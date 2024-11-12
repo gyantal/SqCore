@@ -182,44 +182,65 @@ public partial class FinDb
     public static async Task<bool> CrawlPriceData(string p_ticker, string p_finDataDir, DateTime p_startDate, DateTime p_endDate)
     {
         int nPotentialProblems = 0;
-        IReadOnlyList<Candle?>? history = await Yahoo.GetHistoricalAsync(p_ticker, p_startDate, p_endDate, Period.Daily);
-        if (history == null)
+
+        // Fetch data using the IHistPrice interface with all necessary flags for OHLCV, dividends, and splits.
+        var histResult = await HistPrice.g_HistPrice.GetHistAsync(p_ticker, HpDataNeed.AdjClose | HpDataNeed.Split | HpDataNeed.Dividend | HpDataNeed.OHLCV, p_startDate, p_endDate);
+
+        // Check if there was an error in fetching data
+        if (histResult.ErrorStr != null)
         {
-            Utils.Logger.Error($"Cannot download YF data (ticker:{p_ticker}) after many tries.");
+            Utils.Logger.Error($"Cannot download data for {p_ticker}: after many tries.");
             return false;
         }
 
-        // First, collect splits from YF, because daily prices (history data) have to be reverse adjusted with the splits. YF raw prices aren't adjusted with dividends, but are adjusted with splits.
-        List<SqSplit> splitList = new();
-        IReadOnlyList<SplitTick?> splitHistory = await Yahoo.GetSplitsAsync(p_ticker, p_startDate.AddDays(1), null); // YF 'chart' API gives the Time part too for dividends, splits. E.g. "2020-10-02 9:30".
-        foreach (SplitTick? splitTick in splitHistory)
-        {
-            splitList.Add(new SqSplit() { ReferenceDate = splitTick!.DateTime.Date, SplitFactor = splitTick.AfterSplit / splitTick.BeforeSplit });  // YF 'chart' API gives the Time part too for dividends, splits. E.g. "2020-10-02 9:30". We need only the .Date part
-        }
+        // Extract data from the result
+        SqDateOnly[]? dates = histResult.Dates;
+        float[]? adjCloses = histResult.AdjCloses;
+        HpSplit[]? splits = histResult.Splits;
+        HpDividend[]? dividends = histResult.Dividends;
+        float[]? opens = histResult.Opens;
+        float[]? closes = histResult.Closes;
+        float[]? highs = histResult.Highs;
+        float[]? lows = histResult.Lows;
+        long[]? volumes = histResult.Volumes;
 
-        // Collect YF daily price data (OHLC and Volume) - split adjusted!
-        List<SqPrice> rawClosesFromYfList = new();
-        foreach (Candle? candle in history)
+        // Process the raw price data with SqDateOnly to ensure compatibility
+        if (dates == null || opens == null || highs == null || lows == null || closes == null || volumes == null) // Ensure dates and other data arrays are not null before processing
         {
-            rawClosesFromYfList.Add(new SqPrice() { ReferenceDate = candle!.DateTime, Open = candle.Open, High = candle.High, Low = candle.Low, Close = candle.Close, Volume = candle.Volume });
+            Utils.Logger.Error($"CrawlPriceDataNew(): No date data received for {p_ticker}.");
+            return false;
+        }
+        List<SqPrice> rawClosesFromYfList = new();
+        for (int i = 0; i < dates.Length; i++)
+        {
+            rawClosesFromYfList.Add(new SqPrice
+            {
+                ReferenceDate = dates[i].Date, // Use the Date property to get DateTime from SqDateOnly
+                Open = (decimal)opens[i],
+                High = (decimal)highs[i],
+                Low = (decimal)lows[i],
+                Close = (decimal)closes[i],
+                Volume = volumes[i]
+            });
         }
 
         // Reverse adjust historical data with the splits. Going backwards in time, starting from 'today'.
-        if (splitList.Count != 0)
+        if (splits?.Length > 0)
         {
             decimal splitMultiplier = 1m;
-            int lastSplitIdx = splitList.Count - 1;
-            DateTime watchedSplitDate = splitList[lastSplitIdx].ReferenceDate;
+            int lastSplitIdx = splits.Length - 1;
+            DateTime watchedSplitDate = splits[lastSplitIdx].DateTime.Date;
 
             for (int i = rawClosesFromYfList.Count - 1; i >= 0; i--)
             {
                 SqPrice dailyData = rawClosesFromYfList[i];
                 DateTime date = dailyData.ReferenceDate;
+
                 if (date < watchedSplitDate)
                 {
-                    splitMultiplier *= splitList[lastSplitIdx].SplitFactor;
+                    splitMultiplier *= (decimal)splits[lastSplitIdx].AfterSplit / splits[lastSplitIdx].BeforeSplit;
                     lastSplitIdx--;
-                    watchedSplitDate = (lastSplitIdx == -1) ? DateTime.MinValue : splitList[lastSplitIdx].ReferenceDate;
+                    watchedSplitDate = (lastSplitIdx == -1) ? DateTime.MinValue : splits[lastSplitIdx].DateTime;
                 }
 
                 dailyData.Open *= splitMultiplier;
@@ -269,47 +290,48 @@ public partial class FinDb
         }
         tw.Close();
 
-        // Download dividend history from YF. After that collect dividends and splits into a dictionary.
-        IReadOnlyList<DividendTick?> dividendHistory = await Yahoo.GetDividendsAsync(p_ticker, p_startDate.AddDays(1), null);
+        // Prepare for factor file creation
         Dictionary<DateTime, SqDivSplit> divSplitHistory = new();
-        foreach (DividendTick? dividendTick in dividendHistory)
+
+        // Process dividends if they are not null
+        if (dividends != null)
         {
-            if (dividendTick == null)
-                continue;
-            DateTime date = dividendTick.DateTime.Date; // YF 'chart' API gives the Time part too for dividends, splits. E.g. "2020-10-02 9:30". We need only the .Date part
-
-            // Markets were closed for a week after 9/11, but e.g. NVDA had a split on 2001-09-12. We need to use last known price on 2001-09-10. https://finance.yahoo.com/quote/NVDA/history/?period1=999302400&period2=1001376000
-            // An alternative idea is to always use the Date of the last known price. But then we would not use the dividendSplit.Date at all. And what if YF has a Date data error. Then we prefer a warning of that.
-            // Also, if YF has data error for prices (e.g. mistakenly doesn't have price data for the previous 3 months, then we wouldn't notice, and we would use the last price 3 months earlier. )
-            // Decision: it is safer to regard only this 9/11 period as an exception. And having warning of faulty data.
-            DateTime referencePriceDate = (date >= new DateTime(2001, 9, 11) && date <= new DateTime(2001, 9, 14)) ? new DateTime(2001, 9, 10) : date;
-            if (!rawPrevClosesDict.TryGetValue(referencePriceDate, out SqPrice? refRawClose)) // If the date is present in both the dividend history and the raw closes dictionary, add the extended element to the dictionary.
+            foreach (HpDividend dividendTick in dividends)
             {
-                nPotentialProblems++;
-                continue;
+                DateTime date = dividendTick.DateTime.Date; // YF 'chart' API gives the Time part too for dividends, splits. E.g. "2020-10-02 9:30". We need only the .Date part
+                // Markets were closed for a week after 9/11, but e.g. NVDA had a split on 2001-09-12. We need to use last known price on 2001-09-10. https://finance.yahoo.com/quote/NVDA/history/?period1=999302400&period2=1001376000
+                // An alternative idea is to always use the Date of the last known price. But then we would not use the dividendSplit.Date at all. And what if YF has a Date data error. Then we prefer a warning of that.
+                // Also, if YF has data error for prices (e.g. mistakenly doesn't have price data for the previous 3 months, then we wouldn't notice, and we would use the last price 3 months earlier. )
+                // Decision: it is safer to regard only this 9/11 period as an exception. And having warning of faulty data.
+                DateTime referencePriceDate = (date >= new DateTime(2001, 9, 11) && date <= new DateTime(2001, 9, 14)) ? new DateTime(2001, 9, 10) : date;
+                if (!rawPrevClosesDict.TryGetValue(referencePriceDate, out SqPrice? refRawClose))
+                {
+                    nPotentialProblems++;
+                    continue;
+                }
+                divSplitHistory.Add(date, new SqDivSplit { ReferenceDate = refRawClose.ReferenceDate, DividendValue = (decimal)dividendTick.Amount, SplitFactor = 1m, ReferenceRawPrice = refRawClose.Close });
             }
-
-            divSplitHistory.Add(date, new SqDivSplit() { ReferenceDate = refRawClose.ReferenceDate, DividendValue = dividendTick.Dividend, SplitFactor = 1m, ReferenceRawPrice = refRawClose.Close });
         }
 
-        foreach (SplitTick? splitTick in splitHistory)
+        // Process splits if they are not null
+        if (splits != null)
         {
-            if (splitTick == null)
-                continue;
-
-            DateTime date = splitTick.DateTime.Date; // YF 'chart' API gives the Time part too for dividends, splits. E.g. "2020-10-02 9:30". We need only the .Date part
-            DateTime referencePriceDate = (date >= new DateTime(2001, 9, 11) && date <= new DateTime(2001, 9, 14)) ? new DateTime(2001, 9, 10) : date; // see notes "Markets were closed for a week after 9/11" above
-            if (!rawPrevClosesDict.TryGetValue(referencePriceDate, out SqPrice? refRawClose))
+            foreach (HpSplit splitTick in splits)
             {
-                nPotentialProblems++;
-                continue;
-            }
+                DateTime date = splitTick.DateTime.Date; // YF 'chart' API gives the Time part too for dividends, splits. E.g. "2020-10-02 9:30". We need only the .Date part
+                DateTime referencePriceDate = date >= new DateTime(2001, 9, 11) && date <= new DateTime(2001, 9, 14) ? new DateTime(2001, 9, 10) : date; // see notes "Markets were closed for a week after 9/11" above
 
-            // Check if the key exists in the dictionary.
-            if (divSplitHistory.TryGetValue(date, out SqDivSplit? divSplit)) // If the key exists, update the splitFactor property of the existing DivSplitYF object.
-                divSplit.SplitFactor = splitTick.BeforeSplit / splitTick.AfterSplit;
-            else // If the date is present in both the split history and the raw closes dictionary, add the extended element to the dictionary.
-                divSplitHistory.Add(date, new SqDivSplit() { ReferenceDate = refRawClose.ReferenceDate, DividendValue = 0m, SplitFactor = splitTick.BeforeSplit / splitTick.AfterSplit, ReferenceRawPrice = refRawClose.Close });
+                if (!rawPrevClosesDict.TryGetValue(referencePriceDate, out SqPrice? refRawClose))
+                {
+                    nPotentialProblems++;
+                    continue;
+                }
+                // Check if the key exists in the dictionary.
+                if (divSplitHistory.TryGetValue(date, out SqDivSplit? divSplit)) // If the key exists, update the splitFactor property of the existing DivSplitYF object.
+                    divSplit.SplitFactor = (decimal)splitTick.BeforeSplit / splitTick.AfterSplit;
+                else // If the date is present in both the split history and the raw closes dictionary, add the extended element to the dictionary.
+                    divSplitHistory.Add(date, new SqDivSplit { ReferenceDate = refRawClose.ReferenceDate, DividendValue = 0m, SplitFactor = (decimal)splitTick.BeforeSplit / splitTick.AfterSplit, ReferenceRawPrice = refRawClose.Close });
+            }
         }
 
         // Create a list from the dictionary so that it can be sorted by date.
@@ -362,6 +384,7 @@ public partial class FinDb
 
         return true;
     }
+
     public static void CreateVirtualTickerDailyPriceFiles(string p_ticker, string p_finDataDir, out int p_lastHistDateInt) // p_ticker is "VXX" (not "VXX-SQ")
     {
         // Read the content of ticker-sq-history.csv

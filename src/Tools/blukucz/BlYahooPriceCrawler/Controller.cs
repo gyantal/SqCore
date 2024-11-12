@@ -90,26 +90,23 @@ namespace BlYahooPriceCrawler
             foreach (string ticker in universeTickers)
             {
                 // Fetch historical data from Yahoo Finance: YF Open/Close/High/Low prices are correctly split adjusted (except ATER on 2024-07-11), and the AdjClose is also dividend adjusted.
-                 IReadOnlyList<Candle?>? history;
-                try
+                var histResult = await HistPrice.g_HistPrice.GetHistAsync(ticker, HpDataNeed.AdjClose | HpDataNeed.OHLCV, p_expectedHistoryStartDateET, DateTime.Now);
+
+                if (histResult.ErrorStr != null || histResult.Dates == null || histResult.AdjCloses == null || histResult.Closes == null || histResult.Opens == null || histResult.Highs == null || histResult.Lows == null)
                 {
-                    history = await Yahoo.GetHistoricalAsync(ticker, p_expectedHistoryStartDateET, DateTime.Now, Period.Daily);
-                }
-                catch (System.Exception e)
-                {
-                    Console.WriteLine($"Skipping ticker '{ticker}' because of Exception, Msg: {e.Message}. Remove it from tickerFile and recommendationFile.");
+                    Console.WriteLine($"Skipping ticker '{ticker}' because of an error: {histResult.ErrorStr}. Remove it from tickerFile and recommendationFile.");
                     continue;
                 }
 
                 // Map the historical data to YFRecord objects
-                YFRecord[] yfRecords = history.Select(r => new YFRecord()
+                YFRecord[] yfRecords = histResult.Dates.Select((date, i) => new YFRecord
                 {
-                    Date = Utils.Date2hYYYYMMDD(r!.DateTime),
-                    AdjClose = RowExtension.IsEmptyRow(r!) ? float.NaN : (float)Math.Round(r!.AdjustedClose, 4),
-                    Close = RowExtension.IsEmptyRow(r!) ? float.NaN : (float)Math.Round(r!.Close, 4),
-                    Open = RowExtension.IsEmptyRow(r!) ? float.NaN : (float)Math.Round(r!.Open, 4),
-                    High = RowExtension.IsEmptyRow(r!) ? float.NaN : (float)Math.Round(r!.High, 4),
-                    Low = RowExtension.IsEmptyRow(r!) ? float.NaN : (float)Math.Round(r!.Low, 4)
+                    Date = Utils.Date2hYYYYMMDD(date.Date),
+                    AdjClose = float.IsNaN(histResult.AdjCloses[i]) ? float.NaN : (float)Math.Round(histResult.AdjCloses[i], 4),
+                    Close = float.IsNaN(histResult.Closes[i]) ? float.NaN : (float)Math.Round(histResult.Closes[i], 4),
+                    Open = float.IsNaN(histResult.Opens[i]) ? float.NaN : (float)Math.Round(histResult.Opens[i], 4),
+                    High = float.IsNaN(histResult.Highs[i]) ? float.NaN : (float)Math.Round(histResult.Highs[i], 4),
+                    Low = float.IsNaN(histResult.Lows[i]) ? float.NaN : (float)Math.Round(histResult.Lows[i], 4)
                 }).ToArray();
 
                 // Checking for significant price changes that could be YF bug. By default singinificant changes are NOT allowed. Except for a very few tickers mentioned here.
@@ -411,7 +408,8 @@ namespace BlYahooPriceCrawler
             string[] tickers = [.. recommendationsFromCsv.UniqueTickers, "SPY"];
             Dictionary<string, List<YFRecord>> yfData = ReadYahooCsvFiles(tickers, "D:/Temp/YFHist/");
 
-            int[] p_nDayinFuture = [-252, -189, -126, -63, -21, 3, 5, 10, 21, 42, 63, 84, 105, 126, 189];
+            // int[] p_nDayinFuture = [-252, -189, -126, -63, -21, 3, 5, 10, 21, 42, 63, 84, 105, 126, 189];
+            int[] p_nDayinFuture = [-252, -189, -126, -63, -21, -15, -10, -5, 1, 2, 3, 4, 5, 10, 15, 21, 42, 63, 84, 105, 126, 189, 252 ];
             float stopLossPercentage = 99999f; // Use a big number (e.g. 9999) to avoid stop-loss.
             bool useMOC = true;
             List<PerformanceResult> performances = CalculatePerformances(recommendationsFromCsv, yfData, p_nDayinFuture, stopLossPercentage, useMOC);

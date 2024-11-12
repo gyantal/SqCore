@@ -214,30 +214,33 @@ internal static partial class UiUtils
     public static TickerClosePrice GetStockTickerLastKnownClosePriceAtDate(DateTime p_date, string stockSqTicker)
     {
         DateTime startDay = p_date.AddDays(-5); // Subtract 5 days from the input date to define the start of the lookback period
-        DateTime endDay = p_date.AddDays(1); // Yahoo.GetHistoricalAsync() uses lookbackEnd as exclusive, it will Not be included in the returned data. Therefore we add 1 day to the query.
-        // Define the lookback period start and end dates
+        DateTime endDay = p_date.AddDays(1); // Add 1 day to the query as the end date is exclusive
         SqDateOnly lookbackStart = new(startDay);
         SqDateOnly lookbackEnd = new(endDay);
 
-        IReadOnlyList<Candle?>? history = Yahoo.GetHistoricalAsync(stockSqTicker, lookbackStart, lookbackEnd, Period.Daily).Result // if asked 2010-01-01 (Friday), the first data returned is 2010-01-04, which is next Monday. So, ask YF 1 day before the intended
-            ?? throw new Exception($"GetStockTickerLastKnownClosePriceAtDate() exception. Cannot download YF data (ticker:{stockSqTicker}) after many tries.");
+        var histResult = HistPrice.g_HistPrice.GetHistAsync(stockSqTicker, HpDataNeed.AdjClose | HpDataNeed.OHLCV, lookbackStart, lookbackEnd).Result;
+
+        if (histResult.ErrorStr != null || histResult.Dates == null || histResult.Closes == null)
+            throw new Exception($"GetStockTickerLastKnownClosePriceAtDate() exception. Cannot download data (ticker: {stockSqTicker}). Error: {histResult.ErrorStr}");
+
         TickerClosePrice tickerClosePrice = new TickerClosePrice
         {
             Date = p_date // Set the default date to p_date
         };
-        if (history != null && history.Count > 0) // Check if the history list is not null and contains elements
+
+        if (histResult.Dates.Length > 0) // Check if the history list is not null and contains elements
         {
-            for (int i = history.Count - 1; i >= 0; i--) // Traverse the history list in reverse order to find the closest date that is less than or equal to the requested date
+            for (int i = histResult.Dates.Length - 1; i >= 0; i--) // Traverse the history list in reverse order to find the closest date that is less than or equal to the requested date
             {
-                YahooFinanceApi.Candle? histCandle = history[i];
-                if (histCandle != null && histCandle.DateTime <= p_date) // Check if the current candle is not null and its date is less than or equal to p_date
+                if (histResult.Dates[i].Date <= p_date) // Check if the current candle is not null and its date is less than or equal to p_date
                 {
-                    tickerClosePrice.Date = histCandle.DateTime;
-                    tickerClosePrice.ClosePrice = (float)histCandle.Close;
+                    tickerClosePrice.Date = histResult.Dates[i].Date;
+                    tickerClosePrice.ClosePrice = (float)histResult.Closes[i];
                     break;
                 }
             }
         }
+
         return tickerClosePrice;
     }
 }

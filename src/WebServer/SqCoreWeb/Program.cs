@@ -579,12 +579,18 @@ public partial class Program
                     DateTime endDate = DateTime.UtcNow;
                     DateTime startDate = endDate.AddDays(-600);
 
-                    IReadOnlyList<Candle?>? history = Yahoo.GetHistoricalAsync(ticker, startDate, endDate, YahooFinanceApi.Period.Daily).Result;
-                    List<float> adjustedClosePrices = new();
-                    foreach (var candle in history)
+                    // Fetch historical data using the custom historical data source with the AdjClose flag only
+                    var histResult = HistPrice.g_HistPrice.GetHistAsync(ticker, HpDataNeed.AdjClose, startDate, endDate).Result;
+
+                    // Check if there was an error in fetching data or if the necessary data is missing
+                    if (histResult.ErrorStr != null || histResult.AdjCloses == null)
                     {
-                        adjustedClosePrices.Add((float)candle!.AdjustedClose);
+                        Console.WriteLine($"Error fetching adjusted close prices for '{ticker}': {histResult.ErrorStr ?? "Adjusted close data is null."}");
+                        return string.Empty;
                     }
+
+                    // Populate the adjustedClosePrices list
+                    List<float> adjustedClosePrices = histResult.AdjCloses.Select(adjClose => (float)adjClose).ToList();
 
                     int bottomPctThreshold = 25;
                     int topPctThreshold = 75;

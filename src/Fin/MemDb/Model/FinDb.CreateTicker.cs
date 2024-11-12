@@ -146,22 +146,25 @@ public partial class FinDb
 
         if (isTickerChanged)
         {
-            // Re-download historical price data from Yahoo Finance for the entire period
-            IReadOnlyList<Candle?>? history = await Yahoo.GetHistoricalAsync(ticker, startDate, startDateCurrTicker.AddDays(1), Period.Daily);
+            // Re-download historical price data for the entire period using the custom historical data source
+            var histResult = await HistPrice.g_HistPrice.GetHistAsync(ticker, HpDataNeed.OHLCV | HpDataNeed.AdjClose, startDate, startDateCurrTicker.AddDays(1));
 
-            if (history == null || history.Count == 0)
+            if (histResult.ErrorStr != null || histResult.Dates == null || histResult.AdjCloses == null || histResult.Opens == null || histResult.Closes == null || histResult.Highs == null || histResult.Lows == null || histResult.Volumes == null)
             {
                 Console.WriteLine($"Error downloading historical data for {ticker}");
                 return;
             }
 
-            // Calculate adjFactor at startDateCurrTicker
-            Candle? startCandle = history.FirstOrDefault(c => c?.DateTime == startDateCurrTicker);
-            if (startCandle == null)
+            // Retrieve data for the specific start date
+            int startIndex = Array.FindIndex(histResult.Dates, date => date.Date == startDateCurrTicker);
+            if (startIndex == -1)
             {
                 Console.WriteLine($"No data found for startDateCurrTicker: {startDateCurrTicker}");
                 return;
             }
+
+            // Calculate adjustment factor at startDateCurrTicker
+            decimal adjFactor = (decimal)histResult.AdjCloses[startIndex] / (decimal)histResult.Closes[startIndex];
 
             // Open the factor file and read the first line
             string factorFilePath = Path.Combine(finDataDir, "factor_files", $"{ticker.ToLower()}.csv");
@@ -173,52 +176,50 @@ public partial class FinDb
             }
 
             // Extract the third element of the first line, which is the split factor
-            string firstLine = factorFileLines[0];
-            string[] firstLineParts = firstLine.Split(',');
+            string[] firstLineParts = factorFileLines[0].Split(',');
             if (firstLineParts.Length < 3 || !decimal.TryParse(firstLineParts[2], out decimal splitFactor))
             {
                 Console.WriteLine($"Error: Cannot parse split factor from factor file for {ticker}.");
                 return;
             }
 
-            // Adjust the adjFactor by multiplying it with the split factor
-            decimal adjFactor = (startCandle.AdjustedClose / startCandle.Close) * splitFactor;
+            // Adjust the adjFactor by applying the split factor
+            adjFactor *= splitFactor;
 
             // Create the adjusted historical data for each old ticker
-            foreach (var oldTicker in oldTickers)
+            foreach ((string Ticker, DateTime StartDate, DateTime EndDate) oldTicker in oldTickers)
             {
                 StringBuilder oldContentBuilder = new();
-                var tickerHistory = history.Where(candle => candle?.DateTime >= oldTicker.StartDate && candle?.DateTime <= oldTicker.EndDate);
-
-                foreach (Candle? candle in tickerHistory)
+                for (int i = 0; i < histResult.Dates.Length; i++)
                 {
-                    if (candle == null)
+                    DateTime date = histResult.Dates[i].Date;
+                    if (date < oldTicker.StartDate || date > oldTicker.EndDate)
                         continue;
 
-                    DateTime date = candle.DateTime;
+                    // Calculate daily adjustment factor
+                    decimal dailyAdjFactor = adjFactor / ((decimal)histResult.AdjCloses[i] / (decimal)histResult.Closes[i]);
 
-                    decimal dailyAdjFactor = adjFactor / (candle.AdjustedClose / candle.Close);
-
-                    decimal open = Math.Round(candle.Open / dailyAdjFactor * 10000);
-                    decimal high = Math.Round(candle.High / dailyAdjFactor * 10000);
-                    decimal low = Math.Round(candle.Low / dailyAdjFactor * 10000);
-                    decimal close = Math.Round(candle.Close / dailyAdjFactor * 10000);
-                    long volume = (long)Math.Round(candle.Volume / dailyAdjFactor);
+                    // Adjust the OHLCV data
+                    decimal open = Math.Round((decimal)histResult.Opens[i] / dailyAdjFactor * 10000);
+                    decimal high = Math.Round((decimal)histResult.Highs[i] / dailyAdjFactor * 10000);
+                    decimal low = Math.Round((decimal)histResult.Lows[i] / dailyAdjFactor * 10000);
+                    decimal close = Math.Round((decimal)histResult.Closes[i] / dailyAdjFactor * 10000);
+                    long volume = (long)Math.Round(histResult.Volumes[i] / dailyAdjFactor);
 
                     oldContentBuilder.AppendLine($"{date:yyyyMMdd},{open},{high},{low},{close},{volume}");
                 }
 
                 // Create a ZIP file for each old ticker in the daily folder
-                string zipFilePath = Path.Combine(finDataDir, "daily", $"{oldTicker.Ticker}.zip");
+                string zipFilePath = Path.Combine(finDataDir, "daily", $"{oldTicker.Ticker.ToLower()}.zip");
                 if (File.Exists(zipFilePath))
                 {
-                    string backupFileName = Path.Combine(finDataDir, "daily", $"{oldTicker.Ticker}_{DateTime.UtcNow:yyyyMMdd}.zip");
+                    string backupFileName = Path.Combine(finDataDir, "daily", $"{oldTicker.Ticker.ToLower()}_{DateTime.UtcNow:yyyyMMdd}.zip");
                     File.Move(zipFilePath, backupFileName, true);
                 }
 
                 using FileStream zipToCreate = new(zipFilePath, FileMode.Create);
                 using ZipArchive zipFile = new(zipToCreate, ZipArchiveMode.Create);
-                ZipArchiveEntry innerCsvFile = zipFile.CreateEntry($"{oldTicker.Ticker}.csv");
+                ZipArchiveEntry innerCsvFile = zipFile.CreateEntry($"{oldTicker.Ticker.ToLower()}.csv");
                 using StreamWriter tw = new(innerCsvFile.Open());
                 tw.Write(oldContentBuilder.ToString().Trim());
             }

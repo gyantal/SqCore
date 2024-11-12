@@ -178,13 +178,14 @@ public class YahooFinanceForwarder : Microsoft.AspNetCore.Mvc.Controller
                     endTime = endTime.AddHours(12);    // endTimeStr Date is excluded from daily data, so Add a little bit more to the middle of the UTC day
             }
 
-            Period period = Period.Daily;
-            if (allParamsDict["interval"] == "1w")
-                period = Period.Weekly;
-            else if (allParamsDict["interval"] == "1m")
-                period = Period.Monthly;
+            string interval = "1d";
+            if (allParamsDict.TryGetValue("interval", out StringValues intervalStrVal))
+                interval = intervalStrVal[0]!;
 
-            var history = await Yahoo.GetHistoricalAsync(ticker, startTime, endTime, period);
+            var histResult = await HistPrice.g_HistPrice.GetHistAsync(ticker, HpDataNeed.AdjClose | HpDataNeed.OHLCV, startTime, endTime, interval);
+
+            if (histResult.ErrorStr != null || histResult.Dates == null || histResult.Opens == null || histResult.Highs == null || histResult.Lows == null || histResult.Closes == null || histResult.AdjCloses == null || histResult.Volumes == null)
+                throw new Exception($"GenerateYffResponse() exception. Cannot download data (ticker: {ticker}). Error: {histResult.ErrorStr}");
 
             // 4.1 Process YF CSV file either as JSON or as CSV: Header
             StringBuilder responseStrBldr = new();
@@ -205,21 +206,21 @@ public class YahooFinanceForwarder : Microsoft.AspNetCore.Mvc.Controller
                 WriteRow(isOutputJson, yffColumnsList, new string[] { "Date", "Open", "High", "Low", "Close", "Adj Close", "Volume" }, responseStrBldr, ref wasDataLineWritten);
             }
 
-            foreach (var candle in history)
+            for (int i = 0; i < histResult.Dates.Length; i++)
             {
                 string[] cells = new string[7];
                 if (isOutputJson)
-                    cells[0] = String.Format(@"Date.UTC({0},{1},{2})", candle!.DateTime.Year, candle!.DateTime.Month - 1, candle!.DateTime.Day);
+                    cells[0] = String.Format(@"Date.UTC({0},{1},{2})", histResult.Dates[i].Date.Year, histResult.Dates[i].Date.Month - 1, histResult.Dates[i].Date.Day);
                 else
-                    cells[0] = String.Format(@"{0}-{1}-{2}", candle!.DateTime.Year, candle!.DateTime.Month, candle!.DateTime.Day);
+                    cells[0] = String.Format(@"{0}-{1}-{2}", histResult.Dates[i].Date.Year, histResult.Dates[i].Date.Month, histResult.Dates[i].Date.Day);
 
-                // Prices in the given CSV as "15.830000" is pointless. Convert it to "15.8" if possible,       "16.059999" should be converted too
-                cells[1] = candle!.Open.ToString("0.###");
-                cells[2] = candle!.High.ToString("0.###");
-                cells[3] = candle!.Low.ToString("0.###");
-                cells[4] = candle!.Close.ToString("0.###");
-                cells[5] = candle!.AdjustedClose.ToString("0.###");
-                cells[6] = candle!.Volume.ToString("0.###");
+                // Prices in the given CSV as "15.830000" is pointless. Convert it to "15.8" if possible, "16.059999" should be converted too
+                cells[1] = histResult.Opens[i].ToString("0.###");
+                cells[2] = histResult.Highs[i].ToString("0.###");
+                cells[3] = histResult.Lows[i].ToString("0.###");
+                cells[4] = histResult.Closes[i].ToString("0.###");
+                cells[5] = histResult.AdjCloses[i].ToString("0.###");
+                cells[6] = histResult.Volumes[i].ToString("0.###");
 
                 WriteRow(isOutputJson, yffColumnsList, cells, responseStrBldr, ref wasDataLineWritten);
             }

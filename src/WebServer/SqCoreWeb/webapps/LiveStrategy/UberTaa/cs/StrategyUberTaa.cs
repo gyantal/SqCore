@@ -798,12 +798,19 @@ public class StrategyUberTaaController : ControllerBase
         int nCalendarDaysNeeded = nTradingDaysNeeded * 7 / 4; // To convert trading days to calendar days, multiply with 7/4 instead of 7/5, to account for surprising holidays. Better to overshoot.
         DateTime startDate = p_endDate.AddDays(-nCalendarDaysNeeded);
 
-        IReadOnlyList<Candle?>? history = Yahoo.GetHistoricalAsync(p_ticker, startDate, p_endDate, YahooFinanceApi.Period.Daily).Result;
-        if (history == null)
-            throw new SqException($"PctChnWeights() Cannot download YF price for ticker {p_ticker}");
+        var histResult = HistPrice.g_HistPrice.GetHistAsync(p_ticker, HpDataNeed.AdjClose, startDate, p_endDate).Result;
+
+        if (histResult.ErrorStr != null)
+            throw new SqException($"PctChnWeights() Cannot download price data for ticker {p_ticker}: {histResult.ErrorStr}");
+
+        if (histResult.Dates == null || histResult.AdjCloses == null)
+            throw new SqException($"PctChnWeights() No valid price data received for ticker {p_ticker}");
+
         List<float> adjustedClosePrices = new();
-        foreach (var candle in history)
-            adjustedClosePrices.Add((float)candle!.AdjustedClose);
+        for (int i = 0; i < histResult.Dates.Length; i++)
+        {
+            adjustedClosePrices.Add(histResult.AdjCloses[i]);
+        }
 
         List<AggregatePctlChannel> pctChannelRes = Controllers.StrategyUberTaaController.PctChnWeights(adjustedClosePrices, p_pctChnLookbackDays, p_calculationLookbackDays, p_resultLengthDays, p_bottomPctThreshold, p_topPctThreshold);
 
@@ -811,7 +818,7 @@ public class StrategyUberTaaController : ControllerBase
         for (int i = 0; i < pctChannelRes.Count; i++)
         {
             AggregatePctlChannel pctChnItem = pctChannelRes[i];
-            DateTime date = history[history.Count - pctChannelRes.Count + i]!.DateTime;
+            DateTime date = histResult.Dates[histResult.Dates.Length - pctChannelRes.Count + i].Date;
             result.Add(new AggregateDatePctlChannel { Date = date, Aggregate = pctChnItem.Aggregate, PctlChannels = pctChnItem.PctlChannels });
         }
         return result;
