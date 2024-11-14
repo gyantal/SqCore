@@ -17,6 +17,17 @@ public class SeekingAlphaHelperController : ControllerBase
         public float SaQuantRating { get; set; }
     }
 
+    public class AnalystData
+    {
+        public int Rank { get; set; }
+        public string AnalystName { get; set; } = string.Empty;
+        public float SucessRate { get; set; }
+        public float AverageReturn { get; set; }
+        public string Ticker { get; set; } = string.Empty;
+        public DateTime Date { get; set; }
+        public string SaActionType { get; set; } = string.Empty; // Buy , Sell
+    }
+
     #pragma warning disable CA1822 // "Mark members as static". Kestrel Controller methods that is called as an URL has to be instance methods, not static.
     [HttpGet] // only 1 HttpGet attribute should be in the Controller (or you have to specify in it how to resolve)
     public IActionResult Get([FromQuery] string dataSelector)
@@ -35,7 +46,10 @@ public class SeekingAlphaHelperController : ControllerBase
             return stockHistDict;
         }
         else if (p_dataSelector == "topAnalysts")
-            return "Top Analysts Data"; // return data for top analysts
+        {
+            string analystsHistDict = ExtractAnalystsRawData2Dict();
+            return analystsHistDict;
+        }
         else
             return "Unknown dataSelector value.";
     }
@@ -43,11 +57,11 @@ public class SeekingAlphaHelperController : ControllerBase
     private string ExtractStocksRawHistData2Dict()
     {
         string url = "https://drive.google.com/uc?export=download&id=1-1HZBrjO4HihpJvk47vxtgBylGeZ0At-";
-        string? rawTopStocksData = Utils.DownloadStringWithRetryAsync(url).TurnAsyncToSyncTask();
+        string? rawTopStocksData = Utils.DownloadStringWithRetryAsync(url).TurnAsyncToSyncTask(); // typical elapsed time: 3,109,366.90 microsecs
         if (string.IsNullOrEmpty(rawTopStocksData) || rawTopStocksData.Contains("Error"))
             return "Error in DownloadStringWithRetry()";
-        Dictionary<DateTime, List<StockData>> topStocksDict = TopStocksRawHistData2Dict(rawTopStocksData);
-        string topStocksStr = TopStocksDict2Str(topStocksDict);
+        Dictionary<DateTime, List<StockData>> topStocksDict = TopStocksRawHistData2Dict(rawTopStocksData); // typical elapsed time:233.30 microsecs
+        string topStocksStr = TopStocksDict2Str(topStocksDict); // typical elapsed time: 116.40 microsecs
         return topStocksStr;
     }
 
@@ -163,5 +177,145 @@ public class SeekingAlphaHelperController : ControllerBase
 
         sbTopStocksDict.Append("\t\t};"); // Append the closing bracket for the dictionary
         return sbTopStocksDict.ToString();
+    }
+
+    private string ExtractAnalystsRawData2Dict()
+    {
+        string url = "https://drive.google.com/uc?export=download&id=1Q-TLER8bsEJeOcSl82mam0bU6z9FwJ5Q";
+        string? rawAnalystsData = Utils.DownloadStringWithRetryAsync(url).TurnAsyncToSyncTask();
+        if (string.IsNullOrEmpty(rawAnalystsData) || rawAnalystsData.Contains("Error"))
+            return "Error in DownloadStringWithRetry()";
+        Dictionary<DateTime, List<AnalystData>> topAnalystsDict = TopAnalystsRawHistData2Dict(rawAnalystsData);
+        string topAnalystsDataStr = TopAnalystsDataDict2Str(topAnalystsDict);
+        return topAnalystsDataStr;
+    }
+
+    public Dictionary<DateTime, List<AnalystData>> TopAnalystsRawHistData2Dict(string p_rawAnalystsData)
+    {
+        Dictionary<DateTime, List<AnalystData>> topAnalystsDict = new();
+        ReadOnlySpan<char> span = p_rawAnalystsData.AsSpan();
+        int i = 0;
+        while (i < span.Length)
+        {
+            int dateStartIdx = span.Slice(i).IndexOf("***"); // Find the start of a new date block
+            if (dateStartIdx == -1)
+                break;
+
+            i += dateStartIdx + "***".Length; // Adjust `i` to the actual start of the date marker
+            int dateEndIdx = span.Slice(i).IndexOf('\n'); // Find the end of the date line
+            if (dateEndIdx == -1)
+                break;
+
+            ReadOnlySpan<char> dateSpan = span.Slice(i, dateEndIdx - " UTC".Length).Trim(); // Parse the date. dateStr = "2024-10-14T12:00 UTC" => dateStr = "2024-10-14T12:00";
+            DateTime dateTime = Utils.Str2DateTimeUtc(dateSpan.ToString());
+            i += dateEndIdx + 1;
+
+            List<AnalystData> analystData = new();
+            int recordNumber = 1;
+            while (i < span.Length)
+            {
+                string recordMarker = $"\r\n{recordNumber}\r\n"; // Marker for each record (e.g., "\r\n1\r\n")
+                int recordStart = span.Slice(i).IndexOf(recordMarker);
+                if (recordStart == -1)
+                    break; // No more records found
+
+                i += recordStart + recordMarker.Length;
+                // Find the Analysts Name (e.g., "Don Durrett")
+                int analystNameStartIdx = span.Slice(i).IndexOf("\r\n");
+                if (analystNameStartIdx == -1)
+                    break;
+                i += analystNameStartIdx + "\r\n".Length;
+                int analystNameEndIdx = span.Slice(i).IndexOf("\r\n");
+                ReadOnlySpan<char> analystName = span.Slice(i, analystNameEndIdx).Trim();
+                i += analystNameEndIdx + "\r\n".Length;
+                // Find the SuccessRate (e.g., "82%")
+                int successRateEndIdx = span.Slice(i).IndexOf("%\r\n");
+                if (successRateEndIdx == -1)
+                    break;
+                ReadOnlySpan<char> successRateSpan = span.Slice(i, successRateEndIdx).Trim();
+                float successRate;
+                if (!float.TryParse(successRateSpan.ToString(), out successRate))
+                    successRate = 0;
+                i += successRateEndIdx + "%\r\n".Length;
+                // Find the Average return (e.g., "29.16%")
+                int avgReturnEndIdx = span.Slice(i).IndexOf("%\r\n");
+                if (avgReturnEndIdx == -1)
+                    break;
+                ReadOnlySpan<char> avgReturnSpan = span.Slice(i, avgReturnEndIdx).Trim();
+                float avgReturn;
+                if (!float.TryParse(avgReturnSpan.ToString(), out avgReturn))
+                    avgReturn = 0;
+                i += avgReturnEndIdx + "%\r\n".Length;
+                // Find the Ticker (e.g., "HSIX")
+                int tickerEndIdx = span.Slice(i).IndexOf("\r\n");
+                ReadOnlySpan<char> tickerSpan = span.Slice(i, tickerEndIdx).Trim();
+                i += tickerEndIdx + "\r\n".Length;
+                // Find the coverage date (e.g., "10/14/2024")
+                int coverageDateEndIdx = span.Slice(i).IndexOf("\r\n");
+                ReadOnlySpan<char> coverageDateSpan = span.Slice(i, coverageDateEndIdx).Trim();
+                DateTime coverageDate = Utils.Str2DateTimeUtc(coverageDateSpan.ToString());
+                i += coverageDateEndIdx + "\r\n".Length;
+                // Find the SA action type (e.g., "Strong Buy", "Sell", etc.)
+                int actionTypeEndIdx = span.Slice(i).IndexOf("\t");
+                ReadOnlySpan<char> actionTypeSpan = span.Slice(i, actionTypeEndIdx + "\t".Length).Trim();
+                i += actionTypeEndIdx + "\t".Length;
+
+                analystData.Add(new AnalystData { Rank = recordNumber, AnalystName = analystName.ToString(), SucessRate = successRate, AverageReturn = avgReturn, Ticker = tickerSpan.ToString(), Date = coverageDate, SaActionType = actionTypeSpan.ToString() });
+                recordNumber++;
+            }
+            topAnalystsDict[dateTime] = analystData; // Add the analystDataList to the dictionary with the current date
+
+            int nextDateMarkerIdx = span.Slice(i).IndexOf("***"); // Move `i` to the next block after the current records
+            if (nextDateMarkerIdx == -1)
+                break; // No more date markers found, exit the loop
+            i += nextDateMarkerIdx; // Set `i` to the start of the next date marker
+        }
+
+        return topAnalystsDict;
+    }
+
+    public string TopAnalystsDataDict2Str(Dictionary<DateTime, List<AnalystData>> p_topAnalystsDict)
+    {
+        // creating the dictionary string with proper formatting for readability.
+        // Using tabs (\t) and newlines (\n) for better formatting when copying into QuantConnect's QCStrategy.
+        StringBuilder sbTopAnalystsDataDict = new();
+        sbTopAnalystsDataDict.Append("Dictionary<DateTime, List<AnalystData>> _recommendations = new() \n\t\t{\n");
+
+        int topAnalystsDictCount = p_topAnalystsDict.Count;
+        int currentAnalystDictCount = 0;
+
+        foreach (KeyValuePair<DateTime, List<AnalystData>> topAnalystsRow in p_topAnalystsDict.OrderByDescending(r => r.Key)) // Ordered by the date key in descending order (latest date first)
+        {
+            DateTime date = topAnalystsRow.Key;
+            List<AnalystData> topAnalystsData = topAnalystsRow.Value;
+
+            // Append the dictionary entry for DateTime with the exact year, month, day, and time.
+            sbTopAnalystsDataDict.Append("\t\t\t{ ");
+            sbTopAnalystsDataDict.Append($"new DateTime({date.Year}, {date.Month}, {date.Day}, {date.Hour}, {date.Minute}, {date.Second}), ");
+            sbTopAnalystsDataDict.Append("new List<AnalystData> {\n\t\t\t\t");
+
+            for (int i = 0; i < topAnalystsData.Count; i++)
+            {
+                AnalystData analystData = topAnalystsData[i];
+                sbTopAnalystsDataDict.Append($"new AnalystData({analystData.Rank}, \"{analystData.AnalystName}\", {analystData.SucessRate}, {analystData.AverageReturn} \"{analystData.Ticker}\", {analystData.Date}, {analystData.SaActionType})");
+
+                if (i < topAnalystsData.Count - 1) // Append a comma and space after the analystData, but not for the last analystData in the list.
+                    sbTopAnalystsDataDict.Append(", ");
+
+                // Adjust the index to a 1-based, since the loop index starts from 0
+                if ((i + 1) % 2 == 0) // Add a newline and tab after every 2 analystData for better visual formatting.
+                    sbTopAnalystsDataDict.Append("\n\t\t\t\t");
+            }
+
+            currentAnalystDictCount++;
+            // Close the current dictionary entry, adding a comma if there are more entries left.
+            if (currentAnalystDictCount < topAnalystsDictCount)
+                sbTopAnalystsDataDict.Append("}\n\t\t\t},\n");
+            else
+                sbTopAnalystsDataDict.Append("}\n\t\t\t}\n"); // For the last entry, close without a comma
+        }
+
+        sbTopAnalystsDataDict.Append("\t\t};"); // Append the closing bracket for the dictionary
+        return sbTopAnalystsDataDict.ToString();
     }
 }
