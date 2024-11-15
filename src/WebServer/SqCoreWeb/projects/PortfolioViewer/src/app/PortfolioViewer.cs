@@ -350,8 +350,8 @@ public class PrtfVwrWs
                 if (!uniqueTickers.Contains(trade.Symbol!))
                     uniqueTickers.Add(trade.Symbol!);
             }
-            List<(string Ticker, int Id)> stockIdsResult = MemDb.gMemDb.GetLegacyDbStockIds(uniqueTickers);
-            foreach ((string Ticker, int Id) stock in stockIdsResult)
+            List<(string Ticker, int Id)> stockIdsResult = MemDb.gMemDb.GetLegacyStockIds(uniqueTickers);
+            foreach ((string Ticker, int Id) stock in stockIdsResult) // Check if any ticker from trades doesn't exist in the stock data
             {
                 if (stock.Id == -1) // Check if the stock ID is -1, indicating the symbol does not exist in LegacyDb
                 {
@@ -363,10 +363,11 @@ public class PrtfVwrWs
 
         if (testAndInsertTradeResult == "OK") // insert the trades only if the test is "OK"
         {
-            testAndInsertTradeResult = "Trades were successfully inserted";
             bool isTradesInsertSuccessful = MemDb.gMemDb.InsertLegacyPortfolioTrades(prtfName, trades!);
-            if(!isTradesInsertSuccessful)
-                testAndInsertTradeResult = $"InsertTrade failed";
+            if (isTradesInsertSuccessful)
+                testAndInsertTradeResult = "Trades were successfully inserted";
+            else
+                testAndInsertTradeResult = $"InsertTrades failed";
         }
         byte[] encodedMsg = Encoding.UTF8.GetBytes("PrtfVwr.LegacyDbTradesTestAndInsert:" + Utils.CamelCaseSerialize(testAndInsertTradeResult));
         if (webSocket!.State == WebSocketState.Open)

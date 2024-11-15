@@ -20,7 +20,7 @@ public partial class MemDb
         return m_legacyDb.InsertTrade(p_legacyDbPortfName, p_newTrade);
     }
 
-    public List<(string Ticker, int Id)> GetLegacyDbStockIds(List<string> p_tickers)
+    public List<(string Ticker, int Id)> GetLegacyStockIds(List<string> p_tickers)
     {
         return m_legacyDb.GetStockIds(p_tickers);
     }

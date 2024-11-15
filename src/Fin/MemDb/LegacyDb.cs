@@ -222,6 +222,12 @@ public class LegacyDb : IDisposable
 
     public bool InsertTrades(string p_legacyDbPortfName, List<Trade> p_newTrades)
     {
+        if (m_connection?.State != System.Data.ConnectionState.Open)
+        {
+            Utils.Logger.Error("LegacyDb Error. Connection to SQL Server has not established successfully.");
+            return false;
+        }
+
         int portfolioId = GetPortfolioId(p_legacyDbPortfName);
         if (portfolioId == -1)
         {
@@ -230,7 +236,7 @@ public class LegacyDb : IDisposable
         }
 
         StringBuilder queryBuilder = new();
-        queryBuilder.Append("INSERT INTO portfolioitem (PortfolioID, TransactionType, AssetTypeID, AssetSubTableID, Volume, Price, Date, Note) VALUES ");
+        queryBuilder.Append("INSERT INTO PortfolioItem (PortfolioID, TransactionType, AssetTypeID, AssetSubTableID, Volume, Price, Date, Note) VALUES ");
 
         for (int i = 0; i < p_newTrades.Count; i++)
         {
