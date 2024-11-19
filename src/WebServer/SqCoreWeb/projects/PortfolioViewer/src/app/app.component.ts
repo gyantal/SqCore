@@ -137,7 +137,7 @@ export class AppComponent {
   m_enumExchangeId = ExchangeId;
 
   // LegacyDbTrades tabpage
-  m_legacyDbInsertionYear: number = new Date().getFullYear(); // using the current year as default value
+  m_CompletionDateUtcStr: string = SqNgCommonUtilsTime.Date2PaddedIsoStr(SqNgCommonUtilsTime.ConvertDateLocToEt(new Date())); // convert the localDate to UTC then convert to DateStr format "YYYY-MM-DD"
   m_legacyDbInsTradesSyntaxCheckResult: string = '';
   m_legacyDbTradesTestAndInsertResult: string = '';
   m_legacyDbTrades: TradeJs[] = [];
@@ -587,8 +587,8 @@ export class AppComponent {
     this.m_isPositionsTabSortDirAscend = !this.m_isPositionsTabSortDirAscend;
   }
 
-  onInputLegacyDbInsertionYear(event: Event) {
-    this.m_legacyDbInsertionYear = parseInt((event.target as HTMLInputElement).value.trim());
+  onInputLegacyDbDateInsertion(event: Event) {
+    this.m_CompletionDateUtcStr = (event.target as HTMLInputElement).value.trim();
   }
 
   onClickConvertTradesStrToTradesJs() {
@@ -610,18 +610,18 @@ export class AppComponent {
     }
   }
 
-  validateAndProcessTradeData(tradeRowStr: string, rowInd:number, tradeObj: TradeJs): string { // Function to validate trade data. TBD for other data validation
+  validateAndProcessTradeData(tradeRowStr: string, rowInd:number, tradeObj: TradeJs): string { // Function to validate trade data.
     if (tradeRowStr.startsWith('-')) // Check for partial trades
       return `Error. Processing stopped. "-" was found at row ${rowInd + 1} which indicates partial trades are present. Remove partial trades.`;
     else {
       tradeRowStr = tradeRowStr.startsWith('+') ? tradeRowStr.substring(2) : tradeRowStr.startsWith('\t') ? tradeRowStr.substring(1) : tradeRowStr; // removing the '+' and '\t' from the tradeRecord
       const trade: string[] = tradeRowStr.split('\t');
-      const quantity = Number(trade[2]);
+      const quantity = Number(trade[2].replace(/,/g, '')); // replace the comma and convert to number
       if (isNaN(quantity) || !isFinite(quantity)) // Check if quantity is a valid number (including floats) and is finite
         return (`Quantity ${trade[2]} at row ${rowInd + 1} is  not a valid number.`);
       tradeObj.quantity = quantity; // Assign the valid quantity to tradeObj
 
-      const price = Number(trade[3]);
+      const price = Number(trade[3].replace(/,/g, '')); // replace the comma and convert to number
       if (isNaN(price) || !isFinite(price)) // Check if price is a valid number (including floats) and is finite
         return (`Price ${trade[3]} at row ${rowInd + 1} is  not a valid number.`);
       tradeObj.price = price;
@@ -646,15 +646,16 @@ export class AppComponent {
 
       tradeObj.symbol = trade[1];
       // Convert date to a proper date format
-      let tradeDt: Date = new Date(trade[5]);
+      const tradeDt: Date = new Date(trade[5]);
+      const completionDateStr: string[] = this.m_CompletionDateUtcStr.split('-');
       if (isNaN(tradeDt.getTime())) { // If tradeDt is invalid, assume it only contains the time part.
         const timeStr = trade[5];
-        tradeDt = new Date(); // Use today's date as the default
+        tradeDt.setUTCFullYear(parseInt(completionDateStr[0], 10), parseInt(completionDateStr[1], 10) - 1, parseInt(completionDateStr[2], 10));
         tradeDt.setHours(0, 0, 0, 0); // Reset time to start of the day
         const timeParts = timeStr.split(':'); // Split the timeStr and manually parse each part
         tradeDt.setHours(parseInt(timeParts[0], 10), parseInt(timeParts[1], 10), parseInt(timeParts[2], 10)); // Set the time on tradeDt to the parsed hours, minutes, and seconds
       }
-      tradeDt.setFullYear(this.m_legacyDbInsertionYear);
+      tradeDt.setUTCFullYear(parseInt(completionDateStr[0], 10));
 
       tradeObj.time = tradeDt;
       return 'Syntax OK'; // All validations and processing succeeded

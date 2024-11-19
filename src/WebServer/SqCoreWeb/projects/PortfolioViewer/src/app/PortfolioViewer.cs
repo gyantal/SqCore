@@ -363,13 +363,15 @@ public class PrtfVwrWs
 
         if (testAndInsertTradeResult == "OK") // insert the trades only if the test is "OK"
         {
+            Console.WriteLine("InsertLegacyPortfolioTrades() : start");
             bool isTradesInsertSuccessful = MemDb.gMemDb.InsertLegacyPortfolioTrades(prtfName, trades!);
             if (isTradesInsertSuccessful)
                 testAndInsertTradeResult = "Trades were successfully inserted";
             else
-                testAndInsertTradeResult = $"InsertTrades failed";
+                testAndInsertTradeResult = "InsertTrades failed";
         }
-        byte[] encodedMsg = Encoding.UTF8.GetBytes("PrtfVwr.LegacyDbTradesTestAndInsert:" + Utils.CamelCaseSerialize(testAndInsertTradeResult));
+        Console.WriteLine($"InsertLegacyPortfolioTrades() : End - {testAndInsertTradeResult}");
+        byte[] encodedMsg = Encoding.UTF8.GetBytes("PrtfVwr.LegacyDbTradesTestAndInsert:" + testAndInsertTradeResult);
         if (webSocket!.State == WebSocketState.Open)
             webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
     }

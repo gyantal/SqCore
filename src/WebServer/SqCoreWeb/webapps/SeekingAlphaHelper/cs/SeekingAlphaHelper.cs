@@ -181,7 +181,7 @@ public class SeekingAlphaHelperController : ControllerBase
 
     private string ExtractAnalystsRawData2Dict()
     {
-        string url = "https://drive.google.com/uc?export=download&id=1Q-TLER8bsEJeOcSl82mam0bU6z9FwJ5Q";
+        string url = "https://drive.google.com/uc?export=download&id=1-3aFmPHMYfoNCeeXBqq6wlgCEkaCb_vu";
         string? rawAnalystsData = Utils.DownloadStringWithRetryAsync(url).TurnAsyncToSyncTask();
         if (string.IsNullOrEmpty(rawAnalystsData) || rawAnalystsData.Contains("Error"))
             return "Error in DownloadStringWithRetry()";
