@@ -224,7 +224,8 @@ public class ContangoVisualizerDataController : Microsoft.AspNetCore.Mvc.Control
     public static string GetStrOIL()
     {
         // Downloading live data from cmegroup.com.
-        string? webpageLive = Utils.DownloadStringWithRetryAsync("https://www.cmegroup.com/CmeWS/mvc/Quotes/Future/425/G", 3, TimeSpan.FromSeconds(2), true).TurnAsyncToSyncTask();
+        // string? webpageLive = Utils.DownloadStringWithRetryAsync("https://www.cmegroup.com/CmeWS/mvc/Quotes/Future/425/G", 3, TimeSpan.FromSeconds(2), true).TurnAsyncToSyncTask();
+        string? webpageLive = Utils.DownloadStringWithRetryAsync("https://www.cmegroup.com/CmeWS/mvc/quotes/v2/425", 3, TimeSpan.FromSeconds(2), true).TurnAsyncToSyncTask();
         // bool isOkLive = Utils.DownloadStringWithRetry(out webpageLive, "http://www.cmegroup.com/trading/energy/crude-oil/light-sweet-crude.html", 3, TimeSpan.FromSeconds(2), true);
         if (webpageLive == null)
             return "Error in live data";
@@ -269,9 +270,9 @@ public class ContangoVisualizerDataController : Microsoft.AspNetCore.Mvc.Control
         string dataSourceOIL = "https://www.cmegroup.com/trading/energy/crude-oil/light-sweet-crude.html";
 
         int startPosLiveDate = webpageLive.IndexOf("\"updated\":\"", liveFuturesDataVecInd[0]) + "\"updated\":\"".Length;
-        string liveFuturesDataDT = webpageLive.Substring(startPosLiveDate, 29);
-        string liveFuturesDataDate = liveFuturesDataDT.Substring(18, 11);
-        string liveFuturesDataTime = liveFuturesDataDT[..8] + " CT";
+        string liveFuturesDataDT = webpageLive.Substring(startPosLiveDate, 19);
+        string liveFuturesDataDate = liveFuturesDataDT[..10];
+        string liveFuturesDataTime = liveFuturesDataDT[11..] + " CT";
 
         int nextExpLiveMonth = webpageLive.IndexOf("\"expirationMonth\":\"", 0) + "\"expirationMonth\":\"".Length;
         string liveFuturesNextExp = webpageLive.Substring(nextExpLiveMonth, 3);
@@ -382,7 +383,8 @@ public class ContangoVisualizerDataController : Microsoft.AspNetCore.Mvc.Control
     public static string GetStrGAS()
     {
         // Downloading live data from cmegroup.com.
-        string? webpageLive = Utils.DownloadStringWithRetryAsync("https://www.cmegroup.com/CmeWS/mvc/Quotes/Future/444/G", 3, TimeSpan.FromSeconds(2), true).TurnAsyncToSyncTask();
+        // string? webpageLive = Utils.DownloadStringWithRetryAsync("https://www.cmegroup.com/CmeWS/mvc/Quotes/Future/444/G", 3, TimeSpan.FromSeconds(2), true).TurnAsyncToSyncTask();
+        string? webpageLive = Utils.DownloadStringWithRetryAsync("https://www.cmegroup.com/CmeWS/mvc/quotes/v2/444", 3, TimeSpan.FromSeconds(2), true).TurnAsyncToSyncTask();
         // bool isOkLive = Utils.DownloadStringWithRetry("http://www.cmegroup.com/trading/energy/natural-gas/natural-gas.html", out webpageLive, 3, TimeSpan.FromSeconds(2), true);
         if (webpageLive == null)
             return "Error in live data";
@@ -427,9 +429,9 @@ public class ContangoVisualizerDataController : Microsoft.AspNetCore.Mvc.Control
         string dataSourceGAS = "https://www.cmegroup.com/trading/energy/natural-gas/natural-gas.html";
 
         int startPosLiveDate = webpageLive.IndexOf("\"updated\":\"", liveFuturesDataVecInd[0]) + "\"updated\":\"".Length;
-        string liveFuturesDataDT = webpageLive.Substring(startPosLiveDate, 29);
-        string liveFuturesDataDate = liveFuturesDataDT.Substring(18, 11);
-        string liveFuturesDataTime = liveFuturesDataDT[..8] + " CT";
+        string liveFuturesDataDT = webpageLive.Substring(startPosLiveDate, 19);
+        string liveFuturesDataDate = liveFuturesDataDT[..10];
+        string liveFuturesDataTime = liveFuturesDataDT[11..] + " CT";
 
         int nextExpLiveMonth = webpageLive.IndexOf("\"expirationMonth\":\"", 0) + "\"expirationMonth\":\"".Length;
         string liveFuturesNextExp = webpageLive.Substring(nextExpLiveMonth, 3);

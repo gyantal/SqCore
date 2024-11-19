@@ -14,32 +14,27 @@ namespace Fin.MemDb;
 class SqPrice
 {
     public DateTime ReferenceDate;
-    public decimal Open;
-    public decimal High;
-    public decimal Low;
-    public decimal Close;
+    public float Open;
+    public float High;
+    public float Low;
+    public float Close;
     public long Volume;
-}
-class SqSplit
-{
-    public DateTime ReferenceDate;
-    public decimal SplitFactor;
 }
 
 class SqDivSplit
 {
     public DateTime ReferenceDate;
-    public decimal DividendValue;
-    public decimal SplitFactor;
-    public decimal ReferenceRawPrice;
+    public double DividendValue;
+    public double SplitFactor;
+    public float ReferenceRawPrice;
 }
 
 class FactorFileDivSplit
 {
     public DateTime ReferenceDate;
-    public decimal DividendFactorCum;
-    public decimal SplitFactorCum;
-    public decimal ReferenceRawPrice;
+    public double DividendFactorCum;
+    public double SplitFactorCum;
+    public float ReferenceRawPrice;
 }
 
 public class FinDbCrawlerExecution : SqExecution
@@ -216,10 +211,10 @@ public partial class FinDb
             rawClosesFromYfList.Add(new SqPrice
             {
                 ReferenceDate = dates[i].Date, // Use the Date property to get DateTime from SqDateOnly
-                Open = (decimal)opens[i],
-                High = (decimal)highs[i],
-                Low = (decimal)lows[i],
-                Close = (decimal)closes[i],
+                Open = opens[i],
+                High = highs[i],
+                Low = lows[i],
+                Close = closes[i],
                 Volume = volumes[i]
             });
         }
@@ -227,7 +222,7 @@ public partial class FinDb
         // Reverse adjust historical data with the splits. Going backwards in time, starting from 'today'.
         if (splits?.Length > 0)
         {
-            decimal splitMultiplier = 1m;
+            double splitMultiplier = 1.0;
             int lastSplitIdx = splits.Length - 1;
             DateTime watchedSplitDate = splits[lastSplitIdx].DateTime.Date;
 
@@ -238,15 +233,15 @@ public partial class FinDb
 
                 if (date < watchedSplitDate)
                 {
-                    splitMultiplier *= (decimal)splits[lastSplitIdx].AfterSplit / splits[lastSplitIdx].BeforeSplit;
+                    splitMultiplier *= (double)splits[lastSplitIdx].AfterSplit / splits[lastSplitIdx].BeforeSplit;
                     lastSplitIdx--;
                     watchedSplitDate = (lastSplitIdx == -1) ? DateTime.MinValue : splits[lastSplitIdx].DateTime;
                 }
 
-                dailyData.Open *= splitMultiplier;
-                dailyData.High *= splitMultiplier;
-                dailyData.Low *= splitMultiplier;
-                dailyData.Close *= splitMultiplier;
+                dailyData.Open *= (float)splitMultiplier;
+                dailyData.High *= (float)splitMultiplier;
+                dailyData.Low *= (float)splitMultiplier;
+                dailyData.Close *= (float)splitMultiplier;
                 dailyData.Volume = (long)Math.Round(dailyData.Volume / splitMultiplier);
             }
         }
@@ -263,7 +258,7 @@ public partial class FinDb
         // Previous days date and closing prices have to be collected for factor file. These will be reference date and reference price.
         // YF vs. required QC price format: 2000-01-01 123.4567 vs. 20200101 00:00 1234567
         Dictionary<DateTime, SqPrice> rawPrevClosesDict = new();
-        decimal prevClosePrice = 0m;
+        float prevClosePrice = 0f;
         DateTime prevDayDate = DateTime.MinValue;
 
         using FileStream zipToCreate = new(zipFilePath, FileMode.Create);
@@ -275,10 +270,10 @@ public partial class FinDb
         {
             SqPrice dailyData = rawClosesFromYfList[days];
             string date = dailyData.ReferenceDate.ToString("yyyyMMdd HH:mm");
-            decimal open = Math.Round(dailyData.Open * 10000);
-            decimal high = Math.Round(dailyData.High * 10000);
-            decimal low = Math.Round(dailyData.Low * 10000);
-            decimal close = Math.Round(dailyData.Close * 10000);
+            double open = Math.Round(dailyData.Open * 10000);
+            double high = Math.Round(dailyData.High * 10000);
+            double low = Math.Round(dailyData.Low * 10000);
+            double close = Math.Round(dailyData.Close * 10000);
             decimal volume = dailyData.Volume;
 
             rawPrevClosesDict.Add(dailyData.ReferenceDate, new SqPrice() { ReferenceDate = prevDayDate, Close = prevClosePrice });
@@ -309,7 +304,7 @@ public partial class FinDb
                     nPotentialProblems++;
                     continue;
                 }
-                divSplitHistory.Add(date, new SqDivSplit { ReferenceDate = refRawClose.ReferenceDate, DividendValue = (decimal)dividendTick.Amount, SplitFactor = 1m, ReferenceRawPrice = refRawClose.Close });
+                divSplitHistory.Add(date, new SqDivSplit { ReferenceDate = refRawClose.ReferenceDate, DividendValue = dividendTick.Amount, SplitFactor = 1.0, ReferenceRawPrice = refRawClose.Close });
             }
         }
 
@@ -328,9 +323,9 @@ public partial class FinDb
                 }
                 // Check if the key exists in the dictionary.
                 if (divSplitHistory.TryGetValue(date, out SqDivSplit? divSplit)) // If the key exists, update the splitFactor property of the existing DivSplitYF object.
-                    divSplit.SplitFactor = (decimal)splitTick.BeforeSplit / splitTick.AfterSplit;
+                    divSplit.SplitFactor = (double)splitTick.BeforeSplit / splitTick.AfterSplit;
                 else // If the date is present in both the split history and the raw closes dictionary, add the extended element to the dictionary.
-                    divSplitHistory.Add(date, new SqDivSplit { ReferenceDate = refRawClose.ReferenceDate, DividendValue = 0m, SplitFactor = (decimal)splitTick.BeforeSplit / splitTick.AfterSplit, ReferenceRawPrice = refRawClose.Close });
+                    divSplitHistory.Add(date, new SqDivSplit { ReferenceDate = refRawClose.ReferenceDate, DividendValue = 0.0, SplitFactor = (double)splitTick.BeforeSplit / splitTick.AfterSplit, ReferenceRawPrice = refRawClose.Close });
             }
         }
 
@@ -345,16 +340,16 @@ public partial class FinDb
 
         // Accumulate splits and dividends for factor file. Dividends have to be reverse adjusted with splits!
         List<FactorFileDivSplit> divSplitHistoryCumList = new();
-        decimal cumDivFact = 1m;
-        decimal cumSplitFact = 1m;
+        double cumDivFact = 1.0;
+        double cumSplitFact = 1.0;
         for (int ticks = divSplitHistoryList.Count - 1; ticks >= 0; ticks--)
         {
             SqDivSplit currDivSplit = divSplitHistoryList[ticks];
             if (currDivSplit.DividendValue > 0)
-                cumDivFact *= 1 - decimal.Divide(currDivSplit.DividendValue / cumSplitFact, currDivSplit.ReferenceRawPrice);
+                cumDivFact *= 1 - currDivSplit.DividendValue / cumSplitFact / currDivSplit.ReferenceRawPrice;
             if (currDivSplit.SplitFactor > 0)
                 cumSplitFact *= currDivSplit.SplitFactor;
-            divSplitHistoryCumList.Add(new FactorFileDivSplit() { ReferenceDate = currDivSplit.ReferenceDate, DividendFactorCum = Math.Round(cumDivFact, 8), SplitFactorCum = Math.Round(cumSplitFact, 8), ReferenceRawPrice = Math.Round(currDivSplit.ReferenceRawPrice, 4) });
+            divSplitHistoryCumList.Add(new FactorFileDivSplit() { ReferenceDate = currDivSplit.ReferenceDate, DividendFactorCum = Math.Round(cumDivFact, 8), SplitFactorCum = Math.Round(cumSplitFact, 8), ReferenceRawPrice = (float)Math.Round(currDivSplit.ReferenceRawPrice, 4) });
         }
 
         divSplitHistoryCumList.Sort((FactorFileDivSplit x, FactorFileDivSplit y) => x.ReferenceDate.CompareTo(y.ReferenceDate));
