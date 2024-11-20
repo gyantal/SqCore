@@ -80,7 +80,7 @@ public enum PortfolioType : byte
     Unknown = 0,
     Trades = 1, // trades come from the SqCore RedisDB
     Simulation = 2,
-    TradesSqClassic = 3, // trades come from the SqDesktop SqlDB
+    LegacyDbTrades = 3, // trades come from the SqDesktop SqlDB
 }
 
 // Not used. Copied from HqFramework for getting ideas; if we need an in-memory data structure for TickerHistory
@@ -189,7 +189,8 @@ public static class AssetHelper
     {
         { string.Empty, PortfolioType.Trades },
         { "Trades", PortfolioType.Trades },
-        { "Simulation", PortfolioType.Simulation }
+        { "Simulation", PortfolioType.Simulation },
+        { "LegacyDbTrades", PortfolioType.LegacyDbTrades }
     };
     public static readonly Dictionary<TradeAction, string> gTradeActionToStr = new()
     {

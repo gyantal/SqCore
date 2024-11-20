@@ -160,7 +160,7 @@ public partial class DashboardClient
         }
     }
 
-    public void PortfMgrCreateOrEditPortfolio(string p_msg) // "msg - id:-1,name:TestPrtf,prntFId:16,currency:USD,type:Simulation,algo:SqPctAllocation,algoP:assets=SVXY,VXX,VXZ,TQQQ,TLT,USO,UNG&weights=15,-5, 10, 25, 255,-27,-78&rebFreq=Daily,1d,access:Anyone,note:Testing"
+    public void PortfMgrCreateOrEditPortfolio(string p_msg) // "msg - id:-1,name:TestPrtf,prntFId:16,currency:USD,type:Simulation,algo:SqPctAllocation,algoP:assets=SVXY,VXX,VXZ,TQQQ,TLT,USO,UNG&weights=15,-5, 10, 25, 255,-27,-78&rebFreq=Daily,1d,access:Anyone,note:Testing,legacy:LegacyPrtfName"
     {
         int idStartIdx = p_msg.IndexOf(":");
         int pfNameIdx = (idStartIdx == -1) ? -1 : p_msg.IndexOf(':', idStartIdx + 1);
@@ -172,6 +172,7 @@ public partial class DashboardClient
         int trdHisIdx = algoParamIdx == -1 ? -1 : p_msg.IndexOf(":", algoParamIdx + 1);
         int userAccessIdx = trdHisIdx == -1 ? -1 : p_msg.IndexOf(":", trdHisIdx + 1);
         int userNoteIdx = userAccessIdx == -1 ? -1 : p_msg.IndexOf(":", userAccessIdx + 1);
+        int legacyPrtfIdx = userNoteIdx == -1 ? -1 : p_msg.IndexOf(":", userNoteIdx + 1);
 
         int id = int.Parse(p_msg.Substring(idStartIdx + 1, pfNameIdx - idStartIdx - ",name:".Length));
         string pfName = p_msg.Substring(pfNameIdx + 1, prntFldrIdx - pfNameIdx - ",prntFId:".Length);
@@ -182,7 +183,9 @@ public partial class DashboardClient
         string algorithmParam = p_msg.Substring(algoParamIdx + 1, trdHisIdx - algoParamIdx - ",trdHis:".Length);
         int tradeHistoryId = int.Parse(p_msg.Substring(trdHisIdx + 1, userAccessIdx - trdHisIdx - ",access:".Length)); // AddOrEditPortfolio() expect it to be an 'int' with -1 default, but input p_msg can have it in any way: "-1", or "", or tradeHistoryId field can be missing
         string userAccess = p_msg.Substring(userAccessIdx + 1, userNoteIdx - userAccessIdx - ",note:".Length);
-        string userNote = p_msg[(userNoteIdx + 1)..];
+        string userNote = p_msg.Substring(userNoteIdx + 1, legacyPrtfIdx - userNoteIdx - ",legacy:".Length);
+        string legacyPrtfName = p_msg[(legacyPrtfIdx + 1)..];
+        Console.WriteLine($"legacyPrtfName: {legacyPrtfName}"); // TBC: sending the legacyPrtfName to AddOrEditPortfolio
 
         string? errMsg = GetRealParentFldId(virtualParentFldId, out User? user, out int realParentFldId);
         if (errMsg == null)

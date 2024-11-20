@@ -38,7 +38,7 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
   isViewedPortfolioSaveAllowed: boolean = false;
   loggedInUser: string = '';
   currencyType: string[] = ['USD', 'EUR', 'GBP', 'GBX', 'HUF', 'JPY', 'CAD', 'CNY', 'CHF'];
-  portfolioType: string[] = ['Trades', 'Simulation', 'TradesSqClassic'];
+  portfolioType: string[] = ['Trades', 'Simulation', 'LegacyDbTrades'];
   sharedAccess: string[] = ['Restricted', 'OwnerOnly', 'Anyone'];
   // sharedUsers: number[] = [31, 33, 38]; // ignore the feature for now. Leave this empty
   public gPortfolioIdOffset: number = 10000;
@@ -343,6 +343,7 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
       this.parentfolderName = this.folders?.find((r) => r.id == lastSelectedTreeNode.parentFolderId!)?.name ?? null;
       this.editedPortfolio.algorithm = prtfolioSelected?.algorithm!;
       this.editedPortfolio.algorithmParam = prtfolioSelected?.algorithmParam!; // even after clicking the saveButton the algorithm param is not updating because it inital takes lastSelected item. So we have updated with current Portfolios AlgorithmParam.
+      this.editedPortfolio.legacyDbPortfName = prtfolioSelected?.legacyDbPortfName!;
       this.editedPortfolio.tradeHistoryId = prtfolioSelected?.tradeHistoryId!;
     }
 
@@ -360,13 +361,19 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
       return;
     }
 
-    if (!this.editedPortfolio.name) // the portfolio name field shouldn't be left empty
+    if (!this.editedPortfolio.name) { // the portfolio name field shouldn't be left empty
       this.isCreateOrEditPortfolioPopupVisible = true;
-    else {
-      if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
-        this._parentWsConnection.send(`PortfMgr.CreateOrEditPortfolio:id:${this.editedPortfolio.id},name:${this.editedPortfolio.name},prntFId:${this.editedPortfolio.parentFolderId},currency:${this.editedPortfolio.baseCurrency},type:${this.editedPortfolio.type},algo:${this.editedPortfolio.algorithm},algoP:${this.editedPortfolio.algorithmParam},trdHis:${this.editedPortfolio.tradeHistoryId},access:${this.editedPortfolio.sharedAccess},note:${this.editedPortfolio.note}`);
-      this.isCreateOrEditPortfolioPopupVisible = false;
+      return;
     }
+
+    if (this.editedPortfolio.type == 'LegacyDbTrades' && this.editedPortfolio.legacyDbPortfName == '') { // For protfolioType LegacyDbTrades the LegacyPortfolioName field shouldn't be left empty
+      this.isCreateOrEditPortfolioPopupVisible = true;
+      return;
+    }
+
+    if (this._parentWsConnection && this._parentWsConnection.readyState === WebSocket.OPEN)
+      this._parentWsConnection.send(`PortfMgr.CreateOrEditPortfolio:id:${this.editedPortfolio.id},name:${this.editedPortfolio.name},prntFId:${this.editedPortfolio.parentFolderId},currency:${this.editedPortfolio.baseCurrency},type:${this.editedPortfolio.type},algo:${this.editedPortfolio.algorithm},algoP:${this.editedPortfolio.algorithmParam},trdHis:${this.editedPortfolio.tradeHistoryId},access:${this.editedPortfolio.sharedAccess},note:${this.editedPortfolio.note},legacy:${this.editedPortfolio.legacyDbPortfName}`);
+    this.isCreateOrEditPortfolioPopupVisible = false;
   }
 
   onOpenPortfolioViewerClicked() {

@@ -101,6 +101,10 @@
             <input class="pfItemLongInput" type="text" placeholder="Enter Portfolio AlgorithmParam" [(ngModel)]="editedPortfolio.algorithmParam" [value]="editedPortfolio.algorithmParam">
           </div>
         </div>
+        <div class="prtfCommon prtfFields">LegacyDbPortfName:<span class="requiredAndNotFound" *ngIf="!editedPortfolio.legacyDbPortfName">*</span></div>
+        <div class="prtfCommon prtfUserValues">
+          <input class="pfItemLongInput" type="text" placeholder="Enter LegacyDbPortfName" [disabled]="editedPortfolio.type != 'LegacyDbTrades'" [(ngModel)]="editedPortfolio.legacyDbPortfName">
+        </div>
         <div>
           <div class="prtfCommon prtfFields">TradeHistoryId:</div>
           <div class="prtfCommon prtfUserValues">

@@ -141,7 +141,7 @@ internal static partial class UiUtils
             int virtualParentFldId = GetVirtualParentFldId(pf.User, pf.ParentFolderId);
             int ownerUserId = pf.User?.Id ?? -1;
 
-            PortfolioJs pfJs = new() { Id = pf.Id + gPortfolioIdOffset, Name = pf.Name, OwnerUserId = ownerUserId, ParentFolderId = virtualParentFldId, BaseCurrency = pf.BaseCurrency.ToString(), SharedAccess = pf.SharedAccess.ToString(), SharedUsersWith = pf.SharedUsersWith, Type = pf.Type.ToString(), Algorithm = pf.Algorithm, AlgorithmParam = pf.AlgorithmParam, TradeHistoryId = pf.TradeHistoryId, Note = pf.Note };
+            PortfolioJs pfJs = new() { Id = pf.Id + gPortfolioIdOffset, Name = pf.Name, OwnerUserId = ownerUserId, ParentFolderId = virtualParentFldId, BaseCurrency = pf.BaseCurrency.ToString(), SharedAccess = pf.SharedAccess.ToString(), SharedUsersWith = pf.SharedUsersWith, Type = pf.Type.ToString(), Algorithm = pf.Algorithm, AlgorithmParam = pf.AlgorithmParam, TradeHistoryId = pf.TradeHistoryId, Note = pf.Note, LegacyDbPortfName = pf is LegacyPortfolio legacyPf ? legacyPf.LegacyDbPortfName : string.Empty };
             prtfsToClient.Add(pfJs);
         }
         return prtfsToClient;

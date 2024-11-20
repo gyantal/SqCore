@@ -108,7 +108,7 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
             case PortfolioType.Simulation:
                 return GetBacktestResult(p_returnOnlyTwrPv, p_sqResultStat, p_forcedStartDate, p_forcedEndDate, out p_pv,  out p_stat, out p_prtfPoss, out p_chartResolution);
             case PortfolioType.Trades:
-            case PortfolioType.TradesSqClassic:
+            case PortfolioType.LegacyDbTrades:
             default:
                 return GetPortfolioRunResultDefault(out p_stat, out p_pv, out p_prtfPoss, out p_chartResolution);
         }
