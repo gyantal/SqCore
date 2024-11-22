@@ -47,6 +47,7 @@ public class PortfolioInDb // Portfolio.Id is not in the JSON, which is the Hash
         Algorithm = p_prtf.Algorithm.ToString();
         AlgorithmParam = p_prtf.AlgorithmParam.ToString();
         TradeHistoryId = p_prtf.TradeHistoryId == -1 ? null : p_prtf.TradeHistoryId;
+        LegacyDbPortfName = p_prtf is LegacyPortfolio legacyPf ? legacyPf.LegacyDbPortfName : string.Empty;
     }
 }
 

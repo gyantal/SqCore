@@ -355,6 +355,12 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
     this.isCreateOrEditPortfolioPopupVisible = false;
   }
 
+  onChangePortfolioType(event: Event) { // setting the default algorithm for portfolioType of 'LegacyDbTrades'
+    const portfolioType: string = (event.target as HTMLInputElement).value.trim();
+    if (portfolioType == 'LegacyDbTrades')
+      this.editedPortfolio.algorithm = 'SqTradeAccumulation';
+  }
+
   onCreateOrEditPortfolioClicked() {
     if (this.treeViewState.lastSelectedItem == null) {
       console.log('Cannot Create/Edit, because no Portfolio was selected.');
@@ -372,7 +378,7 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
     }
 
     if (this._parentWsConnection && this._parentWsConnection.readyState === WebSocket.OPEN)
-      this._parentWsConnection.send(`PortfMgr.CreateOrEditPortfolio:id:${this.editedPortfolio.id},name:${this.editedPortfolio.name},prntFId:${this.editedPortfolio.parentFolderId},currency:${this.editedPortfolio.baseCurrency},type:${this.editedPortfolio.type},algo:${this.editedPortfolio.algorithm},algoP:${this.editedPortfolio.algorithmParam},trdHis:${this.editedPortfolio.tradeHistoryId},access:${this.editedPortfolio.sharedAccess},note:${this.editedPortfolio.note},legacy:${this.editedPortfolio.legacyDbPortfName}`);
+      this._parentWsConnection.send(`PortfMgr.CreateOrEditPortfolio:id:${this.editedPortfolio.id},name:${this.editedPortfolio.name},prntFId:${this.editedPortfolio.parentFolderId},currency:${this.editedPortfolio.baseCurrency},type:${this.editedPortfolio.type},algo:${this.editedPortfolio.algorithm},algoP:${this.editedPortfolio.algorithmParam},trdHis:${this.editedPortfolio.tradeHistoryId},access:${this.editedPortfolio.sharedAccess},note:${this.editedPortfolio.note},legPrtfNm:${this.editedPortfolio.legacyDbPortfName}`);
     this.isCreateOrEditPortfolioPopupVisible = false;
   }
 

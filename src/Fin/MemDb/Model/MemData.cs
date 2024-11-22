@@ -173,7 +173,7 @@ internal class MemData // don't expose to clients.
         }
     }
 
-    public Portfolio AddNewPortfolio(User? p_user, string p_name, int p_parentFldId, string p_creationTime, CurrencyId p_currency, PortfolioType p_type, string p_algorithm, string p_algorithmParam, SharedAccess p_sharedAccess, string p_note, List<User> p_sharedUsersWith, int p_tradeHistoryId)
+    public Portfolio AddNewPortfolio(User? p_user, string p_name, int p_parentFldId, string p_creationTime, CurrencyId p_currency, PortfolioType p_type, string p_algorithm, string p_algorithmParam, SharedAccess p_sharedAccess, string p_note, List<User> p_sharedUsersWith, int p_tradeHistoryId, string p_legacyDbPortfName)
     {
         lock (PrtfUpdateLock)
         {
@@ -186,7 +186,11 @@ internal class MemData // don't expose to clients.
                     maxId = id;
             }
             int newId = ++maxId;
-            Portfolio prtf = new (newId, p_user, p_name, p_parentFldId, p_creationTime, p_currency, p_type, p_algorithm, p_algorithmParam, p_sharedAccess, p_note, p_sharedUsersWith, p_tradeHistoryId);
+            Portfolio prtf;
+            if (string.IsNullOrEmpty(p_legacyDbPortfName))
+                prtf = new Portfolio(newId, p_user, p_name, p_parentFldId, p_creationTime, p_currency, p_type, p_algorithm, p_algorithmParam, p_sharedAccess, p_note, p_sharedUsersWith, p_tradeHistoryId);
+            else
+                prtf = new LegacyPortfolio(newId, p_user, p_name, p_parentFldId, p_creationTime, p_currency, p_type, p_algorithm, p_algorithmParam, p_sharedAccess, p_note, p_sharedUsersWith, p_tradeHistoryId, p_legacyDbPortfName);
             Portfolios[newId] = prtf;
             return prtf;
         }

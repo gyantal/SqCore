@@ -183,14 +183,13 @@ public partial class DashboardClient
         string algorithmParam = p_msg.Substring(algoParamIdx + 1, trdHisIdx - algoParamIdx - ",trdHis:".Length);
         int tradeHistoryId = int.Parse(p_msg.Substring(trdHisIdx + 1, userAccessIdx - trdHisIdx - ",access:".Length)); // AddOrEditPortfolio() expect it to be an 'int' with -1 default, but input p_msg can have it in any way: "-1", or "", or tradeHistoryId field can be missing
         string userAccess = p_msg.Substring(userAccessIdx + 1, userNoteIdx - userAccessIdx - ",note:".Length);
-        string userNote = p_msg.Substring(userNoteIdx + 1, legacyPrtfIdx - userNoteIdx - ",legacy:".Length);
+        string userNote = p_msg.Substring(userNoteIdx + 1, legacyPrtfIdx - userNoteIdx - ",legPrtfNm:".Length);
         string legacyPrtfName = p_msg[(legacyPrtfIdx + 1)..];
-        Console.WriteLine($"legacyPrtfName: {legacyPrtfName}"); // TBC: sending the legacyPrtfName to AddOrEditPortfolio
 
         string? errMsg = GetRealParentFldId(virtualParentFldId, out User? user, out int realParentFldId);
         if (errMsg == null)
         {
-            errMsg = MemDb.gMemDb.AddOrEditPortfolio(id, user, pfName, realParentFldId, AssetHelper.gStrToCurrency[currency], AssetHelper.gStrToPortfolioType[prtfType], algorithm, algorithmParam, AssetHelper.gStrToSharedAccess[userAccess], userNote, tradeHistoryId, out Portfolio? p_newItem);
+            errMsg = MemDb.gMemDb.AddOrEditPortfolio(id, user, pfName, realParentFldId, AssetHelper.gStrToCurrency[currency], AssetHelper.gStrToPortfolioType[prtfType], algorithm, algorithmParam, AssetHelper.gStrToSharedAccess[userAccess], userNote, tradeHistoryId, legacyPrtfName, out Portfolio? p_newItem);
             if (errMsg == String.Empty && p_newItem == null)
                 errMsg = "Error. Portfolio change was not done.";
         }
