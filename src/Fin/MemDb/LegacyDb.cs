@@ -274,6 +274,81 @@ public class LegacyDb : IDisposable
         }
     }
 
+    public string InsertTrades2(string p_legacyDbPortfName, List<Trade> p_newTrades) // Less SQL Queries
+    {
+        // Step1: Check the connection state
+        string testAndInsertTradeResult;
+        if (m_connection?.State != System.Data.ConnectionState.Open)
+            testAndInsertTradeResult = "LegacyDb Error. Connection to SQL Server has not established successfully";
+        // Step2: Check the if the PortfolioId exists
+        int portfolioId = GetPortfolioId(p_legacyDbPortfName);
+        if (portfolioId == -1)
+            testAndInsertTradeResult = $"LegacyDb Error. Could not find portfolio ID for portfolio '{p_legacyDbPortfName}'.";
+        // Step3: Get the uniqueTickers from p_newTrades (since p_newTrades may contain duplicates)
+        List<string> uniqueTickers = new List<string>();
+        foreach (Trade trade in p_newTrades)
+        {
+            if (!uniqueTickers.Contains(trade.Symbol!))
+                uniqueTickers.Add(trade.Symbol!);
+        }
+        // Step4: Get the stockIds for the tickers
+        List<(string Ticker, int Id)> stockIdsResult = GetStockIds(uniqueTickers);
+        foreach ((string Ticker, int Id) stock in stockIdsResult) // Check if any ticker from trades doesn't exist in the stock data
+        {
+            if (stock.Id == -1) // Check if the stock ID is -1, indicating the symbol does not exist in LegacyDb
+            {
+                testAndInsertTradeResult = $"LegacyDb Error. TestInsertTrade failed, Ticker '{stock.Ticker}' doesn't exists";
+                break;
+            }
+        }
+        // Step5: Build the QueryBuilder for inserting the trades
+        StringBuilder queryBuilder = new();
+        queryBuilder.Append("INSERT INTO PortfolioItem (PortfolioID, TransactionType, AssetTypeID, AssetSubTableID, Volume, Price, Date, Note) VALUES ");
+        for (int i = 0; i < p_newTrades.Count; i++)
+        {
+            Trade trade = p_newTrades[i];
+            queryBuilder.Append($"({portfolioId}, {MapTradeActionToLegacyDbTransactionType(trade.Action)}, 2,");
+            for(int j = 0; j < stockIdsResult.Count; j++) // Extract the stockId from existing stockIdsResult
+            {
+                if (trade.Symbol == stockIdsResult[j].Ticker)
+                {
+                    queryBuilder.Append($"{stockIdsResult[j].Id},");
+                    break;
+                }
+            }
+            queryBuilder.Append($"{trade.Quantity}, {trade.Price}, '{trade.Time:yyyy-MM-dd HH:mm:ss}', ");
+            queryBuilder.Append(string.IsNullOrEmpty(trade.Note) ? "NULL" : $"'<Note><UserNote Text=\"{trade.Note}\" /></Note>'");
+
+            if (i < p_newTrades.Count - 1)
+                queryBuilder.Append("), "); // If it's not the last ticker, add a closing parenthesis and a comma separator
+            else
+                queryBuilder.Append(")"); // If it's the last ticker, add a closing parenthesis without a comma
+        }
+
+        try
+        {
+            string queryStr = queryBuilder.ToString();
+            using SqlCommand command = new(queryStr, m_connection);
+            // Luckily, we don't have to do defensive coding because:
+            // Firstly, we send checked PortfolioID and StockID data, so insertion cannot fail on those.
+            // Secondly, according to our SQL Management Studio checks, if the batch insert fails, none of the trades are inserted.
+            // E.g., "(357386, 5, 2, 9728, 1000, 36.84, '2024-11-15BBBBBB21:00:00', NULL)" fails due to a syntax check.
+            // E.g., "(357386, 5, 999999, 9728, 1000, 36.84, '2024-11-15 21:00:00', NULL)" fails with 'The INSERT statement conflicted with the FOREIGN KEY constraint "FK_PortfolioItem_AssetType". The statement has been terminated.'
+            // If an error occurs in any trade, the whole batch insert is terminated. The logical reason is that the SQL server itself performs a batch insertion into its file system, so it checks all data correctness beforehand.
+            int rowsAffected = command.ExecuteNonQuery();
+            int insertedRows = rowsAffected - 1; // One(1) row is for the index table in the SQL database, so subtract 1 from the total rowsAffected.
+            if (insertedRows == p_newTrades.Count)
+                testAndInsertTradeResult = $"Trades are successfully inserted for portfolio '{p_legacyDbPortfName}'.";
+            else
+                testAndInsertTradeResult = $"LegacyDb Error. Failed to insert trades for portfolio '{p_legacyDbPortfName}'.";
+        }
+        catch (Exception ex)
+        {
+            testAndInsertTradeResult = $"LegacyDb Error. An error occurred while inserting the trades: {ex.Message}";
+        }
+        return testAndInsertTradeResult;
+    }
+
     public int GetStockId(string p_ticker)
     {
         string queryStr = $"SELECT Id FROM Stock WHERE Ticker = @Ticker";

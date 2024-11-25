@@ -99,7 +99,7 @@ public class PrtfVwrWs
                 break;
             case "LegacyDbTradesTestAndInsert":
                 Utils.Logger.Info($"PrtfVwrWs.OnWsReceiveAsync(): LegacyDbTradesTestAndInsert: '{msgObjStr}'");
-                LegacyDbTestAndInsertTrades(webSocket, msgObjStr);
+                LegacyDbTestAndInsertTrades2(webSocket, msgObjStr);
                 break;
             default:
                 Utils.Logger.Info($"PrtfVwrWs.OnWsReceiveAsync(): Unrecognized message from client, {msgCode},{msgObjStr}");
@@ -371,6 +371,30 @@ public class PrtfVwrWs
                 testAndInsertTradeResult = "InsertTrades failed";
         }
         Console.WriteLine($"InsertLegacyPortfolioTrades() : End - {testAndInsertTradeResult}");
+        byte[] encodedMsg = Encoding.UTF8.GetBytes("PrtfVwr.LegacyDbTradesTestAndInsert:" + testAndInsertTradeResult);
+        if (webSocket!.State == WebSocketState.Open)
+            webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+    }
+
+    public static void LegacyDbTestAndInsertTrades2(WebSocket webSocket, string p_msg) // p_msg : legacyPfName and JSON string representation of tradesObj
+    {
+        int prtfNameStartInd = p_msg.IndexOf(":");
+        if (prtfNameStartInd == -1)
+            return;
+
+        int trdObjStartInd = p_msg.IndexOf("&", prtfNameStartInd + 1);
+        if (trdObjStartInd == -1)
+            return;
+
+        string prtfName = p_msg.Substring(prtfNameStartInd + 1, trdObjStartInd - prtfNameStartInd - 1);
+        string tradeObjStr = p_msg[(trdObjStartInd + "&trades".Length)..]; // extract the Trade object string from p_msg
+        List<Trade>? trades = JsonSerializer.Deserialize<List<Trade>>(tradeObjStr, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }); // Deserialize the trade string into a Trade object
+        string testAndInsertTradeResult;
+        if (trades == null) // Check if 'trades' is null, which means there are no trades to process
+            testAndInsertTradeResult = "Trades are Null";
+        else
+            testAndInsertTradeResult = MemDb.gMemDb.InsertLegacyPortfolioTrades2(prtfName, trades!);
+
         byte[] encodedMsg = Encoding.UTF8.GetBytes("PrtfVwr.LegacyDbTradesTestAndInsert:" + testAndInsertTradeResult);
         if (webSocket!.State == WebSocketState.Open)
             webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);

@@ -29,4 +29,9 @@ public partial class MemDb
     {
         return m_legacyDb.InsertTrades(p_legacyDbPortfName, p_newTrades);
     }
+
+    public string InsertLegacyPortfolioTrades2(string p_legacyDbPortfName, List<Trade> p_newTrades) // Less SQL Queries
+    {
+        return m_legacyDb.InsertTrades2(p_legacyDbPortfName, p_newTrades);
+    }
 }
