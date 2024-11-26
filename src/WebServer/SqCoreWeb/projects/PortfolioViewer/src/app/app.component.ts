@@ -137,7 +137,7 @@ export class AppComponent {
   m_enumExchangeId = ExchangeId;
 
   // LegacyDbTrades tabpage
-  m_CompletionDateUtcStr: string = SqNgCommonUtilsTime.Date2PaddedIsoStr(SqNgCommonUtilsTime.ConvertDateLocToEt(new Date())); // convert the localDate to UTC then convert to DateStr format "YYYY-MM-DD"
+  m_legacyDbCompletionDateUtcStr: string = SqNgCommonUtilsTime.Date2PaddedIsoStr(SqNgCommonUtilsTime.ConvertDateLocToEt(new Date())); // convert the localDate to UTC then convert to DateStr format "YYYY-MM-DD". The HTML date <input> requires a YYYY-MM-DD formatted 'string' as value. E.g. <input type="date" value="2017-06-01" />
   m_legacyDbInsTradesSyntaxCheckResult: string = '';
   m_legacyDbTradesTestAndInsertResult: string = '';
   m_legacyDbTrades: TradeJs[] = [];
@@ -588,7 +588,7 @@ export class AppComponent {
   }
 
   onInputLegacyDbDateInsertion(event: Event) {
-    this.m_CompletionDateUtcStr = (event.target as HTMLInputElement).value.trim();
+    this.m_legacyDbCompletionDateUtcStr = (event.target as HTMLInputElement).value.trim();
   }
 
   onClickConvertTradesStrToTradesJs() {
@@ -617,13 +617,13 @@ export class AppComponent {
       tradeRowStr = tradeRowStr.startsWith('+') ? tradeRowStr.substring(2) : tradeRowStr.startsWith('\t') ? tradeRowStr.substring(1) : tradeRowStr; // removing the '+' and '\t' from the tradeRecord
       const trade: string[] = tradeRowStr.split('\t');
       const quantity = Number(trade[2].replace(/,/g, '')); // replace the comma and convert to number
-      if (isNaN(quantity) || !isFinite(quantity)) // Check if quantity is a valid number (including floats) and is finite
-        return (`Quantity ${trade[2]} at row ${rowInd + 1} is  not a valid number.`);
+      if (isNaN(quantity) || !isFinite(quantity) || !Number.isInteger(quantity)) // Check if quantity is a valid number (including floats) and is finite
+        return (`Quantity ${trade[2]} at row ${rowInd + 1} is invalid.`);
       tradeObj.quantity = quantity; // Assign the valid quantity to tradeObj
 
       const price = Number(trade[3].replace(/,/g, '')); // replace the comma and convert to number
       if (isNaN(price) || !isFinite(price)) // Check if price is a valid number (including floats) and is finite
-        return (`Price ${trade[3]} at row ${rowInd + 1} is  not a valid number.`);
+        return (`Price ${trade[3]} at row ${rowInd + 1} is invalid.`);
       tradeObj.price = price;
 
       if (CurrencyId[trade[4]] == undefined) // Validate CurrencyId
@@ -645,9 +645,12 @@ export class AppComponent {
       }
 
       tradeObj.symbol = trade[1];
-      // Convert date to a proper date format
+      const validTradeDt = SqNgCommonUtilsTime.ValidateDateStr(trade[5]);
+      if (validTradeDt.includes('invalid'))
+        return validTradeDt;
+
       const tradeDt: Date = new Date(trade[5]);
-      const completionDateStr: string[] = this.m_CompletionDateUtcStr.split('-');
+      const completionDateStr: string[] = this.m_legacyDbCompletionDateUtcStr.split('-');
       if (isNaN(tradeDt.getTime())) { // If tradeDt is invalid, assume it only contains the time part.
         const timeStr = trade[5];
         tradeDt.setUTCFullYear(parseInt(completionDateStr[0], 10), parseInt(completionDateStr[1], 10) - 1, parseInt(completionDateStr[2], 10));

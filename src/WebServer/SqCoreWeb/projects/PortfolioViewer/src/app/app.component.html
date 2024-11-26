@@ -253,37 +253,36 @@
   <textarea id="inputTradesStr"></textarea><br>
   <label title="Default: Today in UTC. The Dates from data rows are not complete. Year is always missing. If trades executed today, then Month and Day are also missing.
   CompletionDate parts (year, month, day) are used in this case to create the final UTC trade date. By default it is the UtcNow time converted to a date.
-  If the default is somehow wrong, the user can change it.">CompletionDate (in UTC): <input type="date" [value]="m_CompletionDateUtcStr" (input)="onInputLegacyDbDateInsertion($event)"></label>&nbsp;
+  If the default is somehow wrong, the user can change it.">CompletionDate (in UTC): <input type="date" [value]="m_legacyDbCompletionDateUtcStr" (input)="onInputLegacyDbDateInsertion($event)"></label>&nbsp;
   <button (click)="onClickConvertTradesStrToTradesJs()">Convert</button>
-  <div *ngIf="m_legacyDbInsTradesSyntaxCheckResult != null">
-    <p [innerHtml]="m_legacyDbInsTradesSyntaxCheckResult"></p>
+  <div *ngIf="m_legacyDbInsTradesSyntaxCheckResult != null" [ngStyle]="{color: m_legacyDbInsTradesSyntaxCheckResult.includes('invalid') ? '#FF0000' : '#008000'}">{{m_legacyDbInsTradesSyntaxCheckResult}}
   </div>
   <table class="tableCommon" *ngIf="this.m_legacyDbTrades.length != 0">
     <thead>
       <tr>
         <th>S.No</th>
+        <th>TradeAction</th>
         <th>Symbol</th>
         <th>Qty</th>
         <th>Price</th>
-        <th>Currency</th>
-        <th>TradeAction</th>
         <th>Date</th>
+        <th>Currency</th>
       </tr>
     </thead>
     <tbody>
       <tr *ngFor="let item of this.m_legacyDbTrades let i = index">
         <td>{{i + 1}}</td>
+        <td>{{m_enumTradeAction[item.action]}}</td>
         <td>{{item.symbol}}</td>
         <td>{{item.quantity}}</td>
-        <td>{{item.price | number:'1.2-2'}}</td>
-        <td>{{m_enumCurrencyId[item.currency] == 'Unknown' ? 'USD' : m_enumCurrencyId[item.currency]}}</td> <!-- Displaying the currencyId as 'USD' in the UI, while 'USD' is stored as 'unknown' in the database. -->
-        <td>{{m_enumTradeAction[item.action]}}</td>
+        <td>{{m_enumCurrencyId[item.currency] == 'USD' ? '$' : ''}}{{item.price | number:'1.2-2'}}</td>
         <td>{{item.time | date : 'yyyy-MM-dd HH:mm'}}</td>
+        <td>{{m_enumCurrencyId[item.currency] == 'Unknown' ? 'USD' : m_enumCurrencyId[item.currency]}}</td> <!-- Displaying the currencyId as 'USD' in the UI, while 'USD' is stored as 'unknown' in the database. -->
       </tr>
     </tbody>
   </table><br>
   <button *ngIf="m_legacyDbInsTradesSyntaxCheckResult == 'Syntax OK'" (click)="onClickTestAndInsertLegacyDbTrades()">TestAndInsertLegacyDbTrades</button><br><br>
-  <div *ngIf="m_legacyDbTradesTestAndInsertResult">LegacyDbTrades Test and Insert: {{m_legacyDbTradesTestAndInsertResult}}</div><br>
+  <div *ngIf="m_legacyDbTradesTestAndInsertResult" [ngStyle]="{color: m_legacyDbTradesTestAndInsertResult.includes('Error') ? '#FF0000' : '#008000'}">LegacyDbTrades Test and Insert: {{m_legacyDbTradesTestAndInsertResult}}</div><br>
 </div>
 <div id="copyToClipboardDialog" *ngIf="m_isCopyToClipboardDialogVisible">All/Selected rows copied To Clipboard
   <div id="copyToClipboardDialogClosetBtn">

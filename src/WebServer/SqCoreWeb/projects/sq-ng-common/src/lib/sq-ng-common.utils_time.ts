@@ -203,4 +203,43 @@ export class SqNgCommonUtilsTime implements OnInit {
   public static RemoveHyphensFromDateStr(dateStr: string): string { // Date : "2024-03-13"(yyyy-MM-dd) to "20240313"(yyyyMMdd)
     return dateStr.split('-').join('');
   }
+
+  public static ValidateDateStr(tradeDtStr: string): string { // DateStr : NOV 14 21:00:03 or 21:00:03
+    const dateParts: string[] = tradeDtStr.split(' ');
+
+    if (dateParts.length == 1) { // Handles cases where dateParts contains only the time part (e.g., 21:00:03) or an invalid date format (e.g., NOV3504:60:03).
+      const timeParts: string[] = dateParts[0].split(':');
+      return this.ValidateTimeStr(timeParts);
+    }
+
+    // Validate month
+    const validMonths: string[] = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+    const month: string = dateParts[0];
+    if (!validMonths.includes(month))
+      return `'invalid month:'${month}`;
+    // Validate day
+    const day = parseInt(dateParts[1], 10);
+    if (day < 1 || day > 31)
+      return `'invalid day:'${day}`;
+    // Validate time
+    const timeParts: string[] = dateParts[2].split(':');
+    return this.ValidateTimeStr(timeParts);
+  }
+
+  public static ValidateTimeStr(timeParts: string[]): string { // TimeParts: [21, 00, 03]
+    const hours = parseInt(timeParts[0], 10);
+    const minutes = parseInt(timeParts[1], 10);
+    const seconds = parseInt(timeParts[2], 10);
+
+    if (isNaN(hours) || hours < 0 || hours > 23) // special case - isNaN checks for invalid input, e.g., in a date format like 'NOV3504:60:03', where 'NOV3504' is not a valid hour.
+      return `'invalid hours: ${hours}'`;
+
+    if (minutes < 0 || minutes > 59)
+      return `'invalid minutes: ${minutes}'`;
+
+    if (seconds < 0 || seconds > 59)
+      return `'invalid seconds: ${seconds}'`;
+
+    return 'Valid Date';
+  }
 }
