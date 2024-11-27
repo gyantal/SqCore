@@ -207,10 +207,8 @@ export class SqNgCommonUtilsTime implements OnInit {
   public static ValidateDateStr(tradeDtStr: string): string { // DateStr : NOV 14 21:00:03 or 21:00:03
     const dateParts: string[] = tradeDtStr.split(' ');
 
-    if (dateParts.length == 1) { // Handles cases where dateParts contains only the time part (e.g., 21:00:03) or an invalid date format (e.g., NOV3504:60:03).
-      const timeParts: string[] = dateParts[0].split(':');
-      return this.ValidateTimeStr(timeParts);
-    }
+    if (dateParts.length == 1) // Handles cases where dateParts contains only the time part (e.g., 21:00:03) or an invalid date format (e.g., NOV2504:60:03).
+      return this.ValidateTimeStr(tradeDtStr);
 
     // Validate month
     const validMonths: string[] = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
@@ -222,16 +220,16 @@ export class SqNgCommonUtilsTime implements OnInit {
     if (day < 1 || day > 31)
       return `'invalid day:'${day}`;
     // Validate time
-    const timeParts: string[] = dateParts[2].split(':');
-    return this.ValidateTimeStr(timeParts);
+    return this.ValidateTimeStr(dateParts[2]);
   }
 
-  public static ValidateTimeStr(timeParts: string[]): string { // TimeParts: [21, 00, 03]
+  public static ValidateTimeStr(timeStr: string): string { // e.g: 21:00:03 or NOV2504:00:03
+    const timeParts: string[] = timeStr.split(':');
     const hours = parseInt(timeParts[0], 10);
     const minutes = parseInt(timeParts[1], 10);
     const seconds = parseInt(timeParts[2], 10);
 
-    if (isNaN(hours) || hours < 0 || hours > 23) // special case - isNaN checks for invalid input, e.g., in a date format like 'NOV3504:60:03', where 'NOV3504' is not a valid hour.
+    if (isNaN(hours) || hours < 0 || hours > 23) // special case - isNaN checks for invalid input, e.g., in a date format like 'NOV2504:00:03', where 'NOV2504' is not a valid hour.
       return `'invalid hours: ${hours}'`;
 
     if (minutes < 0 || minutes > 59)

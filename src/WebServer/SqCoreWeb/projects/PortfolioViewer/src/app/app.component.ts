@@ -645,17 +645,17 @@ export class AppComponent {
       }
 
       tradeObj.symbol = trade[1];
-      const validTradeDt = SqNgCommonUtilsTime.ValidateDateStr(trade[5]);
-      if (validTradeDt.includes('invalid'))
-        return validTradeDt;
+      const validTradeDtStr: string = SqNgCommonUtilsTime.ValidateDateStr(trade[5]);
+      if (validTradeDtStr.includes('invalid'))
+        return validTradeDtStr;
 
       const tradeDt: Date = new Date(trade[5]);
       const completionDateStr: string[] = this.m_legacyDbCompletionDateUtcStr.split('-');
       if (isNaN(tradeDt.getTime())) { // If tradeDt is invalid, assume it only contains the time part.
-        const timeStr = trade[5];
+        const timeStr: string = trade[5];
         tradeDt.setUTCFullYear(parseInt(completionDateStr[0], 10), parseInt(completionDateStr[1], 10) - 1, parseInt(completionDateStr[2], 10));
         tradeDt.setHours(0, 0, 0, 0); // Reset time to start of the day
-        const timeParts = timeStr.split(':'); // Split the timeStr and manually parse each part
+        const timeParts: string[] = timeStr.split(':'); // Split the timeStr and manually parse each part
         tradeDt.setHours(parseInt(timeParts[0], 10), parseInt(timeParts[1], 10), parseInt(timeParts[2], 10)); // Set the time on tradeDt to the parsed hours, minutes, and seconds
       }
       tradeDt.setUTCFullYear(parseInt(completionDateStr[0], 10));
