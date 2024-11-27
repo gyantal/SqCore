@@ -99,7 +99,7 @@ public class PrtfVwrWs
                 break;
             case "LegacyDbTradesTestAndInsert":
                 Utils.Logger.Info($"PrtfVwrWs.OnWsReceiveAsync(): LegacyDbTradesTestAndInsert: '{msgObjStr}'");
-                LegacyDbTestAndInsertTrades2(webSocket, msgObjStr);
+                LegacyDbTestAndInsertTrades(webSocket, msgObjStr);
                 break;
             default:
                 Utils.Logger.Info($"PrtfVwrWs.OnWsReceiveAsync(): Unrecognized message from client, {msgCode},{msgObjStr}");
@@ -342,58 +342,7 @@ public class PrtfVwrWs
         if (trades == null) // Check if 'trades' is null, which means there are no trades to process
             testAndInsertTradeResult = "Trades are Null";
         else
-        {
-            testAndInsertTradeResult = "OK";
-            List<string> uniqueTickers = new List<string>();
-            foreach (Trade trade in trades) // Extract unique tickers from trades (since p_msg may contain duplicates)
-            {
-                if (!uniqueTickers.Contains(trade.Symbol!))
-                    uniqueTickers.Add(trade.Symbol!);
-            }
-            List<(string Ticker, int Id)> stockIdsResult = MemDb.gMemDb.GetLegacyStockIds(uniqueTickers);
-            foreach ((string Ticker, int Id) stock in stockIdsResult) // Check if any ticker from trades doesn't exist in the stock data
-            {
-                if (stock.Id == -1) // Check if the stock ID is -1, indicating the symbol does not exist in LegacyDb
-                {
-                    testAndInsertTradeResult = $"TestInsertTrade failed : Ticker '{stock.Ticker}' doesn't exists";
-                    break;
-                }
-            }
-        }
-
-        if (testAndInsertTradeResult == "OK") // insert the trades only if the test is "OK"
-        {
-            Console.WriteLine("InsertLegacyPortfolioTrades() : start");
-            bool isTradesInsertSuccessful = MemDb.gMemDb.InsertLegacyPortfolioTrades(prtfName, trades!);
-            if (isTradesInsertSuccessful)
-                testAndInsertTradeResult = "Trades were successfully inserted";
-            else
-                testAndInsertTradeResult = "InsertTrades failed";
-        }
-        Console.WriteLine($"InsertLegacyPortfolioTrades() : End - {testAndInsertTradeResult}");
-        byte[] encodedMsg = Encoding.UTF8.GetBytes("PrtfVwr.LegacyDbTradesTestAndInsert:" + testAndInsertTradeResult);
-        if (webSocket!.State == WebSocketState.Open)
-            webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
-    }
-
-    public static void LegacyDbTestAndInsertTrades2(WebSocket webSocket, string p_msg) // p_msg : legacyPfName and JSON string representation of tradesObj
-    {
-        int prtfNameStartInd = p_msg.IndexOf(":");
-        if (prtfNameStartInd == -1)
-            return;
-
-        int trdObjStartInd = p_msg.IndexOf("&", prtfNameStartInd + 1);
-        if (trdObjStartInd == -1)
-            return;
-
-        string prtfName = p_msg.Substring(prtfNameStartInd + 1, trdObjStartInd - prtfNameStartInd - 1);
-        string tradeObjStr = p_msg[(trdObjStartInd + "&trades".Length)..]; // extract the Trade object string from p_msg
-        List<Trade>? trades = JsonSerializer.Deserialize<List<Trade>>(tradeObjStr, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }); // Deserialize the trade string into a Trade object
-        string testAndInsertTradeResult;
-        if (trades == null) // Check if 'trades' is null, which means there are no trades to process
-            testAndInsertTradeResult = "Trades are Null";
-        else
-            testAndInsertTradeResult = MemDb.gMemDb.InsertLegacyPortfolioTrades2(prtfName, trades!);
+            testAndInsertTradeResult = MemDb.gMemDb.InsertLegacyPortfolioTrades(prtfName, trades!);
 
         byte[] encodedMsg = Encoding.UTF8.GetBytes("PrtfVwr.LegacyDbTradesTestAndInsert:" + testAndInsertTradeResult);
         if (webSocket!.State == WebSocketState.Open)

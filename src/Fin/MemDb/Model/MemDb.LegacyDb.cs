@@ -25,13 +25,8 @@ public partial class MemDb
         return m_legacyDb.InsertTrade(p_legacyDbPortfName, p_newTrade);
     }
 
-    public bool InsertLegacyPortfolioTrades(string p_legacyDbPortfName, List<Trade> p_newTrades) // if we are sure that the ticker in the trade is valid, we can save 1 SQL query of checking it.
+    public string InsertLegacyPortfolioTrades(string p_legacyDbPortfName, List<Trade> p_newTrades) // Less SQL Queries
     {
         return m_legacyDb.InsertTrades(p_legacyDbPortfName, p_newTrades);
-    }
-
-    public string InsertLegacyPortfolioTrades2(string p_legacyDbPortfName, List<Trade> p_newTrades) // Less SQL Queries
-    {
-        return m_legacyDb.InsertTrades2(p_legacyDbPortfName, p_newTrades);
     }
 }

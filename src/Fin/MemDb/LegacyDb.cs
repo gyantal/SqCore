@@ -220,61 +220,7 @@ public class LegacyDb : IDisposable
         }
     }
 
-    public bool InsertTrades(string p_legacyDbPortfName, List<Trade> p_newTrades)
-    {
-        if (m_connection?.State != System.Data.ConnectionState.Open)
-        {
-            Utils.Logger.Error("LegacyDb Error. Connection to SQL Server has not established successfully.");
-            return false;
-        }
-
-        int portfolioId = GetPortfolioId(p_legacyDbPortfName);
-        if (portfolioId == -1)
-        {
-            Utils.Logger.Error($"LegacyDb Error. Could not find portfolio ID for portfolio '{p_legacyDbPortfName}'.");
-            return false;
-        }
-
-        StringBuilder queryBuilder = new();
-        queryBuilder.Append("INSERT INTO PortfolioItem (PortfolioID, TransactionType, AssetTypeID, AssetSubTableID, Volume, Price, Date, Note) VALUES ");
-
-        for (int i = 0; i < p_newTrades.Count; i++)
-        {
-            Trade trade = p_newTrades[i];
-
-            queryBuilder.Append($"({portfolioId}, {MapTradeActionToLegacyDbTransactionType(trade.Action)}, 2, {GetStockId(trade.Symbol!)}, {trade.Quantity}, {trade.Price}, '{trade.Time:yyyy-MM-dd HH:mm:ss}', ");
-            queryBuilder.Append(string.IsNullOrEmpty(trade.Note) ? "NULL" : $"'<Note><UserNote Text=\"{trade.Note}\" /></Note>'");
-
-            if (i < p_newTrades.Count - 1)
-                queryBuilder.Append("), "); // If it's not the last ticker, add a closing parenthesis and a comma separator
-            else
-                queryBuilder.Append(")"); // If it's the last ticker, add a closing parenthesis without a comma
-        }
-
-        try
-        {
-            string queryStr = queryBuilder.ToString();
-            using SqlCommand command = new(queryStr, m_connection);
-            int rowsAffected = command.ExecuteNonQuery();
-            if (rowsAffected > 0)
-            {
-                Utils.Logger.Info($"Trades are successfully inserted for portfolio '{p_legacyDbPortfName}'.");
-                return true;
-            }
-            else
-            {
-                Utils.Logger.Error($"LegacyDb Error. Failed to insert trades for portfolio '{p_legacyDbPortfName}'.");
-                return false;
-            }
-        }
-        catch (Exception ex)
-        {
-            Utils.Logger.Error($"LegacyDb Error. An error occurred while inserting the trades: {ex.Message}");
-            return false;
-        }
-    }
-
-    public string InsertTrades2(string p_legacyDbPortfName, List<Trade> p_newTrades) // Less SQL Queries
+    public string InsertTrades(string p_legacyDbPortfName, List<Trade> p_newTrades) // Less SQL Queries
     {
         // Step1: Check the connection state
         string testAndInsertTradeResult;
@@ -338,7 +284,7 @@ public class LegacyDb : IDisposable
             int rowsAffected = command.ExecuteNonQuery();
             int insertedRows = rowsAffected - 1; // One(1) row is for the index table in the SQL database, so subtract 1 from the total rowsAffected.
             if (insertedRows == p_newTrades.Count)
-                testAndInsertTradeResult = $"Trades are successfully inserted for portfolio '{p_legacyDbPortfName}'.";
+                testAndInsertTradeResult = $"OK. Trades are successfully inserted for portfolio '{p_legacyDbPortfName}'.";
             else
                 testAndInsertTradeResult = $"LegacyDb Error. Failed to insert trades for portfolio '{p_legacyDbPortfName}'.";
         }
