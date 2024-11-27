@@ -67,7 +67,7 @@ namespace QuantConnect.Lean.Engine.DataFeeds.Enumerators
                     // SqCore Change NEW:
                     if (_config.Resolution == Resolution.Daily && SqBacktestConfig.SqDailyTradingAtMOC)
                         // baseData.Time = baseData.Time.AddHours(-8);
-                        baseData.Time = baseData.Time.AddHours(16); /// 2014-10-22: changed this from -8h to +16h when developing HarryLong portfolios
+                        baseData.Time = baseData.Time.AddHours(16); // 2024-11-27: We shift splits by -8 hours, and dividends by +16 hours. Intended. Correct. We double checked.
                     // SqCore Change END
 
                     // let the config know about it for normalization

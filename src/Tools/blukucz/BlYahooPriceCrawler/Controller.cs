@@ -110,7 +110,7 @@ namespace BlYahooPriceCrawler
                 }).ToArray();
 
                 // Checking for significant price changes that could be YF bug. By default singinificant changes are NOT allowed. Except for a very few tickers mentioned here.
-                string[] allowedSignificantChangeTickers = ["ARVLF", "CANOQ", "EXPRQ", "FFIE", "FSRNQ", "FTCHQ", "GCT", "GTII", "HMFAF", "MTC", "NVTAQ", "OM", "RADCQ", "STIXF", "VFS", "WEWKQ"]; // Significant changes are checked manually.
+                string[] allowedSignificantChangeTickers = ["ADN", "ARVLF", "CANOQ", "EXPRQ", "FFIE", "FSRNQ", "FTCHQ", "GCT", "GEVO", "SAVE", "GTII", "HMFAF", "MTC", "NVTAQ", "OM", "RADCQ", "STIXF", "VFS", "WEWKQ"]; // Significant changes are checked manually.
                 if (!p_unsafeFlag && !allowedSignificantChangeTickers.Contains(ticker)) // Check if the prices are continuous. If there is a discontinuity (e.g., missing split), then stop and do not write the file. Except if we are in unsafe mode.
                 {
                     bool hasSignificantChange = false;

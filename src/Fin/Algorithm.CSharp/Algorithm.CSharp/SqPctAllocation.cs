@@ -316,7 +316,7 @@ namespace QuantConnect.Algorithm.CSharp
                 // Log($"OnData(Slice). Slice.Time: {slice.Time}, this.Time: {sliceTime}");
                 foreach (string ticker in _tickers)
                 {
-                    var symbol = _symbolsDaily[ticker];
+                    Symbol symbol = _symbolsDaily[ticker];
                     Split occuredSplit = (slice.Splits.ContainsKey(symbol) && slice.Splits[symbol].Type == SplitType.SplitOccurred) ? slice.Splits[symbol] : null; // split.Type can be Warning and SplitOccured. Ignore 1-day early Split Warnings. Just use the occured
 
                     decimal? rawClose = null;
@@ -367,11 +367,11 @@ namespace QuantConnect.Algorithm.CSharp
 
                 foreach (string ticker in _tickers)
                 {
-                    var symbol = _symbolsDaily[ticker];
+                    Symbol symbol = _symbolsDaily[ticker];
                     Split occuredSplit = (slice.Splits.ContainsKey(symbol) && slice.Splits[symbol].Type == SplitType.SplitOccurred) ? slice.Splits[symbol] : null; // split.Type can be Warning and SplitOccured. Ignore 1-day early Split Warnings. Just use the occured
                     if (slice.Dividends.ContainsKey(symbol))
                     {
-                        var dividend = slice.Dividends[symbol];
+                        Dividend dividend = slice.Dividends[symbol];
                         if (SqBacktestConfig.SqDailyTradingAtMOC) // SqDailyTradingAtMOC sends price at 16:00, which is right. No need the change. Without it, price comes 00:00 next morning, so we adjust it back.
                             _dividends[ticker].Add(new QcDividend() { ReferenceDate = slice.Time.Date, Dividend = dividend });
                         else

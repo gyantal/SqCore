@@ -224,7 +224,7 @@ public partial class FinDb
         {
             double splitMultiplier = 1.0;
             int lastSplitIdx = splits.Length - 1;
-            DateTime watchedSplitDate = splits[lastSplitIdx].DateTime.Date;
+            DateTime watchedSplitDate = splits[lastSplitIdx].DateTime.Date;  // YF 'chart' API gives the Time part too for dividends, splits. E.g. "2020-10-02 9:30". We need only the .Date part
 
             for (int i = rawClosesFromYfList.Count - 1; i >= 0; i--)
             {
@@ -235,7 +235,7 @@ public partial class FinDb
                 {
                     splitMultiplier *= (double)splits[lastSplitIdx].AfterSplit / splits[lastSplitIdx].BeforeSplit;
                     lastSplitIdx--;
-                    watchedSplitDate = (lastSplitIdx == -1) ? DateTime.MinValue : splits[lastSplitIdx].DateTime;
+                    watchedSplitDate = (lastSplitIdx == -1) ? DateTime.MinValue : splits[lastSplitIdx].DateTime.Date;  // YF 'chart' API gives the Time part too for dividends, splits. E.g. "2020-10-02 9:30". We need only the .Date part
                 }
 
                 dailyData.Open *= (float)splitMultiplier;
