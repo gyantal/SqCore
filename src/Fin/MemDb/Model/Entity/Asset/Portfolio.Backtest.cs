@@ -102,17 +102,22 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
     // Also it allows to show the user how up-to-date (real-time) the today value is.
     public string? GetPortfolioRunResult(bool p_returnOnlyTwrPv, SqResultStat p_sqResultStat, DateTime? p_forcedStartDate, DateTime? p_forcedEndDate, out PortfolioRunResultStatistics p_stat, out List<DateValue> p_pv, out List<PortfolioPosition> p_prtfPoss, out ChartResolution p_chartResolution)
     {
-        #pragma warning disable IDE0066 // disable the switch suggestion warning only locally
-        switch (Type)
-        {
-            case PortfolioType.Simulation:
-                return GetBacktestResult(p_returnOnlyTwrPv, p_sqResultStat, p_forcedStartDate, p_forcedEndDate, out p_pv,  out p_stat, out p_prtfPoss, out p_chartResolution);
-            case PortfolioType.Trades:
-            case PortfolioType.LegacyDbTrades:
-            default:
-                return GetPortfolioRunResultDefault(out p_stat, out p_pv, out p_prtfPoss, out p_chartResolution);
-        }
-        #pragma warning restore IDE0066
+        if (String.IsNullOrEmpty(Algorithm)) // if there is an Algorithm, we can run it. LegacyDbTrades uses 'SqTradeAccumulation' algorithm
+            return GetPortfolioRunResultDefault(out p_stat, out p_pv, out p_prtfPoss, out p_chartResolution);
+        else
+            return GetBacktestResult(p_returnOnlyTwrPv, p_sqResultStat, p_forcedStartDate, p_forcedEndDate, out p_pv, out p_stat, out p_prtfPoss, out p_chartResolution);
+
+        // #pragma warning disable IDE0066 // disable the switch suggestion warning only locally
+        // switch (Type)
+        // {
+        //     case PortfolioType.Simulation:
+        //         return GetBacktestResult(p_returnOnlyTwrPv, p_sqResultStat, p_forcedStartDate, p_forcedEndDate, out p_pv,  out p_stat, out p_prtfPoss, out p_chartResolution);
+        //     case PortfolioType.Trades:
+        //     case PortfolioType.LegacyDbTrades:
+        //     default:
+        //         return GetPortfolioRunResultDefault(out p_stat, out p_pv, out p_prtfPoss, out p_chartResolution);
+        // }
+        // #pragma warning restore IDE0066
     }
 
     public static string? GetPortfolioRunResultDefault(out PortfolioRunResultStatistics p_stat, out List<DateValue> p_pv, out List<PortfolioPosition> p_prtfPoss, out ChartResolution p_chartResolution)
