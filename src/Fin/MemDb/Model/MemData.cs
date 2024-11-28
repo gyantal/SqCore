@@ -173,7 +173,7 @@ internal class MemData // don't expose to clients.
         }
     }
 
-    public Portfolio AddNewPortfolio(User? p_user, string p_name, int p_parentFldId, string p_creationTime, CurrencyId p_currency, PortfolioType p_type, string p_algorithm, string p_algorithmParam, SharedAccess p_sharedAccess, string p_note, List<User> p_sharedUsersWith, int p_tradeHistoryId, string p_legacyDbPortfName)
+    public Portfolio AddNewPortfolio(User? p_user, string p_name, int p_parentFldId, string p_creationTime, CurrencyId p_currency, PortfolioType p_type, string p_algorithm, string p_algorithmParam, SharedAccess p_sharedAccess, string p_note, List<User> p_sharedUsersWith, int p_tradeHistoryId, string? p_legacyDbPortfName)
     {
         lock (PrtfUpdateLock)
         {

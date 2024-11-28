@@ -357,6 +357,7 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
 
   onChangePortfolioType(event: Event) { // setting the default algorithm for portfolioType of 'LegacyDbTrades'
     const portfolioType: string = (event.target as HTMLInputElement).value.trim();
+    this.editedPortfolio.type = portfolioType;
     if (portfolioType == 'LegacyDbTrades')
       this.editedPortfolio.algorithm = 'SqTradeAccumulation';
   }

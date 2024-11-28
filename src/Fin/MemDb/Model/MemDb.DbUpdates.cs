@@ -74,7 +74,7 @@ public partial class MemDb
         if (p_id == -1) // if id == -1, which is an invalid key in the Db, we create a new Item
         {
             string creationTime = DateTime.UtcNow.TohYYYYMMDDHHMMSS(); // DateTime.Now.ToString() => "CTime":"2022-10-13T20:00:00"
-            prtf = m_memData.AddNewPortfolio(p_user, p_name, p_parentFldId, creationTime, p_currency, p_prtfType, p_algorithm, p_algorithmParam, p_userAccess, p_note, sharedUsersWith, p_tradeHistoryId, p_legacyPrtfName ?? string.Empty);
+            prtf = m_memData.AddNewPortfolio(p_user, p_name, p_parentFldId, creationTime, p_currency, p_prtfType, p_algorithm, p_algorithmParam, p_userAccess, p_note, sharedUsersWith, p_tradeHistoryId, p_legacyPrtfName);
             if (prtf == null)
                 errMsg = "Cannot create new item.";
             else
