@@ -220,10 +220,10 @@ public class LegacyDb : IDisposable
         }
     }
 
-    public string InsertTrades(string p_legacyDbPortfName, List<Trade> p_newTrades) // Less SQL Queries
+    public string? InsertTrades(string p_legacyDbPortfName, List<Trade> p_newTrades) // Insert trades with StockID check with only 2x SQL Queries. Returns errorStr or null if success.
     {
         // Step1: Check the connection state
-        string testAndInsertTradeResult;
+        string? testAndInsertTradeResult;
         if (m_connection?.State != System.Data.ConnectionState.Open)
             testAndInsertTradeResult = "LegacyDb Error. Connection to SQL Server has not established successfully";
         // Step2: Check the if the PortfolioId exists
@@ -284,7 +284,7 @@ public class LegacyDb : IDisposable
             int rowsAffected = command.ExecuteNonQuery();
             int insertedRows = rowsAffected - 1; // One(1) row is for the index table in the SQL database, so subtract 1 from the total rowsAffected.
             if (insertedRows == p_newTrades.Count)
-                testAndInsertTradeResult = $"OK. Trades are successfully inserted for portfolio '{p_legacyDbPortfName}'.";
+                testAndInsertTradeResult = null; // null indicates successful insertion.
             else
                 testAndInsertTradeResult = $"LegacyDb Error. Failed to insert trades for portfolio '{p_legacyDbPortfName}'.";
         }

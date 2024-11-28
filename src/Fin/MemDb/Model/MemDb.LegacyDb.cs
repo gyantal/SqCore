@@ -25,7 +25,7 @@ public partial class MemDb
         return m_legacyDb.InsertTrade(p_legacyDbPortfName, p_newTrade);
     }
 
-    public string InsertLegacyPortfolioTrades(string p_legacyDbPortfName, List<Trade> p_newTrades) // Less SQL Queries
+    public string? InsertLegacyPortfolioTrades(string p_legacyDbPortfName, List<Trade> p_newTrades) // Insert trades with StockID check with only 2x SQL Queries. Returns errorStr or null if success.
     {
         return m_legacyDb.InsertTrades(p_legacyDbPortfName, p_newTrades);
     }

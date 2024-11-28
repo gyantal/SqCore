@@ -335,14 +335,17 @@ public class PrtfVwrWs
         if (trdObjStartInd == -1)
             return;
 
-        string prtfName = p_msg.Substring(prtfNameStartInd + 1, trdObjStartInd - prtfNameStartInd - 1);
+        string legacyPrtfName = p_msg.Substring(prtfNameStartInd + 1, trdObjStartInd - prtfNameStartInd - 1);
         string tradeObjStr = p_msg[(trdObjStartInd + "&trades".Length)..]; // extract the Trade object string from p_msg
         List<Trade>? trades = JsonSerializer.Deserialize<List<Trade>>(tradeObjStr, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }); // Deserialize the trade string into a Trade object
-        string testAndInsertTradeResult;
+        string? testAndInsertTradeResult;
         if (trades == null) // Check if 'trades' is null, which means there are no trades to process
             testAndInsertTradeResult = "Trades are Null";
         else
-            testAndInsertTradeResult = MemDb.gMemDb.InsertLegacyPortfolioTrades(prtfName, trades!);
+            testAndInsertTradeResult = MemDb.gMemDb.InsertLegacyPortfolioTrades(legacyPrtfName, trades);
+
+        if (testAndInsertTradeResult == null)
+          testAndInsertTradeResult = $"OK. Trades are successfully inserted for portfolio '{legacyPrtfName}'.";
 
         byte[] encodedMsg = Encoding.UTF8.GetBytes("PrtfVwr.LegacyDbTradesTestAndInsert:" + testAndInsertTradeResult);
         if (webSocket!.State == WebSocketState.Open)
