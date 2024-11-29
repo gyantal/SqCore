@@ -601,68 +601,70 @@ export class AppComponent {
     const tradeRows: string[] = tradesStr.trim().split('\n'); // Split the data by newline to get each row
     for (let i = 0; i < tradeRows.length; i++) {
       const tradeRowStr = tradeRows[i];
-      const tradeObj: TradeJs = new TradeJs();
-      this.m_legacyDbInsTradesSyntaxCheckResult = this.validateAndProcessTradeData(tradeRowStr, i, tradeObj);
-      if (this.m_legacyDbInsTradesSyntaxCheckResult.startsWith('Syntax OK'))
-        this.m_legacyDbTrades.push(tradeObj); // Add TradeJs object to the result array
-      else
-        return; // if any of the rows fail at syntax check, we terminate any further execution.
+      const tradeDataProcessResult: { tradeObj: TradeJs | null; errorStr: string | null } = this.validateAndProcessTradeData(tradeRowStr, i);
+      if (tradeDataProcessResult.errorStr != null) {
+        this.m_legacyDbInsTradesSyntaxCheckResult = tradeDataProcessResult.errorStr;
+        return;
+      } else if (tradeDataProcessResult.tradeObj != null) {
+        this.m_legacyDbInsTradesSyntaxCheckResult = 'Syntax OK';
+        this.m_legacyDbTrades.push(tradeDataProcessResult.tradeObj);
+      }
     }
   }
 
-  validateAndProcessTradeData(tradeRowStr: string, rowInd:number, tradeObj: TradeJs): string { // Function to validate trade data.
+  validateAndProcessTradeData(tradeRowStr: string, rowInd:number): { tradeObj: TradeJs | null; errorStr: string | null } {
+    const errorStr: string | null = null;
+    const tradeObj: TradeJs | null = new TradeJs();
     if (tradeRowStr.startsWith('-')) // Check for partial trades
-      return `Error. Processing stopped. "-" was found at row ${rowInd + 1} which indicates partial trades are present. Remove partial trades.`;
-    else {
-      tradeRowStr = tradeRowStr.startsWith('+') ? tradeRowStr.substring(2) : tradeRowStr.startsWith('\t') ? tradeRowStr.substring(1) : tradeRowStr; // removing the '+' and '\t' from the tradeRecord
-      const trade: string[] = tradeRowStr.split('\t');
-      const quantity = Number(trade[2].replace(/,/g, '')); // replace the comma and convert to number
-      if (isNaN(quantity) || !isFinite(quantity) || !Number.isInteger(quantity)) // Check if quantity is a valid number (including floats) and is finite
-        return (`Quantity ${trade[2]} at row ${rowInd + 1} is invalid.`);
-      tradeObj.quantity = quantity; // Assign the valid quantity to tradeObj
+      return { tradeObj: null, errorStr: `Error. Processing stopped. "-" was found at row ${rowInd + 1 }, indicating partial trades are present. Remove partial trades.` };
 
-      const price = Number(trade[3].replace(/,/g, '')); // replace the comma and convert to number
-      if (isNaN(price) || !isFinite(price)) // Check if price is a valid number (including floats) and is finite
-        return (`Price ${trade[3]} at row ${rowInd + 1} is invalid.`);
-      tradeObj.price = price;
+    tradeRowStr = tradeRowStr.startsWith('+') ? tradeRowStr.substring(2) : tradeRowStr.startsWith('\t') ? tradeRowStr.substring(1) : tradeRowStr; // removing the '+' and '\t' from the tradeRecord
+    const trade: string[] = tradeRowStr.split('\t');
+    const quantity = Number(trade[2].replace(/,/g, '')); // replace the comma and convert to number
+    if (isNaN(quantity) || !isFinite(quantity) || !Number.isInteger(quantity)) // Check if quantity is a valid number (including floats) and is finite
+      return { tradeObj: null, errorStr: `Error. Quantity ${trade[2]} at row ${rowInd + 1} is invalid.` };
+    tradeObj.quantity = quantity; // Assign the valid quantity to tradeObj
 
-      if (CurrencyId[trade[4]] == undefined) // Validate CurrencyId
-        return (`CurrencyId: '${trade[4]}' at row ${rowInd + 1} is invalid.`);
-      tradeObj.currency = CurrencyId[trade[4]];
+    const price = Number(trade[3].replace(/,/g, '')); // replace the comma and convert to number
+    if (isNaN(price) || !isFinite(price)) // Check if price is a valid number (including floats) and is finite
+      return { tradeObj: null, errorStr: `Error. Price ${trade[3]} at row ${rowInd + 1} is invalid.` };
+    tradeObj.price = price;
 
-      switch (trade[0]) { // Validate and process TradeAction
-        case 'BOT':
-          tradeObj.action = TradeAction.Buy;
-          break;
-        case 'SLD':
-          tradeObj.action = TradeAction.Sell;
-          break;
-        case 'DEPOSIT':
-          tradeObj.action = TradeAction.Deposit;
-          break;
-        default:
-          return `TradeAction: '${trade[0]}' at row ${rowInd + 1} is invalid.`;
-      }
+    if (CurrencyId[trade[4]] == undefined) // Validate CurrencyId
+      return { tradeObj: null, errorStr: `Error. CurrencyId: '${trade[4]}' at row ${rowInd + 1} is invalid.` };
+    tradeObj.currency = CurrencyId[trade[4]];
 
-      tradeObj.symbol = trade[1];
-      const validTradeDtStr: string = SqNgCommonUtilsTime.ValidateDateStr(trade[5]);
-      if (validTradeDtStr.includes('invalid'))
-        return validTradeDtStr;
-
-      const tradeDt: Date = new Date(trade[5]);
-      const completionDateStr: string[] = this.m_legacyDbCompletionDateUtcStr.split('-');
-      if (isNaN(tradeDt.getTime())) { // If tradeDt is invalid, assume it only contains the time part.
-        const timeStr: string = trade[5];
-        tradeDt.setUTCFullYear(parseInt(completionDateStr[0], 10), parseInt(completionDateStr[1], 10) - 1, parseInt(completionDateStr[2], 10));
-        tradeDt.setHours(0, 0, 0, 0); // Reset time to start of the day
-        const timeParts: string[] = timeStr.split(':'); // Split the timeStr and manually parse each part
-        tradeDt.setHours(parseInt(timeParts[0], 10), parseInt(timeParts[1], 10), parseInt(timeParts[2], 10)); // Set the time on tradeDt to the parsed hours, minutes, and seconds
-      }
-      tradeDt.setUTCFullYear(parseInt(completionDateStr[0], 10));
-
-      tradeObj.time = tradeDt;
-      return 'Syntax OK'; // All validations and processing succeeded
+    switch (trade[0]) { // Validate and process TradeAction
+      case 'BOT':
+        tradeObj.action = TradeAction.Buy;
+        break;
+      case 'SLD':
+        tradeObj.action = TradeAction.Sell;
+        break;
+      case 'DEPOSIT':
+        tradeObj.action = TradeAction.Deposit;
+        break;
+      default:
+        return { tradeObj: null, errorStr: `Error. TradeAction: '${trade[0]}' at row ${rowInd + 1} is invalid.` };
     }
+
+    const validTradeDtStr: string | null = SqNgCommonUtilsTime.ValidateDateStr(trade[5], rowInd); // ValidateDateStr() - returns errorStr or null if success.
+    if (validTradeDtStr != null)
+      return { tradeObj: null, errorStr: validTradeDtStr };
+
+    const tradeDt: Date = new Date(trade[5]);
+    const completionDateStr: string[] = this.m_legacyDbCompletionDateUtcStr.split('-');
+    if (isNaN(tradeDt.getTime())) { // If tradeDt is invalid, assume it only contains the time part.
+      const timeStr: string = trade[5];
+      tradeDt.setUTCFullYear(parseInt(completionDateStr[0], 10), parseInt(completionDateStr[1], 10) - 1, parseInt(completionDateStr[2], 10));
+      tradeDt.setHours(0, 0, 0, 0); // Reset time to start of the day
+      const timeParts: string[] = timeStr.split(':'); // Split the timeStr and manually parse each part
+      tradeDt.setHours(parseInt(timeParts[0], 10), parseInt(timeParts[1], 10), parseInt(timeParts[2], 10)); // Set the time on tradeDt to the parsed hours, minutes, and seconds
+    }
+    tradeDt.setUTCFullYear(parseInt(completionDateStr[0], 10));
+    tradeObj.time = tradeDt;
+    tradeObj.symbol = trade[1];
+    return { tradeObj, errorStr };
   }
 
   tradeStringifyHelper(trade: TradeJs): string {

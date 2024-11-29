@@ -20,7 +20,7 @@ export class SqNgCommonUtilsTime implements OnInit {
 
   // 2020: Javascript didn't support timezones, so either use moment.js or hack it here.
   // https://stackoverflow.com/questions/36206260/how-to-set-date-always-to-eastern-time-regardless-of-users-time-zone/36206597
-  public static ConvertDateUtcToEt(utcDate: Date) {
+  public static ConvertDateUtcToEt(utcDate: Date) : Date {
     const monthOriUTC = utcDate.getMonth() + 1;
     const dayOriUTC = utcDate.getDate();
     const dayOfWeekOriUTC = utcDate.getDay(); // Sunday is 0, Monday is 1, and so on.
@@ -204,40 +204,40 @@ export class SqNgCommonUtilsTime implements OnInit {
     return dateStr.split('-').join('');
   }
 
-  public static ValidateDateStr(tradeDtStr: string): string { // DateStr : NOV 14 21:00:03 or 21:00:03
+  public static ValidateDateStr(tradeDtStr: string, rowInd: number): string | null { // DateStr : NOV 14 21:00:03 or 21:00:03
     const dateParts: string[] = tradeDtStr.split(' ');
 
     if (dateParts.length == 1) // Handles cases where dateParts contains only the time part (e.g., 21:00:03) or an invalid date format (e.g., NOV2504:60:03).
-      return this.ValidateTimeStr(tradeDtStr);
+      return this.ValidateTimeStr(tradeDtStr, rowInd);
 
     // Validate month
     const validMonths: string[] = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
     const month: string = dateParts[0];
     if (!validMonths.includes(month))
-      return `'invalid month:'${month}`;
+      return `Error. invalid month: ${month} at row ${rowInd + 1}`;
     // Validate day
     const day = parseInt(dateParts[1], 10);
     if (day < 1 || day > 31)
-      return `'invalid day:'${day}`;
+      return `Error. invalid day: ${day} at row ${rowInd + 1}`;
     // Validate time
-    return this.ValidateTimeStr(dateParts[2]);
+    return this.ValidateTimeStr(dateParts[2], rowInd);
   }
 
-  public static ValidateTimeStr(timeStr: string): string { // e.g: 21:00:03 or NOV2504:00:03
+  public static ValidateTimeStr(timeStr: string, rowInd: number): string | null { // e.g: 21:00:03 or NOV2504:00:03
     const timeParts: string[] = timeStr.split(':');
     const hours = parseInt(timeParts[0], 10);
     const minutes = parseInt(timeParts[1], 10);
     const seconds = parseInt(timeParts[2], 10);
 
     if (isNaN(hours) || hours < 0 || hours > 23) // special case - isNaN checks for invalid input, e.g., in a date format like 'NOV2504:00:03', where 'NOV2504' is not a valid hour.
-      return `'invalid hours: ${hours}'`;
+      return `Error. invalid hours: ${hours} at row ${rowInd + 1}`;
 
     if (minutes < 0 || minutes > 59)
-      return `'invalid minutes: ${minutes}'`;
+      return `Error. invalid minutes: ${minutes} at row ${rowInd + 1}`;
 
     if (seconds < 0 || seconds > 59)
-      return `'invalid seconds: ${seconds}'`;
+      return `Error. invalid seconds: ${seconds} at row ${rowInd + 1}`;
 
-    return 'Valid Date';
+    return null;
   }
 }
