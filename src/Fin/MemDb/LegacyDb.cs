@@ -223,13 +223,12 @@ public class LegacyDb : IDisposable
     public string? InsertTrades(string p_legacyDbPortfName, List<Trade> p_newTrades) // Insert trades with StockID check with only 2x SQL Queries. Returns errorStr or null if success.
     {
         // Step1: Check the connection state
-        string? testAndInsertTradeResult;
         if (m_connection?.State != System.Data.ConnectionState.Open)
-            testAndInsertTradeResult = "LegacyDb Error. Connection to SQL Server has not established successfully";
+            return "LegacyDb Error. Connection to SQL Server has not established successfully";
         // Step2: Check the if the PortfolioId exists
         int portfolioId = GetPortfolioId(p_legacyDbPortfName);
         if (portfolioId == -1)
-            testAndInsertTradeResult = $"LegacyDb Error. Could not find portfolio ID for portfolio '{p_legacyDbPortfName}'.";
+            return $"LegacyDb Error. Could not find portfolio ID for portfolio '{p_legacyDbPortfName}'.";
         // Step3: Get the uniqueTickers from p_newTrades (since p_newTrades may contain duplicates)
         List<string> uniqueTickers = new List<string>();
         foreach (Trade trade in p_newTrades)
@@ -239,14 +238,16 @@ public class LegacyDb : IDisposable
         }
         // Step4: Get the stockIds for the tickers
         List<(string Ticker, int Id)> stockIdsResult = GetStockIds(uniqueTickers);
+        List<string> missingTickers = new();
         foreach ((string Ticker, int Id) stock in stockIdsResult) // Check if any ticker from trades doesn't exist in the stock data
         {
             if (stock.Id == -1) // Check if the stock ID is -1, indicating the symbol does not exist in LegacyDb
-            {
-                testAndInsertTradeResult = $"LegacyDb Error. TestInsertTrade failed, Ticker '{stock.Ticker}' doesn't exists";
-                break;
-            }
+                missingTickers.Add(stock.Ticker);
         }
+
+        if (missingTickers.Count > 0)
+            return $"LegacyDb Error. TestInsertTrade failed, missing SQL Tickers: '{string.Join(",", missingTickers)}'";
+
         // Step5: Build the QueryBuilder for inserting the trades
         StringBuilder queryBuilder = new();
         queryBuilder.Append("INSERT INTO PortfolioItem (PortfolioID, TransactionType, AssetTypeID, AssetSubTableID, Volume, Price, Date, Note) VALUES ");
@@ -283,21 +284,19 @@ public class LegacyDb : IDisposable
             // If an error occurs in any trade, the whole batch insert is terminated. The logical reason is that the SQL server itself performs a batch insertion into its file system, so it checks all data correctness beforehand.
             int rowsAffected = command.ExecuteNonQuery();
             int insertedRows = rowsAffected - 1; // One(1) row is for the index table in the SQL database, so subtract 1 from the total rowsAffected.
-            if (insertedRows == p_newTrades.Count)
-                testAndInsertTradeResult = null; // null indicates successful insertion.
-            else
-                testAndInsertTradeResult = $"LegacyDb Error. Failed to insert trades for portfolio '{p_legacyDbPortfName}'.";
+            if (insertedRows != p_newTrades.Count)
+                return $"LegacyDb Error. Failed to insert trades for portfolio '{p_legacyDbPortfName}'.";
         }
         catch (Exception ex)
         {
-            testAndInsertTradeResult = $"LegacyDb Error. An error occurred while inserting the trades: {ex.Message}";
+            return $"LegacyDb Error. An error occurred while inserting the trades: {ex.Message}";
         }
-        return testAndInsertTradeResult;
+        return null; // ErrorStr: null indicates successful insertion.
     }
 
-    public int GetStockId(string p_ticker)
+    public int GetStockId(string p_ticker, bool p_isAlive = true)
     {
-        string queryStr = $"SELECT Id FROM Stock WHERE Ticker = @Ticker";
+        string queryStr = $"SELECT Id FROM Stock WHERE IsAlive = {(p_isAlive ? 1 : 0)} AND  Ticker = @Ticker";
         SqlCommand command = new(queryStr, m_connection);
         command.Parameters.AddWithValue("@Ticker", p_ticker);
 
@@ -315,7 +314,7 @@ public class LegacyDb : IDisposable
         return -1;
     }
 
-    public List<(string Ticker, int Id)> GetStockIds(List<string> p_tickers)
+    public List<(string Ticker, int Id)> GetStockIds(List<string> p_tickers, bool p_isAlive = true)
     {
         List<(string Ticker, int Id)> sqlStockIdsResult = new List<(string Ticker, int Id)>();
         StringBuilder sbTickers = new(); // Build a comma-separated string of tickers to use in the SQL query
@@ -325,7 +324,7 @@ public class LegacyDb : IDisposable
             if (i < p_tickers.Count - 1) // Add a comma separator between tickers, except after the last ticker
                 sbTickers.Append(", ");
         }
-        string queryStr = $"SELECT Ticker, Id FROM Stock WHERE Ticker IN ({sbTickers})"; // Construct the SQL query to retrieve the ID for each specified ticker
+        string queryStr = $"SELECT Ticker, Id FROM Stock WHERE IsAlive = {(p_isAlive ? 1 : 0)} AND Ticker IN ({sbTickers})"; // Construct the SQL query to retrieve the ID for each specified ticker
         SqlCommand command = new(queryStr, m_connection); // Initialize the SQL command with the query and the open connection
         using SqlDataReader reader = command.ExecuteReader(); // Execute the query and retrieve the results using a data reader
         if (reader.HasRows)
