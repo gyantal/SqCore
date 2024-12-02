@@ -160,31 +160,36 @@ public partial class DashboardClient
         }
     }
 
-    public void PortfMgrCreateOrEditPortfolio(string p_msg) // "msg - id:-1,name:TestPrtf,prntFId:16,currency:USD,type:Simulation,algo:SqPctAllocation,algoP:assets=SVXY,VXX,VXZ,TQQQ,TLT,USO,UNG&weights=15,-5, 10, 25, 255,-27,-78&rebFreq=Daily,1d,access:Anyone,note:Testing,legacy:LegacyPrtfName"
+    public void PortfMgrCreateOrEditPortfolio(string p_msg) // "msg - id=-1&name=LegacyDb: !SeekingAlpha%26TopAnalystsShorts&prntFId=-38&currency=USD&type=LegacyDbTrades&algo=SqTradeAccumulation&algoP=assets%3DAAPL,AMZN,MSFT,TSLA%26weights%3D25,25,25,25%26rebFreq%3DDaily,30d&trdHis=-1&access=Restricted&note=Alpha%3DTopAnalysts&legPrtfNm=!SeekingAlpha%26TopAnalystsShorts"
     {
-        int idStartIdx = p_msg.IndexOf(":");
-        int pfNameIdx = (idStartIdx == -1) ? -1 : p_msg.IndexOf(':', idStartIdx + 1);
-        int prntFldrIdx = (pfNameIdx == -1) ? -1 : p_msg.IndexOf(":", pfNameIdx + 1);
-        int currencyIdx = prntFldrIdx == -1 ? -1 : p_msg.IndexOf(":", prntFldrIdx + 1);
-        int prtfTypeIdx = currencyIdx == -1 ? -1 : p_msg.IndexOf(":", currencyIdx + 1);
-        int algoIdx = prtfTypeIdx == -1 ? -1 : p_msg.IndexOf(":", prtfTypeIdx + 1);
-        int algoParamIdx = algoIdx == -1 ? -1 : p_msg.IndexOf(":", algoIdx + 1);
-        int trdHisIdx = algoParamIdx == -1 ? -1 : p_msg.IndexOf(":", algoParamIdx + 1);
-        int userAccessIdx = trdHisIdx == -1 ? -1 : p_msg.IndexOf(":", trdHisIdx + 1);
-        int userNoteIdx = userAccessIdx == -1 ? -1 : p_msg.IndexOf(":", userAccessIdx + 1);
-        int legacyPrtfIdx = userNoteIdx == -1 ? -1 : p_msg.IndexOf(":", userNoteIdx + 1);
+        int idStartIdx = p_msg.IndexOf("=");
+        int pfNameIdx = (idStartIdx == -1) ? -1 : p_msg.IndexOf('=', idStartIdx + 1);
+        int prntFldrIdx = (pfNameIdx == -1) ? -1 : p_msg.IndexOf("=", pfNameIdx + 1);
+        int currencyIdx = prntFldrIdx == -1 ? -1 : p_msg.IndexOf("=", prntFldrIdx + 1);
+        int prtfTypeIdx = currencyIdx == -1 ? -1 : p_msg.IndexOf("=", currencyIdx + 1);
+        int algoIdx = prtfTypeIdx == -1 ? -1 : p_msg.IndexOf("=", prtfTypeIdx + 1);
+        int algoParamIdx = algoIdx == -1 ? -1 : p_msg.IndexOf("=", algoIdx + 1);
+        int trdHisIdx = algoParamIdx == -1 ? -1 : p_msg.IndexOf("=", algoParamIdx + 1);
+        int userAccessIdx = trdHisIdx == -1 ? -1 : p_msg.IndexOf("=", trdHisIdx + 1);
+        int userNoteIdx = userAccessIdx == -1 ? -1 : p_msg.IndexOf("=", userAccessIdx + 1);
+        int legacyPrtfIdx = userNoteIdx == -1 ? -1 : p_msg.IndexOf("=", userNoteIdx + 1);
 
-        int id = int.Parse(p_msg.Substring(idStartIdx + 1, pfNameIdx - idStartIdx - ",name:".Length));
-        string pfName = p_msg.Substring(pfNameIdx + 1, prntFldrIdx - pfNameIdx - ",prntFId:".Length);
-        int virtualParentFldId = int.Parse(p_msg.Substring(prntFldrIdx + 1, currencyIdx - prntFldrIdx - ",currency:".Length));
-        string currency = p_msg.Substring(currencyIdx + 1, prtfTypeIdx - currencyIdx - ",type:".Length);
-        string prtfType = p_msg.Substring(prtfTypeIdx + 1, algoIdx - prtfTypeIdx - ",algo:".Length);
-        string algorithm = p_msg.Substring(algoIdx + 1, algoParamIdx - algoIdx - ",algoP:".Length);
-        string algorithmParam = p_msg.Substring(algoParamIdx + 1, trdHisIdx - algoParamIdx - ",trdHis:".Length);
-        int tradeHistoryId = int.Parse(p_msg.Substring(trdHisIdx + 1, userAccessIdx - trdHisIdx - ",access:".Length)); // AddOrEditPortfolio() expect it to be an 'int' with -1 default, but input p_msg can have it in any way: "-1", or "", or tradeHistoryId field can be missing
-        string userAccess = p_msg.Substring(userAccessIdx + 1, userNoteIdx - userAccessIdx - ",note:".Length);
-        string userNote = p_msg.Substring(userNoteIdx + 1, legacyPrtfIdx - userNoteIdx - ",legPrtfNm:".Length);
+        int id = int.Parse(p_msg.Substring(idStartIdx + 1, pfNameIdx - idStartIdx - "&name=".Length));
+        string pfName = p_msg.Substring(pfNameIdx + 1, prntFldrIdx - pfNameIdx - "&prntFId=".Length);
+        int virtualParentFldId = int.Parse(p_msg.Substring(prntFldrIdx + 1, currencyIdx - prntFldrIdx - "&currency=".Length));
+        string currency = p_msg.Substring(currencyIdx + 1, prtfTypeIdx - currencyIdx - "&type=".Length);
+        string prtfType = p_msg.Substring(prtfTypeIdx + 1, algoIdx - prtfTypeIdx - "&algo=".Length);
+        string algorithm = p_msg.Substring(algoIdx + 1, algoParamIdx - algoIdx - "&algoP=".Length);
+        string algorithmParam = p_msg.Substring(algoParamIdx + 1, trdHisIdx - algoParamIdx - "&trdHis=".Length);
+        int tradeHistoryId = int.Parse(p_msg.Substring(trdHisIdx + 1, userAccessIdx - trdHisIdx - "&access=".Length)); // AddOrEditPortfolio() expect it to be an 'int' with -1 default, but input p_msg can have it in any way: "-1", or "", or tradeHistoryId field can be missing
+        string userAccess = p_msg.Substring(userAccessIdx + 1, userNoteIdx - userAccessIdx - "&note=".Length);
+        string userNote = p_msg.Substring(userNoteIdx + 1, legacyPrtfIdx - userNoteIdx - "&legPrtfNm=".Length);
         string legacyPrtfName = p_msg[(legacyPrtfIdx + 1)..];
+
+        pfName = UiUtils.DecodeEncodedChars(pfName);
+        algorithmParam = UiUtils.DecodeEncodedChars(algorithmParam);
+        userNote = UiUtils.DecodeEncodedChars(userNote);
+        legacyPrtfName = UiUtils.DecodeEncodedChars(legacyPrtfName);
 
         string? errMsg = GetRealParentFldId(virtualParentFldId, out User? user, out int realParentFldId);
         if (errMsg == null)
