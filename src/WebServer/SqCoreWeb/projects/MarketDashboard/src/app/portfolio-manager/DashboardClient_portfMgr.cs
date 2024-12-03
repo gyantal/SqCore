@@ -186,10 +186,10 @@ public partial class DashboardClient
         string userNote = p_msg.Substring(userNoteIdx + 1, legacyPrtfIdx - userNoteIdx - "&legPrtfNm=".Length);
         string legacyPrtfName = p_msg[(legacyPrtfIdx + 1)..];
 
-        pfName = UiUtils.DecodeEncodedChars(pfName);
-        algorithmParam = UiUtils.DecodeEncodedChars(algorithmParam);
-        userNote = UiUtils.DecodeEncodedChars(userNote);
-        legacyPrtfName = UiUtils.DecodeEncodedChars(legacyPrtfName);
+        pfName = UiUtils.DecodeUrlEncodedChars(pfName);
+        algorithmParam = UiUtils.DecodeUrlEncodedChars(algorithmParam);
+        userNote = UiUtils.DecodeUrlEncodedChars(userNote);
+        legacyPrtfName = UiUtils.DecodeUrlEncodedChars(legacyPrtfName);
 
         string? errMsg = GetRealParentFldId(virtualParentFldId, out User? user, out int realParentFldId);
         if (errMsg == null)

@@ -52,9 +52,9 @@ internal static partial class UiUtils
     internal const int gPortfolioIdOffset = 10000;
     internal const int gNoUserVirtPortfId = -2;
 
-    internal static string DecodeEncodedChars(string p_decodeInputVal) // e.g, input: "LegacyDb: !SeekingAlpha%26TopAnalystsShorts" => "LegacyDb: !SeekingAlpha&TopAnalystsShorts"
+    internal static string DecodeUrlEncodedChars(string p_str) // e.g, input: "LegacyDb: !SeekingAlpha%26TopAnalystsShorts" => "LegacyDb: !SeekingAlpha&TopAnalystsShorts"
     {
-        return p_decodeInputVal.Replace("%26", "&").Replace("%3D", "=");
+        return p_str.Replace("%26", "&").Replace("%3D", "=");
     }
 
     internal static int GetVirtualParentFldId(User? p_user, int p_realParentFldId)

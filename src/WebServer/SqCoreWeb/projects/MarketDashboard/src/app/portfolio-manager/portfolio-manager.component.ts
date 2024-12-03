@@ -2,7 +2,7 @@ import { Component, OnInit, AfterViewInit, Input, ViewChild } from '@angular/cor
 import { SqTreeViewComponent } from '../../../../sq-ng-common/src/lib/sq-tree-view/sq-tree-view.component';
 import { PrtfRunResultJs, UiPrtfRunResult, PrtfItemType, FolderJs, PortfolioJs, TreeViewItem, TreeViewState, createTreeViewData, prtfsParseHelper, fldrsParseHelper, statsParseHelper, updateUiWithPrtfRunResult } from '../../../../../TsLib/sq-common/backtestCommon';
 import { SqNgCommonUtils } from '../../../../sq-ng-common/src/lib/sq-ng-common.utils';
-import { onFirstVisibleEventListener } from '../../../../../TsLib/sq-common/utils-common';
+import { onFirstVisibleEventListener, urlEncodeChars } from '../../../../../TsLib/sq-common/utils-common';
 import { UserJs } from '../../../../../TsLib/sq-common/sq-globals';
 
 type Nullable<T> = T | null;
@@ -383,11 +383,10 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
       return;
     }
 
-    const charEncodingMap: { '&': string; '=': string; } = { '&': '%26', '=': '%3D' }; // Replacing special characters with their URL-encoded equivalents to avoid conflicts during server-side processing. stackoverflow ref: https://stackoverflow.com/questions/16576983/replace-multiple-characters-in-one-replace-call
-    this.editedPortfolio.name = this.editedPortfolio.name.replace(/[&=]/g, (s: string) => charEncodingMap[s]); // s - special charater
-    this.editedPortfolio.algorithmParam = this.editedPortfolio.algorithmParam.replace(/[&=]/g, (s: string) => charEncodingMap[s]);
-    this.editedPortfolio.note = this.editedPortfolio.note.replace(/[&=]/g, (s: string) => charEncodingMap[s]);
-    this.editedPortfolio.legacyDbPortfName = this.editedPortfolio.legacyDbPortfName.replace(/[&=]/g, (s: string) => charEncodingMap[s]);
+    this.editedPortfolio.name = urlEncodeChars(this.editedPortfolio.name);
+    this.editedPortfolio.algorithmParam = urlEncodeChars(this.editedPortfolio.algorithmParam);
+    this.editedPortfolio.note = urlEncodeChars(this.editedPortfolio.note);
+    this.editedPortfolio.legacyDbPortfName = urlEncodeChars(this.editedPortfolio.legacyDbPortfName);
 
     if (this._parentWsConnection && this._parentWsConnection.readyState === WebSocket.OPEN)
       this._parentWsConnection.send(`PortfMgr.CreateOrEditPortfolio:id=${this.editedPortfolio.id}&name=${this.editedPortfolio.name}&prntFId=${this.editedPortfolio.parentFolderId}&currency=${this.editedPortfolio.baseCurrency}&type=${this.editedPortfolio.type}&algo=${this.editedPortfolio.algorithm}&algoP=${this.editedPortfolio.algorithmParam}&trdHis=${this.editedPortfolio.tradeHistoryId}&access=${this.editedPortfolio.sharedAccess}&note=${this.editedPortfolio.note}&legPrtfNm=${this.editedPortfolio.legacyDbPortfName}`);
