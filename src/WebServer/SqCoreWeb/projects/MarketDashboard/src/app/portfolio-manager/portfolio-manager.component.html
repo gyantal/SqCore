@@ -101,14 +101,15 @@
             <input class="pfItemLongInput" type="text" placeholder="Enter Portfolio AlgorithmParam" [(ngModel)]="editedPortfolio.algorithmParam" [value]="editedPortfolio.algorithmParam">
           </div>
         </div>
-        <div class="prtfCommon prtfFields">LegacyDbPortfName:<span class="requiredAndNotFound" *ngIf="!editedPortfolio.legacyDbPortfName">*</span></div>
+        <!--Disable and apply a gray color to the legacyDb portfolio field if the portfolioType is not set to legacyDbTrades.-->
+        <div class="prtfCommon prtfFields" [ngStyle]="{color: (editedPortfolio.type != 'LegacyDbTrades') ? '#A9A9A9' : '' }">LegacyDbPortfName:<span class="requiredAndNotFound" *ngIf="!editedPortfolio.legacyDbPortfName && editedPortfolio.type == 'LegacyDbTrades'">*</span></div>
         <div class="prtfCommon prtfUserValues">
           <input class="pfItemLongInput" type="text" placeholder="Enter LegacyDbPortfName" [disabled]="editedPortfolio.type != 'LegacyDbTrades'" [(ngModel)]="editedPortfolio.legacyDbPortfName">
         </div>
         <div>
           <div class="prtfCommon prtfFields">TradeHistoryId:</div>
           <div class="prtfCommon prtfUserValues">
-            <input class="pfItemLongInput" type="text" placeholder="TradeHistoryId" [(ngModel)]="editedPortfolio.tradeHistoryId" [value]="editedPortfolio.tradeHistoryId">
+            <input class="inputItemIdCommon" type="text" placeholder="TradeHistoryId" [(ngModel)]="editedPortfolio.tradeHistoryId" [value]="editedPortfolio.tradeHistoryId">
           </div>
         </div>
         <div>
