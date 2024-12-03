@@ -102,10 +102,15 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
     // Also it allows to show the user how up-to-date (real-time) the today value is.
     public string? GetPortfolioRunResult(bool p_returnOnlyTwrPv, SqResultStat p_sqResultStat, DateTime? p_forcedStartDate, DateTime? p_forcedEndDate, out PortfolioRunResultStatistics p_stat, out List<DateValue> p_pv, out List<PortfolioPosition> p_prtfPoss, out ChartResolution p_chartResolution)
     {
-        if (String.IsNullOrEmpty(Algorithm)) // if there is an Algorithm, we can run it. LegacyDbTrades uses 'SqTradeAccumulation' algorithm
+        // "Trades" type portfolios can have Trades in them for the past (for that "SqTradeAccumulation" Algorithm has to be run now),
+        // but a different Algorithm ("CXO", "HL") might exist in the Portfolio.Algorithm, that will be run for the future, e.g. VBroker to determine what to trade at the broker. Or in the very far past (before the era of the trades)
+        // So, for Trades, and LegacyDbTrades portfolios don't use the stored this.Algorithm.
+
+        string algorithmName = (this.Type == PortfolioType.Trades || this.Type == PortfolioType.LegacyDbTrades) ? "SqTradeAccumulation" : this.Algorithm;
+        if (String.IsNullOrEmpty(algorithmName)) // if there is an Algorithm, we can run it. LegacyDbTrades uses 'SqTradeAccumulation' algorithm
             return GetPortfolioRunResultDefault(out p_stat, out p_pv, out p_prtfPoss, out p_chartResolution);
         else
-            return GetBacktestResult(p_returnOnlyTwrPv, p_sqResultStat, p_forcedStartDate, p_forcedEndDate, out p_pv, out p_stat, out p_prtfPoss, out p_chartResolution);
+            return GetBacktestResult(algorithmName, p_returnOnlyTwrPv, p_sqResultStat, p_forcedStartDate, p_forcedEndDate, out p_pv, out p_stat, out p_prtfPoss, out p_chartResolution);
 
         // #pragma warning disable IDE0066 // disable the switch suggestion warning only locally
         // switch (Type)
@@ -153,7 +158,7 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
         return null; // No Error
     }
 
-    public string? GetBacktestResult(bool p_returnOnlyTwrPv, SqResultStat p_sqResultStat, DateTime? p_forcedStartDate, DateTime? p_forcedEndDate, out List<DateValue> p_pv, out PortfolioRunResultStatistics p_stat, out List<PortfolioPosition> p_prtfPoss, out ChartResolution p_chartResolution)
+    public string? GetBacktestResult(string p_algorithmName, bool p_returnOnlyTwrPv, SqResultStat p_sqResultStat, DateTime? p_forcedStartDate, DateTime? p_forcedEndDate, out List<DateValue> p_pv, out PortfolioRunResultStatistics p_stat, out List<PortfolioPosition> p_prtfPoss, out ChartResolution p_chartResolution)
     {
         SqBacktestConfig backtestConfig = new SqBacktestConfig() { SqResultStat = p_sqResultStat, SamplingQcOriginal = false, SamplingSqDailyRawPv = false, SamplingSqDailyTwrPv = false };
         if (p_returnOnlyTwrPv) // target is TwrPv
@@ -165,8 +170,7 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
                 backtestConfig.SamplingSqDailyTwrPv = true;
         }
 
-        string algorithmName = String.IsNullOrEmpty(Algorithm) ? "BasicTemplateFrameworkAlgorithm" : Algorithm;
-        if (algorithmName == "BasicTemplateFrameworkAlgorithm") // If Original QC algorithms, usually per minute.
+        if (p_algorithmName == "BasicTemplateFrameworkAlgorithm") // If Original QC algorithms, usually per minute.
         {
             backtestConfig.SamplingQcOriginal = true; // QC supports per minute resolution
             backtestConfig.SamplingSqDailyRawPv = false; // our Sampling can do only Daily resolution
@@ -180,8 +184,8 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
         p_chartResolution = ChartResolution.Daily;
 
         string backtestAlgorithmParam = GetBacktestAlgorithmParam(p_forcedStartDate, p_forcedEndDate, AlgorithmParam); // AlgorithmParam itself 'can' have StartDate, EndDate. But ChartGenerator can further restricts the period with forcedStartDate/EndDate
-        List<Base.Trade>? portTradeHist = this.GetTradeHistory(); // Don't filter TradeHist based on StartDate, because to properly backtest we need the initial trades that happende Before StartDate. StartDate refers to the ChartGeneration usually. But we have to simulate previous buying trades, even before StartDate.
-        BacktestingResultHandler backtestResults = Backtester.BacktestInSeparateThreadWithTimeout(algorithmName, backtestAlgorithmParam, portTradeHist, @"{""ema-fast"":10,""ema-slow"":20}", backtestConfig);
+        List<Base.Trade>? portTradeHist = this.GetTradeHistory(); // Don't filter TradeHist based on StartDate, because to properly backtest we need the initial trades that happend Before StartDate. StartDate refers to the ChartGeneration usually. But we have to simulate previous buying trades, even before StartDate.
+        BacktestingResultHandler backtestResults = Backtester.BacktestInSeparateThreadWithTimeout(p_algorithmName, backtestAlgorithmParam, portTradeHist, @"{""ema-fast"":10,""ema-slow"":20}", backtestConfig);
         if (backtestResults == null)
             return "Error in Backtest";
 

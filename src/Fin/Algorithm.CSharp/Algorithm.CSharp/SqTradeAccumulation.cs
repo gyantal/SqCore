@@ -43,6 +43,8 @@ namespace QuantConnect.Algorithm.CSharp
             DateTime prevDate = DateTime.MinValue; // For checking if the trades are sorted by date
             foreach (Fin.Base.Trade? trade in this.PortTradeHist)
             {
+                if (trade.AssetType == AssetType.Option) // TEMP: disable options for now as "TMF 231215C00064000" causes exceptions
+                    continue;
                 if (trade.Time < prevDate) // We Assume that trades are sotred by date. Hard requirement. If not, we don't process further, forcing the user to change the trades. This is for the purpose of fast execution.
                     throw new Exception("Tradelist (PortfolioTradeHistory) is not sorted by date.");
                 prevDate = trade.Time;
@@ -109,6 +111,8 @@ namespace QuantConnect.Algorithm.CSharp
             _tickers = new HashSet<string>();
             foreach (Trade trade in this.PortTradeHist)
             {
+                if (trade.AssetType == AssetType.Option) // TEMP: disable options for now as "TMF 231215C00064000" causes exceptions
+                    continue;
                 if (trade.Action == TradeAction.Unknown)
                     throw new SqException("Error. Unknown TradeAction.");
                 if (trade.Action == TradeAction.Deposit || trade.Action == TradeAction.Withdrawal)

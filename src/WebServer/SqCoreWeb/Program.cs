@@ -426,7 +426,7 @@ public partial class Program
                     List<Trade>? portTradeHist = new();
                     Utils.BenchmarkElapsedTime("GetPortfolioTradeHistory()", () =>
                     {
-                        portTradeHist = MemDb.gMemDb.GetPortfolioTradeHistoryToList(1, null, null);
+                        portTradeHist = MemDb.gMemDb.GetPortfolioTradeHistoryToList(1, null, null); // TradeHistory = 1 is used by Portfolio 21 : "TradePortfolio test 1"
                     });
 
                     Console.WriteLine($"portTradeHist.Count: {(portTradeHist == null ? 0 : portTradeHist.Count)}");
@@ -449,8 +449,7 @@ public partial class Program
 
                     Utils.BenchmarkElapsedTime("WritePortfolioTradeHistory()", () =>
                     {
-                        // MemDb.gMemDb.WritePortfolioTradeHistory(44, testTrades, true);
-                        MemDb.gMemDb.AppendPortfolioTradeHistory(35, testTrades, true);
+                        MemDb.gMemDb.AppendPortfolioTradeHistory(0, testTrades, true); // be careful not to overwrite valid tradeHistoryId that is used by any portfolio. Use Id = 0 for debugging. It is not used by any portfolio.
                     });
                     Console.WriteLine($"WritePortfolioTradeHistory(): OK.");
                 }
@@ -462,7 +461,7 @@ public partial class Program
             case "8":
                 try
                 {
-                    MemDb.gMemDb.DeletePortfolioTradeHistory(35);
+                    MemDb.gMemDb.DeletePortfolioTradeHistory(0);
                     // int id = MemDb.gMemDb.InsertPortfolioTradeHistory(new List<Trade>());
                 }
                 catch (System.Exception e)
