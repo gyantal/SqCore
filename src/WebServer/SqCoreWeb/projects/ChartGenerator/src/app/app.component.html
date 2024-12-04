@@ -49,12 +49,38 @@
       <button class="btnCommon" (click)="onClickClearBacktestedBnmrks()" [disabled]="m_backtestedBenchmarks.length <= 0">Clear</button>
     </span>
   </span>
-  <span class="commonColStyle" id="techIndicators">
-    Tech Indicators
-  </span>
   <span class="commonColStyle" id="others">
-    Others
+    Tech Indicators / Others
   </span>
+  <table class="tableCommon">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th title="Leverage multiplier applied to the daily PctChg to create a synthetic version.">LeverageMultiplier</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let item of m_backtestedPortfoliosWithLeverage">
+        <td>{{item.name}}</td>
+        <td><input type="text" [value]="(item.leverage > 0 ? '&#43;' : '') +  item.leverage"></td> <!-- minus sign(-) is automatically assigned for negative leverage value -->
+      </tr>
+    </tbody>
+  </table>
+<br>
+  <table class="tableCommon">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th title="Leverage multiplier applied to the daily PctChg to create a synthetic version.">LeverageMultiplier</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let item of m_backtestedBenchmarksWithLevarage">
+        <td>{{item.name}}</td>
+        <td><input type="text" [value]="(item.leverage > 0 ? '&#43;' : '') +  item.leverage"></td> <!-- minus sign(-) is automatically assigned for negative leverage value -->
+      </tr>
+    </tbody>
+  </table>
   <span>
     <span class="range">Range:
       <div class="selectionDropDown">

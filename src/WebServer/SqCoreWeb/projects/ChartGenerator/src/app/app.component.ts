@@ -28,6 +28,11 @@ export class ChrtGenDiagnostics { // have to export the class, because .mainTsTi
   public serverBacktestTime: number = 0; // msec
 }
 
+class LeverageMultiplier { // Class name TBD
+  name: string = ''; // it can be portfolio or benchmark
+  leverage: number = 1.0; // Default value
+}
+
 export const gChrtGenDiag: ChrtGenDiagnostics = new ChrtGenDiagnostics();
 
 @Component({
@@ -53,6 +58,14 @@ export class AppComponent implements OnInit {
   m_detailedStatistics: DetailedStatistics = new DetailedStatistics();
   m_backtestedPortfolios: PortfolioJs[] = [];
   m_backtestedBenchmarks: string[] = [];
+  m_backtestedPortfoliosWithLeverage: LeverageMultiplier[] = [ // dummy data
+    { name: '*PctAllocation SPY/TLT(60/40)', leverage: 1.5 },
+    { name: 'LegacyDb: !IB-V Sobek-HL(Contango-Bond) harvester Agy Live', leverage: -1.2 }
+  ];
+  m_backtestedBenchmarksWithLevarage: LeverageMultiplier[] = [ // dummy data
+    { name: 'SPY', leverage: 2.0 },
+    { name: 'TLT', leverage: 1.0 }
+  ];
 
   // BacktestResults and charts sections
   m_chrtGenBacktestResults: Nullable<ChrtGenBacktestResult> = null;

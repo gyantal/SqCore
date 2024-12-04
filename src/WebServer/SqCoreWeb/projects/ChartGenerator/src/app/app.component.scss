@@ -15,7 +15,7 @@
 
 .commonColStyle { // same style for all the div's of Portfolios, StockAndIndexex, TechIndicators and others ( 4 sections similar to sniffeQuant Chart Generator)
   display: inline-block; // will achieve a side-by-side layout for the elements while still having the ability to control their width, height, and spacing
-  width: 24.8%;
+  width: 32.8%;
   min-height: 8rem;
   margin-bottom: 0.5rem;
   padding-left: 0.5rem;
@@ -245,7 +245,6 @@ table {
   width: 100%;
   border-collapse: collapse;
   align-items: stretch;
-  white-space: nowrap; // nowrap auto adjust the text with multiple lined to a single line
 }
 
 thead {
