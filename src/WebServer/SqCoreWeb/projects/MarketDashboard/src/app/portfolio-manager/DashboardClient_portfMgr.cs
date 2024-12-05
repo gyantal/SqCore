@@ -186,15 +186,10 @@ public partial class DashboardClient
         string userNote = p_msg.Substring(userNoteIdx + 1, legacyPrtfIdx - userNoteIdx - "&legPrtfNm=".Length);
         string legacyPrtfName = p_msg[(legacyPrtfIdx + 1)..];
 
-        pfName = UiUtils.DecodeUrlEncodedChars(pfName);
-        algorithmParam = UiUtils.DecodeUrlEncodedChars(algorithmParam);
-        userNote = UiUtils.DecodeUrlEncodedChars(userNote);
-        legacyPrtfName = UiUtils.DecodeUrlEncodedChars(legacyPrtfName);
-
         string? errMsg = GetRealParentFldId(virtualParentFldId, out User? user, out int realParentFldId);
         if (errMsg == null)
         {
-            errMsg = MemDb.gMemDb.AddOrEditPortfolio(id, user, pfName, realParentFldId, AssetHelper.gStrToCurrency[currency], AssetHelper.gStrToPortfolioType[prtfType], algorithm, algorithmParam, AssetHelper.gStrToSharedAccess[userAccess], userNote, tradeHistoryId, legacyPrtfName, out Portfolio? p_newItem);
+            errMsg = MemDb.gMemDb.AddOrEditPortfolio(id, user, UiUtils.DecodeUrlEncodedChars(pfName), realParentFldId, AssetHelper.gStrToCurrency[currency], AssetHelper.gStrToPortfolioType[prtfType], algorithm, UiUtils.DecodeUrlEncodedChars(algorithmParam), AssetHelper.gStrToSharedAccess[userAccess], UiUtils.DecodeUrlEncodedChars(userNote), tradeHistoryId, UiUtils.DecodeUrlEncodedChars(legacyPrtfName), out Portfolio? p_newItem);
             if (errMsg == String.Empty && p_newItem == null)
                 errMsg = "Error. Portfolio change was not done.";
         }

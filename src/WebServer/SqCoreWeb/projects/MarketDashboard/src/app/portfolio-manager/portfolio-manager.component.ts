@@ -35,7 +35,6 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
   editedFolder: FolderJs = new FolderJs(); // create or edit folder
   parentfolderName: string | null = ''; // displaying next to the selected parent folder id on Ui
   editedPortfolio: PortfolioJs = new PortfolioJs(); // create or edit portfolio
-  createOrEditMode: string = ''; // common for both portfolio and folder
   isViewedPortfolioSaveAllowed: boolean = false;
   loggedInUser: string = '';
   currencyType: string[] = ['USD', 'EUR', 'GBP', 'GBX', 'HUF', 'JPY', 'CAD', 'CNY', 'CHF'];
@@ -245,19 +244,18 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
   }
 
   // Create or Edit Folder
-  showCreateOrEditFolderPopup(createOrEditMode: string) { // mode is create or edit
+  showCreateOrEditFolderPopup(mode: string) { // mode is create or edit
     const lastSelectedTreeNode = this.treeViewState.lastSelectedItem;
     if (lastSelectedTreeNode == null || lastSelectedTreeNode.prtfItemType != 'Folder') {
       console.log('Cannot Create/Edit, because no folder or portfolio was selected.');
       return;
     }
 
-    console.log('showCreateOrEditFolderPopup(): Mode', this.createOrEditMode);
+    console.log('showCreateOrEditFolderPopup(): Mode', mode);
 
     this.isCreateOrEditFolderPopupVisible = true;
     this.isCreateOrEditPortfolioPopupVisible = false; // close the portfolio popup if it is left open by the user
-    this.createOrEditMode = createOrEditMode;
-    if (this.createOrEditMode == 'create') {
+    if (mode == 'create') {
       this.editedFolder = new FolderJs();
       this.editedFolder.parentFolderId = lastSelectedTreeNode?.id!; // for creating new folder it needs the parentFolderId(i.e. lastSelectedId), so that it can create child folder inside the parent.
       this.parentfolderName = lastSelectedTreeNode?.name!;
@@ -309,25 +307,25 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
   }
 
   // Create or Edit Portfolio
-  showCreateOrEditPortfolioPopup(createOrEditMode: string) {
+  showCreateOrEditPortfolioPopup(mode: string) { // mode is create or edit
     const lastSelectedTreeNode = this.treeViewState.lastSelectedItem;
     if (lastSelectedTreeNode == null) {
       console.log('Cannot Create/Edit, because no Portfolio was selected.');
       return;
     }
-    this.createOrEditMode = createOrEditMode;
-    console.log('showCreateOrEditPortfolioPopup(): Mode', this.createOrEditMode);
-    if (createOrEditMode == 'create' && lastSelectedTreeNode?.prtfItemType == PrtfItemType.Portfolio) {
+
+    console.log('showCreateOrEditPortfolioPopup(): Mode', mode);
+    if (mode == 'create' && lastSelectedTreeNode?.prtfItemType == PrtfItemType.Portfolio) {
       console.log('Portfolio creation is not allowed under the portfolio');
       return;
     }
 
-    if (this.createOrEditMode == 'edit' && lastSelectedTreeNode?.prtfItemType == PrtfItemType.Folder) // simply return , if user clicks on EditPortfolio but the lastSelectedItem is a Folder.
+    if (mode == 'edit' && lastSelectedTreeNode?.prtfItemType == PrtfItemType.Folder) // simply return , if user clicks on EditPortfolio but the lastSelectedItem is a Folder.
       return;
 
     this.isCreateOrEditFolderPopupVisible = false; // close the folder popup if it is left open by the user
     this.isCreateOrEditPortfolioPopupVisible = true;
-    if (this.createOrEditMode == 'create') {
+    if (mode == 'create') {
       this.editedPortfolio = new PortfolioJs();
       this.editedPortfolio.parentFolderId = lastSelectedTreeNode?.id!;
       this.parentfolderName = lastSelectedTreeNode?.name!;
@@ -356,15 +354,11 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
     this.isCreateOrEditPortfolioPopupVisible = false;
   }
 
-  onChangePortfolioType(event: Event) { // setting the default algorithm for portfolioType of 'LegacyDbTrades'
+  onChangePortfolioType(event: Event) {
     const portfolioType: string = (event.target as HTMLInputElement).value.trim();
     this.editedPortfolio.type = portfolioType;
-    if (this.createOrEditMode == 'create' && portfolioType == 'LegacyDbTrades') // Added the createOrEdit condition to retain the existing algorithm even when the user edits the portfolio.
-      this.editedPortfolio.algorithm = 'SqTradeAccumulation';
-    else if (this.createOrEditMode == 'create' && portfolioType != 'LegacyDbTrades') { // for non legacyDbTrades we need to clean the algorithm and legacyDbPortfName (e.g, If after selecting LegacyDb, then user select other type, then clear the Algorithm and Clear the LegacyDbPortfName)
-      this.editedPortfolio.algorithm = '';
+    if (portfolioType != 'LegacyDbTrades') // for non legacyDbTrades we need to clean legacyDbPortfName (e.g, If after selecting LegacyDb, then user select other type, then clear the Algorithm and Clear the LegacyDbPortfName)
       this.editedPortfolio.legacyDbPortfName = '';
-    }
   }
 
   onCreateOrEditPortfolioClicked() {
@@ -383,13 +377,8 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
       return;
     }
 
-    this.editedPortfolio.name = urlEncodeChars(this.editedPortfolio.name);
-    this.editedPortfolio.algorithmParam = urlEncodeChars(this.editedPortfolio.algorithmParam);
-    this.editedPortfolio.note = urlEncodeChars(this.editedPortfolio.note);
-    this.editedPortfolio.legacyDbPortfName = urlEncodeChars(this.editedPortfolio.legacyDbPortfName);
-
     if (this._parentWsConnection && this._parentWsConnection.readyState === WebSocket.OPEN)
-      this._parentWsConnection.send(`PortfMgr.CreateOrEditPortfolio:id=${this.editedPortfolio.id}&name=${this.editedPortfolio.name}&prntFId=${this.editedPortfolio.parentFolderId}&currency=${this.editedPortfolio.baseCurrency}&type=${this.editedPortfolio.type}&algo=${this.editedPortfolio.algorithm}&algoP=${this.editedPortfolio.algorithmParam}&trdHis=${this.editedPortfolio.tradeHistoryId}&access=${this.editedPortfolio.sharedAccess}&note=${this.editedPortfolio.note}&legPrtfNm=${this.editedPortfolio.legacyDbPortfName}`);
+      this._parentWsConnection.send(`PortfMgr.CreateOrEditPortfolio:id=${this.editedPortfolio.id}&name=${urlEncodeChars(this.editedPortfolio.name)}&prntFId=${this.editedPortfolio.parentFolderId}&currency=${this.editedPortfolio.baseCurrency}&type=${this.editedPortfolio.type}&algo=${this.editedPortfolio.algorithm}&algoP=${urlEncodeChars(this.editedPortfolio.algorithmParam)}&trdHis=${this.editedPortfolio.tradeHistoryId}&access=${this.editedPortfolio.sharedAccess}&note=${urlEncodeChars(this.editedPortfolio.note)}&legPrtfNm=${urlEncodeChars(this.editedPortfolio.legacyDbPortfName)}`);
     this.isCreateOrEditPortfolioPopupVisible = false;
   }
 
