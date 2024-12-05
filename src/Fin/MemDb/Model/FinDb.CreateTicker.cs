@@ -206,7 +206,7 @@ public partial class FinDb
                     decimal close = Math.Round((decimal)histResult.Closes[i] / dailyAdjFactor * 10000);
                     long volume = (long)Math.Round(histResult.Volumes[i] / dailyAdjFactor);
 
-                    oldContentBuilder.AppendLine($"{date:yyyyMMdd},{open},{high},{low},{close},{volume}");
+                    oldContentBuilder.AppendLine($"{date:yyyyMMdd} 00:00,{open},{high},{low},{close},{volume}");
                 }
 
                 // Create a ZIP file for each old ticker in the daily folder

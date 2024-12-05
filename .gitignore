@@ -64,6 +64,8 @@ Cargo.lock
 !**/Fin/Data/equity/usa/daily/oac.zip
 !**/Fin/Data/equity/usa/daily/vxxb.zip
 !**/Fin/Data/equity/usa/daily/vxzb.zip
+!**/Fin/Data/equity/usa/daily/pcln.zip
+!**/Fin/Data/equity/usa/daily/isrgd.zip
 
 # SIN stocks:
 !**/Fin/Data/equity/usa/daily/ald.zip

@@ -64,11 +64,20 @@ namespace QuantConnect.Data.Market
         /// <param name="referencePrice">The previous day's closing price</param>
         /// <param name="priceFactorRatio">The ratio of the price factors, pf_i/pf_i+1</param>
         /// <param name="decimalPlaces">The number of decimal places to round the dividend's distribution to, defaulting to 2</param>
-        public static Dividend Create(Symbol symbol, DateTime date, decimal referencePrice, decimal priceFactorRatio, int decimalPlaces = 2)
+        // SqCore Change ORIGINAL:
+        // public static Dividend Create(Symbol symbol, DateTime date, decimal referencePrice, decimal priceFactorRatio, int decimalPlaces = 2)
+        // {
+        //     var distribution = ComputeDistribution(referencePrice, priceFactorRatio, decimalPlaces);
+        //     return new Dividend(symbol, date, distribution, referencePrice);
+        // }
+        // SqCore Change NEW:
+        // Changed default decimalPlaces from 2 => 5, because accurate dividends can be valid for 5 decimal digits. E.g. https://www.nasdaq.com/market-activity/etf/tmv/dividend-history
+        public static Dividend Create(Symbol symbol, DateTime date, decimal referencePrice, decimal priceFactorRatio, int decimalPlaces = 5)
         {
             var distribution = ComputeDistribution(referencePrice, priceFactorRatio, decimalPlaces);
             return new Dividend(symbol, date, distribution, referencePrice);
         }
+        // SqCore Change END
 
         /// <summary>
         /// Computes the price factor ratio given the previous day's closing price and the p
