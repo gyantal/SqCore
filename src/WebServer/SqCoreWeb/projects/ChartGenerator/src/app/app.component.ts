@@ -14,7 +14,7 @@ type Nullable<T> = T | null;
 class HandshakeMessage {
   public email = '';
   public anyParam = -1;
-  public prtfsToClient: Nullable<PortfolioJs[]> = null;
+  public prtfsToClient: Nullable<PortfolioJsEx[]> = null;
   public fldrsToClient: Nullable<FolderJs[]> = null;
 }
 
@@ -28,9 +28,13 @@ export class ChrtGenDiagnostics { // have to export the class, because .mainTsTi
   public serverBacktestTime: number = 0; // msec
 }
 
-class LeverageMultiplier { // Class name TBD
-  name: string = ''; // it can be portfolio or benchmark
-  leverage: number = 1.0; // Default value
+class PortfolioJsEx extends PortfolioJs {
+  public leverage: number = 1.0; // default value
+}
+
+class BenchmarkEx {
+  public ticker = '';
+  public leverage: number = 1.0; // default value
 }
 
 export const gChrtGenDiag: ChrtGenDiagnostics = new ChrtGenDiagnostics();
@@ -48,7 +52,7 @@ export class AppComponent implements OnInit {
   m_prtfIds: Nullable<string> = null;
   m_treeViewState: TreeViewState = new TreeViewState();
   m_uiNestedPrtfTreeViewItems: TreeViewItem[] = [];
-  m_allPortfolios: Nullable<PortfolioJs[]> = null;
+  m_allPortfolios: Nullable<PortfolioJsEx[]> = null;
   m_allFolders: Nullable<FolderJs[]> = null;
   m_prtfSelectedName: Nullable<string> = null;
   m_prtfSelectedId: number = 0;
@@ -56,16 +60,8 @@ export class AppComponent implements OnInit {
   m_sqStatisticsbuilder: SqStatisticsBuilder = new SqStatisticsBuilder();
   m_backtestStatsResults: StatisticsResults[] = [];
   m_detailedStatistics: DetailedStatistics = new DetailedStatistics();
-  m_backtestedPortfolios: PortfolioJs[] = [];
-  m_backtestedBenchmarks: string[] = [];
-  m_backtestedPortfoliosWithLeverage: LeverageMultiplier[] = [ // dummy data
-    { name: '*PctAllocation SPY/TLT(60/40)', leverage: 1.5 },
-    { name: 'LegacyDb: !IB-V Sobek-HL(Contango-Bond) harvester Agy Live', leverage: -1.2 }
-  ];
-  m_backtestedBenchmarksWithLevarage: LeverageMultiplier[] = [ // dummy data
-    { name: 'SPY', leverage: 2.0 },
-    { name: 'TLT', leverage: 1.0 }
-  ];
+  m_backtestedPortfolios: PortfolioJsEx[] = [];
+  m_backtestedBenchmarks: BenchmarkEx[] = [];
 
   // BacktestResults and charts sections
   m_chrtGenBacktestResults: Nullable<ChrtGenBacktestResult> = null;
@@ -114,8 +110,9 @@ export class AppComponent implements OnInit {
     const url = new URL(window.location.href);
     const bmrksTickers: string[] = url.searchParams.get('bmrks')!.trim().split(',');
     for (const item of bmrksTickers) {
-      if (!this.m_backtestedBenchmarks.includes(item)) // check if the item is included or not
-        this.m_backtestedBenchmarks.push(item);
+      const bmrkItem = new BenchmarkEx();
+      bmrkItem.ticker = item;
+      this.m_backtestedBenchmarks.push(bmrkItem);
     }
 
     this.onStartBacktests();
@@ -167,8 +164,10 @@ export class AppComponent implements OnInit {
           for (let i = 0; i < prtfStrIds.length; i++) {
             for (let j = 0; j < this.m_allPortfolios.length; j++) {
               const id = this.m_allPortfolios[j].id - this.gPortfolioIdOffset;
-              if (id == parseInt(prtfStrIds[i]))
+              if (id == parseInt(prtfStrIds[i])) {
+                this.m_allPortfolios[j].leverage = 1.0; // default value
                 this.m_backtestedPortfolios.push(this.m_allPortfolios[j]);
+              }
             }
           }
           break;
@@ -346,9 +345,16 @@ export class AppComponent implements OnInit {
   onStartBacktestsClicked() {
     if (this._socket != null && this._socket.readyState == this._socket.OPEN) {
       this.m_prtfIds = ''; // empty the prtfIds
-      for (const item of this.m_backtestedPortfolios) // iterate to add the backtested portfolioIds selected by the user
-        this.m_prtfIds += item.id - this.gPortfolioIdOffset + ',';
-      this.m_bmrks = this.m_backtestedBenchmarks.join(',');
+      for (let i = 0; i < this.m_backtestedPortfolios.length; i++) { // iterate to add the backtested portfolioIds selected by the user
+        const id = this.m_backtestedPortfolios[i].id - this.gPortfolioIdOffset;
+        if (!this.m_prtfIds.includes(id + ',')) // Check if the id is already in the this.m_prtfIds string
+          this.m_prtfIds += id + (i < this.m_backtestedPortfolios.length - 1 ? ',' : ''); // appends a comma only if the current item is not the last.
+      }
+      this.m_bmrks = '';
+      for (let i = 0; i < this.m_backtestedBenchmarks.length; i++ ) {
+        if (!this.m_bmrks.includes(this.m_backtestedBenchmarks[i].ticker + ',')) // Check if the ticker is already in the this.m_bmrks string
+          this.m_bmrks += this.m_backtestedBenchmarks[i].ticker + (i < this.m_backtestedBenchmarks.length - 1 ? ',' : '');
+      }
       this.onStartBacktests();
       this._socket.send('RunBacktest:' + '?pids=' + this.m_prtfIds + '&bmrks=' + this.m_bmrks); // parameter example can be pids=1,13,6&bmrks=SPY,QQQ&start=20210101&end=20220305
     }
@@ -446,8 +452,9 @@ export class AppComponent implements OnInit {
   onClickBmrkSelectedForBacktest() {
     const bmrkArray: string[] = this.m_bmrks!.trim().split(',');
     for (const item of bmrkArray) {
-      if (!this.m_backtestedBenchmarks.includes(item)) // check if the item is included or not
-        this.m_backtestedBenchmarks.push(item);
+      const bmrkItem: BenchmarkEx = new BenchmarkEx();
+      bmrkItem.ticker = item;
+      this.m_backtestedBenchmarks.push(bmrkItem);
     }
     this.m_bmrks = ''; // clearing the textbox after inserting the bmrks.
   }
@@ -467,8 +474,10 @@ export class AppComponent implements OnInit {
 
     for (const checkedItem of checkedItems) {
       const portfolioItem = this.m_allPortfolios!.find((item) => item.id == checkedItem.id);
-      if (portfolioItem != null && !this.m_backtestedPortfolios.includes(portfolioItem))
+      if (portfolioItem != null) {
+        portfolioItem.leverage = 1.0;
         this.m_backtestedPortfolios.push(portfolioItem);
+      }
     }
 
     // Reset PrtfTreeviewItems state
