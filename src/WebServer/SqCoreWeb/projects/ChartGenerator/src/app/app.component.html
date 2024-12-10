@@ -49,7 +49,7 @@
       <tbody>
         <tr *ngFor="let item of m_backtestedPortfolios">
           <td>{{item.name}}</td>
-          <td><input class="leverageInput" type="text" [value]="(item.leverage > 0 ? '&#43;' : '') + (item.leverage | number:'1.2-2')"></td> <!-- plus sign html code(&#43;), minus sign(-) is automatically assigned for negative leverage value-->
+          <td><input class="leverageInput" type="text" [value]="(item.leverage > 0 ? '&#43;' : '') + (item.leverage | number:'1.2-2')" (change)="onChangePrtfLeverage($event, item)"></td> <!-- plus sign html code(&#43;), minus sign(-) is automatically assigned for negative leverage value-->
         </tr>
       </tbody>
     </table>
@@ -72,7 +72,7 @@
       <tbody>
         <tr *ngFor="let item of m_backtestedBenchmarks">
           <td>{{item.ticker}}</td>
-          <td><input type="text" class="leverageInput" [value]="(item.leverage > 0 ? '&#43;' : '') + (item.leverage | number:'1.2-2')"></td> <!-- plus sign html code(&#43;), minus sign(-) is automatically assigned for negative leverage value -->
+          <td><input type="text" class="leverageInput" [value]="(item.leverage > 0 ? '&#43;' : '') + (item.leverage | number:'1.2-2')" (change)="onChangeBmrkLeverage($event, item)"></td> <!-- plus sign html code(&#43;), minus sign(-) is automatically assigned for negative leverage value -->
         </tr>
       </tbody>
     </table>
@@ -127,7 +127,7 @@
       <thead>
         <tr>
           <th>DetailedStatistics</th>
-          <th *ngFor="let item of m_backtestStatsResults;">{{item.name}}</th>
+          <th *ngFor="let item of m_detailedStatistics.backtestDetailedStatistics">{{item.strategyName}}</th>
         </tr>
       </thead>
       <tbody>
@@ -155,8 +155,8 @@
 <div class="progressBarContainer" [ngStyle]="{'display': m_isProgressBarVisble ? 'block' : 'none'}">
   <div class="progressBar"></div>
 </div>
-<div *ngFor="let item of m_backtestStatsResults; let i = index"><br>
-  <p><b>Seasonality: </b> Displays mean and median monthly returns in order to identify seasonal patterns of <b>{{item.name}}</b>.</p>
+<div *ngFor="let item of m_detailedStatistics.backtestDetailedStatistics; let i = index"><br>
+  <p><b>Seasonality: </b> Displays mean and median monthly returns in order to identify seasonal patterns of <b>{{item.strategyName}}</b>.</p>
   <table class="tableCommon">
     <thead>
       <tr>

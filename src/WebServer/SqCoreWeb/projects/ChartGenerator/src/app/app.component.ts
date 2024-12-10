@@ -211,19 +211,33 @@ export class AppComponent implements OnInit {
       this.updateMinMaxDates(firstValDate, lastValDate);
       if (item.chrtData.chartResolution == ChartResolution.Minute || item.chrtData.chartResolution == ChartResolution.Minute5) // Check if the portfolio is of per minute resolution
         this.m_userWarning = 'PerMinute strategies not fully supported';
-      const chartItem = this.createCgTimeSeriesFromChrtData(item.chrtData, item.name, true);
+      const filteredPortfolios: PortfolioJsEx[] = this.m_backtestedPortfolios.filter((prtf) => prtf.name == item.name);// The m_backtestedPortfolios may contain the same portfolio name with different leverage values. So, we need to execute createCgTimeSeriesFromChrtData2() twice using the same chartData but with different leverage values.
+      if (filteredPortfolios.length == 0) { // The backtestedPortfolios is populated only after "onConnected," meaning no portfolios will be added until the handshake provides the allPortfolios information (this.m_allPortfolios = handshakeMsg.prtfsToClient).
+        const leverage = 1.0;
+        const chartItem = this.createCgTimeSeriesFromChrtData2(item.chrtData, item.name, true, leverage);
+        uiPrtfResItem.prtfChrtValues.push(chartItem);
+      } else {
+        for (const prtf of filteredPortfolios) {
+          const leverage = prtf.leverage;
+          const chartItem = this.createCgTimeSeriesFromChrtData2(item.chrtData, item.name, true, leverage);
+          uiPrtfResItem.prtfChrtValues.push(chartItem);
+        }
+      }
       this.m_seasonalityData.push(getSeasonalityData(item.chrtData));
-      this.m_detailedStatistics.backtestDetailedStatistics.push(getDetailedStats(item.chrtData));
-      uiPrtfResItem.prtfChrtValues.push(chartItem);
+      this.m_detailedStatistics.backtestDetailedStatistics.push(getDetailedStats(item.chrtData, item.name));
     }
 
     for (const bmrkItem of chrtGenBacktestRes.bmrkHistories) {
       const { firstVal: firstValDate, lastVal: lastValDate } = this.getDateRangeFromChrtData(bmrkItem.chrtData);
       this.updateMinMaxDates(firstValDate, lastValDate);
-      const chartItem = this.createCgTimeSeriesFromChrtData(bmrkItem.chrtData, bmrkItem.sqTicker, false);
+      const filteredBenchmarks: BenchmarkEx[] = this.m_backtestedBenchmarks.filter((benchmark) => benchmark.ticker == bmrkItem.sqTicker);
+      for (const benchmark of filteredBenchmarks) {
+        const leverage = benchmark.leverage;
+        const chartItem = this.createCgTimeSeriesFromChrtData2(bmrkItem.chrtData, bmrkItem.sqTicker, false, leverage);
+        uiPrtfResItem.bmrkChrtValues.push(chartItem);
+      }
       this.m_seasonalityData.push(getSeasonalityData(bmrkItem.chrtData));
-      this.m_detailedStatistics.backtestDetailedStatistics.push(getDetailedStats(bmrkItem.chrtData));
-      uiPrtfResItem.bmrkChrtValues.push(chartItem);
+      this.m_detailedStatistics.backtestDetailedStatistics.push(getDetailedStats(bmrkItem.chrtData, bmrkItem.sqTicker));
     }
 
     this.getAnnualReturnYears(this.m_detailedStatistics.backtestDetailedStatistics, this.m_detailedStatistics.annualReturnYears); // Populate the annualReturnYears after the backtestDetailedStatistics for all portfolios and benchmarks have been received.
@@ -450,6 +464,8 @@ export class AppComponent implements OnInit {
   }
 
   onClickBmrkSelectedForBacktest() {
+    if (this.m_bmrks == null)
+      return;
     const bmrkArray: string[] = this.m_bmrks!.trim().split(',');
     for (const item of bmrkArray) {
       const bmrkItem: BenchmarkEx = new BenchmarkEx();
@@ -475,8 +491,9 @@ export class AppComponent implements OnInit {
     for (const checkedItem of checkedItems) {
       const portfolioItem = this.m_allPortfolios!.find((item) => item.id == checkedItem.id);
       if (portfolioItem != null) {
-        portfolioItem.leverage = 1.0;
-        this.m_backtestedPortfolios.push(portfolioItem);
+      // Clone the portfolio item to avoid shared references
+        const clonedPortfolio = { ...portfolioItem, leverage: 1.0 }; // Directly pushing reference objects from this.m_allPortfolios into this.m_backtestedPortfolios results in shared references between the two arrays, causing updates in one array to reflect in the other. To prevent this, we need to create a deep clone of the portfolioItem before adding it to this.m_backtestedPortfolios. Instead of directly adding the portfolioItem, a shallow copy ({ ...portfolioItem }) is created.
+        this.m_backtestedPortfolios.push(clonedPortfolio);
       }
     }
 
@@ -519,5 +536,47 @@ export class AppComponent implements OnInit {
       }
     }
     annualReturnYears.sort((year1: number, year2: number) => year2 - year1); // Sort the annualReturnYears array in descending order. This ensures the latest year data appears first in the list
+  }
+
+  onChangePrtfLeverage(event: Event, prtfItem: PortfolioJsEx) {
+    const leverage = parseFloat((event.target as HTMLInputElement).value.trim());
+    prtfItem.leverage = leverage;
+    if (!this.m_backtestedPortfolios.includes(prtfItem))
+      this.m_backtestedPortfolios.push(prtfItem);
+  }
+
+  onChangeBmrkLeverage(event: Event, bmrkItem: BenchmarkEx) {
+    const leverage = parseFloat((event.target as HTMLInputElement).value.trim());
+    bmrkItem.leverage = leverage;
+    if (!this.m_backtestedBenchmarks.includes(bmrkItem))
+      this.m_backtestedBenchmarks.push(bmrkItem);
+  }
+
+  // Common function for both portfolios and bmrks to create chartGenerator TimeSeries data
+  createCgTimeSeriesFromChrtData2(chrtData: ChartJs, name: string, isPrimary: boolean, leverage: number): CgTimeSeries { // Temporary until the method is finalized
+    const chartItem = new CgTimeSeries();
+    chartItem.name = name;
+    chartItem.chartResolution = ChartResolution[chrtData.chartResolution];
+    chartItem.linestyle = isPrimary ? LineStyle.Solid : LineStyle.Dashed;
+    chartItem.isPrimary = isPrimary;
+    chartItem.priceData = [];
+
+    const isLeveraged: boolean = leverage != 1;
+    if (isLeveraged) {
+      let preVal = chrtData.values[0]; // Initialize preVal with the first value in the array
+      for (let index = 1; index < chrtData.dates.length; index++) {
+        const curVal = chrtData.values[index];
+        const pctChg = curVal / preVal - 1;
+        const pctChgLev = pctChg * leverage;
+        chrtData.values[index] = parseFloat((chrtData.values[index - 1] * (1 + pctChgLev)).toFixed(4));
+        preVal = curVal; // Update preVal for the next iteration
+      }
+    }
+
+    for (let i = 0; i < chrtData.dates.length; i++) {
+      const chrtItem = this.createUiChartPointFromChrtData(chrtData, i);
+      chartItem.priceData.push(chrtItem);
+    }
+    return chartItem;
   }
 }
