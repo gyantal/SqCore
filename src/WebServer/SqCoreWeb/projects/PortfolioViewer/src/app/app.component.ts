@@ -232,7 +232,7 @@ export class AppComponent {
     }
     if (!isMonthlySeasonalityAvgArrayAllNaN)
       this.processUiWithSeasonalityChart(this.m_seasonalityData);
-    this.m_detailedStatistics = getDetailedStats(this.m_prtfRunResult!.chrtData);
+    this.m_detailedStatistics = getDetailedStats(this.m_prtfRunResult!.chrtData, this.m_prtfRunResult!.name);
   }
 
   getFundamentalData() {
