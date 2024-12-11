@@ -49,14 +49,12 @@ export class AppComponent implements OnInit {
   @ViewChild(SqTreeViewComponent) public _rootTreeComponent!: SqTreeViewComponent; // allows accessing the data from child to parent
 
   // Portfolios & BenchMark Sections
-  m_prtfIds: Nullable<string> = null;
   m_treeViewState: TreeViewState = new TreeViewState();
   m_uiNestedPrtfTreeViewItems: TreeViewItem[] = [];
   m_allPortfolios: Nullable<PortfolioJsEx[]> = null;
   m_allFolders: Nullable<FolderJs[]> = null;
   m_prtfSelectedName: Nullable<string> = null;
   m_prtfSelectedId: number = 0;
-  m_bmrks: Nullable<string> = null; // benchmarks
   m_sqStatisticsbuilder: SqStatisticsBuilder = new SqStatisticsBuilder();
   m_backtestStatsResults: StatisticsResults[] = [];
   m_detailedStatistics: DetailedStatistics = new DetailedStatistics();
@@ -358,22 +356,20 @@ export class AppComponent implements OnInit {
 
   onStartBacktestsClicked() {
     if (this._socket != null && this._socket.readyState == this._socket.OPEN) {
-      this.m_prtfIds = ''; // empty the prtfIds
-      for (let i = 0; i < this.m_backtestedPortfolios.length; i++) { // iterate to add the backtested portfolioIds selected by the user
+      const uniquePrtfIds: number[] = [];
+      for (let i = 0; i < this.m_backtestedPortfolios.length; i++) {
         const id = this.m_backtestedPortfolios[i].id - this.gPortfolioIdOffset;
-        if (!this.m_prtfIds.includes(id + ',')) // Check if the id is already in the this.m_prtfIds string
-          this.m_prtfIds += id + (i < this.m_backtestedPortfolios.length - 1 ? ',' : ''); // appends a comma only if the current item is not the last.
+        if (!uniquePrtfIds.includes(id))
+          uniquePrtfIds.push(id);
       }
-      this.m_bmrks = '';
-      for (let i = 0; i < this.m_backtestedBenchmarks.length; i++ ) {
-        if (!this.m_bmrks.includes(this.m_backtestedBenchmarks[i].ticker + ',')) // Check if the ticker is already in the this.m_bmrks string
-          this.m_bmrks += this.m_backtestedBenchmarks[i].ticker + (i < this.m_backtestedBenchmarks.length - 1 ? ',' : '');
+      const uniqueBmrks: string[] = [];
+      for (let i = 0; i < this.m_backtestedBenchmarks.length; i++) {
+        if (!uniqueBmrks.includes(this.m_backtestedBenchmarks[i].ticker))
+          uniqueBmrks.push(this.m_backtestedBenchmarks[i].ticker);
       }
       this.onStartBacktests();
-      this._socket.send('RunBacktest:' + '?pids=' + this.m_prtfIds + '&bmrks=' + this.m_bmrks); // parameter example can be pids=1,13,6&bmrks=SPY,QQQ&start=20210101&end=20220305
+      this._socket.send('RunBacktest:' + '?pids=' + uniquePrtfIds.toString() + '&bmrks=' + uniqueBmrks.toString()); // parameter example can be pids=1,13,6&bmrks=SPY,QQQ&start=20210101&end=20220305
     }
-    this.m_bmrks = ''; // we need to immediatley make it empty else there will be a blink of a bmrk value in the input box.
-    console.log('the prtfIds length is:', this.m_prtfIds);
   }
 
   showProgressBar() {
@@ -463,16 +459,15 @@ export class AppComponent implements OnInit {
     this.m_backtestedPortfolios.length = 0;
   }
 
-  onClickBmrkSelectedForBacktest() {
-    if (this.m_bmrks == null)
+  onClickBmrkSelectedForBacktest(benhcmarkStr: string) {
+    if (benhcmarkStr == '')
       return;
-    const bmrkArray: string[] = this.m_bmrks!.trim().split(',');
+    const bmrkArray: string[] = benhcmarkStr.trim().split(',');
     for (const item of bmrkArray) {
       const bmrkItem: BenchmarkEx = new BenchmarkEx();
       bmrkItem.ticker = item;
       this.m_backtestedBenchmarks.push(bmrkItem);
     }
-    this.m_bmrks = ''; // clearing the textbox after inserting the bmrks.
   }
 
   onClickClearBacktestedBnmrks() { // clear the user selected backtested Benchmarks
@@ -541,15 +536,11 @@ export class AppComponent implements OnInit {
   onChangePrtfLeverage(event: Event, prtfItem: PortfolioJsEx) {
     const leverage = parseFloat((event.target as HTMLInputElement).value.trim());
     prtfItem.leverage = leverage;
-    if (!this.m_backtestedPortfolios.includes(prtfItem))
-      this.m_backtestedPortfolios.push(prtfItem);
   }
 
   onChangeBmrkLeverage(event: Event, bmrkItem: BenchmarkEx) {
     const leverage = parseFloat((event.target as HTMLInputElement).value.trim());
     bmrkItem.leverage = leverage;
-    if (!this.m_backtestedBenchmarks.includes(bmrkItem))
-      this.m_backtestedBenchmarks.push(bmrkItem);
   }
 
   // Common function for both portfolios and bmrks to create chartGenerator TimeSeries data

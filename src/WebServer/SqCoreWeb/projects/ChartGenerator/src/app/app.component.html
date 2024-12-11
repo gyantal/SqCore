@@ -56,8 +56,8 @@
   </span>
   <span class="commonColStyle" id="stockAndIndexes">
     StockAndIndexes<br>
-    <span>Benchmarks: <input class="highlightInputBox" oninput="this.value = this.value.toUpperCase()" id="bmrks" type="text" [(ngModel)]="m_bmrks"></span>&nbsp;
-    <button class="btnCommon" (click)="onClickBmrkSelectedForBacktest()">Insert</button>
+    <span>Benchmarks: <input class="highlightInputBox" oninput="this.value = this.value.toUpperCase()" id="bmrks" type="text" #benchmarkInput></span>&nbsp;
+    <button class="btnCommon" (click)="onClickBmrkSelectedForBacktest(benchmarkInput.value)">Insert</button>
     <div class="backtestPrtfOrBmrkSelected" *ngFor="let item of m_backtestedBenchmarks">{{item.ticker}}</div>&nbsp;
     <span>
       <button class="btnCommon" (click)="onClickClearBacktestedBnmrks()" [disabled]="m_backtestedBenchmarks.length <= 0">Clear</button>
@@ -127,7 +127,7 @@
       <thead>
         <tr>
           <th>DetailedStatistics</th>
-          <th *ngFor="let item of m_detailedStatistics.backtestDetailedStatistics">{{item.strategyName}}</th>
+          <th *ngFor="let item of m_detailedStatistics.backtestDetailedStatistics">{{item.name}}</th>
         </tr>
       </thead>
       <tbody>
@@ -156,7 +156,7 @@
   <div class="progressBar"></div>
 </div>
 <div *ngFor="let item of m_detailedStatistics.backtestDetailedStatistics; let i = index"><br>
-  <p><b>Seasonality: </b> Displays mean and median monthly returns in order to identify seasonal patterns of <b>{{item.strategyName}}</b>.</p>
+  <p><b>Seasonality: </b> Displays mean and median monthly returns in order to identify seasonal patterns of <b>{{item.name}}</b>.</p>
   <table class="tableCommon">
     <thead>
       <tr>

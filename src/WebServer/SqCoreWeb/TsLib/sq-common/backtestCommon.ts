@@ -663,7 +663,7 @@ export function getDetailedStats(chartData: ChartJs, name: string): BacktestDeta
     iStart = iLast; // now, for the inner while loop to work again, we have to swap the indices.
   }
 
-  detailedStats.strategyName = name;
+  detailedStats.name = name;
   detailedStats.annualReturns = annualReturns.sort((annualReturn1: AnnualReturn, annualReturn2: AnnualReturn) => annualReturn2.year - annualReturn1.year); // Sort the annualReturns array in descending order. This ensures the latest year data appears first in the list;
   // Calculate the annualized returns for the last 3 and 5 years
   const numOfYears: number = annualReturns.length;

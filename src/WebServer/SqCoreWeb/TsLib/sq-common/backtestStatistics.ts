@@ -30,7 +30,7 @@ export class DetailedStatistics {
 }
 
 export class BacktestDetailedStatistics {
-  public strategyName: string = '';
+  public name: string = '';
   public annualReturns: AnnualReturn[] = [];
   public last3YearsAnnualized: number = 0;
   public last5YearsAnnualized: number = 0;
