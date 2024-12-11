@@ -83,6 +83,9 @@ Cargo.lock
 !**/Fin/Data/equity/usa/daily/uwt.zip
 !**/Fin/Data/equity/usa/daily/ziv.zip
 
+# GameChanger portfolio dead stocks from the past:
+!**/Fin/Data/equity/usa/daily/gwph.zip
+
 **/Fin/Data/equity/usa/factor_files/*
 !**/Fin/Data/equity/usa/factor_files/spy-qc.csv
 !**/Fin/Data/equity/usa/factor_files/*-sq-history.csv
@@ -94,6 +97,9 @@ Cargo.lock
 !**/Fin/Data/equity/usa/factor_files/oil.csv
 !**/Fin/Data/equity/usa/factor_files/uwt.csv
 !**/Fin/Data/equity/usa/factor_files/ziv.csv
+
+# Harry Long portfolio dead stocks from the past:
+!**/Fin/Data/equity/usa/factor_files/gwph.csv
 
 **/Fin/Data/equity/usa/fundamental/fine/**
 

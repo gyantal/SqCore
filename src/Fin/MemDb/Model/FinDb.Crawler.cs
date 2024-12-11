@@ -314,6 +314,9 @@ public partial class FinDb
             foreach (HpSplit splitTick in splits)
             {
                 DateTime date = splitTick.DateTime.Date; // YF 'chart' API gives the Time part too for dividends, splits. E.g. "2020-10-02 9:30". We need only the .Date part
+                if (date <= p_startDate) // ignore split, if split date is before startdate. E.g. GOOG 2014-04-03 startdate when there was the ticker change, and YF gives a split on that starting day too.
+                    continue;
+
                 DateTime referencePriceDate = date >= new DateTime(2001, 9, 11) && date <= new DateTime(2001, 9, 14) ? new DateTime(2001, 9, 10) : date; // see notes "Markets were closed for a week after 9/11" above
 
                 if (!rawPrevClosesDict.TryGetValue(referencePriceDate, out SqPrice? refRawClose))

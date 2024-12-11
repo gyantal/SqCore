@@ -186,6 +186,14 @@ public partial class FinDb
             // Adjust the adjFactor by applying the split factor
             adjFactor *= splitFactor;
 
+            // Use a HashSet to detect duplicate tickers
+            HashSet<string> tickerSet = new();
+            foreach ((string Ticker, DateTime StartDate, DateTime EndDate) oldTicker in oldTickers)
+            {
+                if (!tickerSet.Add(oldTicker.Ticker))
+                    throw new InvalidOperationException("The same ticker appears on multiple occasions with different dates. The history file cannot be created. Resolve this manually.");
+            }
+
             // Create the adjusted historical data for each old ticker
             foreach ((string Ticker, DateTime StartDate, DateTime EndDate) oldTicker in oldTickers)
             {
