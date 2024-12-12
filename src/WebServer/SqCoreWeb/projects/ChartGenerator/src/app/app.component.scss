@@ -36,10 +36,6 @@
   box-sizing: border-box;
 }
 
-.prtfInputWidth {
-  width: 90%;
-}
-
 .selectionDropDown {
   position: relative; // position: relative, will remain in the natural flow of the page. It will also act as anchor point for the absolutely positioned Child (listDropDown) element:
   display: inline-block;// It combines the characteristics of inline elements, which flow within the content, and block-level elements, which create line breaks and can have specified width and height
@@ -216,8 +212,8 @@ input[type="date"]::-webkit-datetime-edit-year-field {
 #prtfSelectionDialog {
   position: fixed;
   z-index: 1;
-  left: 10rem;
-  top: 4rem;
+  left: 11rem;
+  top: 2.5rem;
   overflow: auto;
   color: rgb(32, 34, 148);
   background-color: #FFA500;

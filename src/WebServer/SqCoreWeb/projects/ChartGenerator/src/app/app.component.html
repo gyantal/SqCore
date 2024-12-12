@@ -27,13 +27,6 @@
         <app-sq-tree-view [items]="m_uiNestedPrtfTreeViewItems" [treeViewState]="m_treeViewState" [rootTreeViewComponent]="_rootTreeComponent" [m_useCheckboxes]=true></app-sq-tree-view>
       </div>
       <br>
-      <span class="selectionDropDown">
-        <input class="highlightInputBox prtfInputWidth" type="text" [(ngModel)]="m_prtfSelectedName">
-        <div class="listDropDown">
-          <option class="optionDropDown" *ngFor="let item of m_allPortfolios" [value]="item.name" (click)="onClickUserSelectedPortfolio(item)">{{item.id}} : {{item.name}}</option>
-        </div>&nbsp;
-      </span>
-      <button class="btnCommon" (click)="onClickPrtfSelectedForBacktest(m_prtfSelectedId)">InsertOld</button>
       <div class="backtestPrtfOrBmrkSelected" *ngFor="let item of m_backtestedPortfolios">{{item.name}}</div>&nbsp;
       <span>
         <button class="btnCommon" (click)="onClickClearBacktestedPortfolios()" [disabled]="m_backtestedPortfolios.length <= 0">Clear</button>

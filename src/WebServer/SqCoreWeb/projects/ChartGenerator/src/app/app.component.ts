@@ -53,8 +53,6 @@ export class AppComponent implements OnInit {
   m_uiNestedPrtfTreeViewItems: TreeViewItem[] = [];
   m_allPortfolios: Nullable<PortfolioJsEx[]> = null;
   m_allFolders: Nullable<FolderJs[]> = null;
-  m_prtfSelectedName: Nullable<string> = null;
-  m_prtfSelectedId: number = 0;
   m_sqStatisticsbuilder: SqStatisticsBuilder = new SqStatisticsBuilder();
   m_backtestStatsResults: StatisticsResults[] = [];
   m_detailedStatistics: DetailedStatistics = new DetailedStatistics();
@@ -427,32 +425,6 @@ export class AppComponent implements OnInit {
     this.m_startDate = new Date(this.m_startDateStr);
     this.m_endDate = new Date(this.m_endDateStr);
     this.onStartOrEndDateChanged();
-  }
-
-  onClickUserSelectedPortfolio(prtf: PortfolioJs) {
-    this.m_prtfSelectedName = prtf.name;
-    this.m_prtfSelectedId = prtf.id;
-  }
-
-  onClickPrtfSelectedForBacktest(prtfSelectedId: number) {
-    if (this.m_allPortfolios == null)
-      return;
-    const prtfId = prtfSelectedId - this.gPortfolioIdOffset; // remove the offset from the prtfSelectedId to get the proper Id from Db
-    let prtfSelectedInd = -1;
-    for (let i = 0; i < this.m_backtestedPortfolios.length; i++) {
-      if (this.m_backtestedPortfolios[i].id == prtfId) {
-        prtfSelectedInd = i; // get the index, if the item is found
-        break;
-      }
-    }
-
-    // If the item is not already included, proceed to add it
-    if (prtfSelectedInd == -1) {
-      const allPortfoliosInd = this.m_allPortfolios.findIndex((item) => item.id == prtfSelectedId); // Find the index of the selected item in _allPortfolios
-      if (allPortfoliosInd != -1 && !this.m_backtestedPortfolios.includes(this.m_allPortfolios[allPortfoliosInd])) // check if the item is included or not
-        this.m_backtestedPortfolios.push(this.m_allPortfolios[allPortfoliosInd]); // Push the selected item from _allPortfolios into _backtestedPortfolios
-    }
-    this.m_prtfSelectedName = ''; // clearing the textbox after inserting the prtf.
   }
 
   onClickClearBacktestedPortfolios() { // clear the user selected backtested portfolios
