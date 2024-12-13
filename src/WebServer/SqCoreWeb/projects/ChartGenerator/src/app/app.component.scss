@@ -257,15 +257,16 @@ thead {
 }
 
 .prtfTbl td:nth-child(1) { // setting the name column wider
-  width: 55%;
+  width: 60%;
 }
 
 .prtfTbl td:nth-child(2) { // setting the levMul column
-  width: 10%;
+  width: 8%;
 }
 
 .leverageInput {
-  width: 4rem;
+  width: 2.1rem;
+  padding: 0rem;
   text-align: center;
 }
 

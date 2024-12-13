@@ -279,18 +279,18 @@ export class AppComponent implements OnInit {
 
   // Common function for both portfolios and bmrks to create UiChartPiont data from chartdata and index
   createUiChartPointFromChrtData(chrtData: ChartJs, index: number): UiChartPoint {
-    const chrtItem = new UiChartPoint();
+    const chrtpoint = new UiChartPoint();
 
     if (chrtData.dateTimeFormat == 'YYYYMMDD')
-      chrtItem.date = parseNumberToDate(chrtData.dates[index]);
+      chrtpoint.date = parseNumberToDate(chrtData.dates[index]);
     else if (chrtData.dateTimeFormat.includes('DaysFrom')) {
       const dateStartInd = chrtData.dateTimeFormat.indexOf('m');
       const dateStartsFrom = parseNumberToDate(parseInt(chrtData.dateTimeFormat.substring(dateStartInd + 1)));
-      chrtItem.date = new Date(dateStartsFrom.setDate(dateStartsFrom.getDate() + chrtData.dates[index]));
+      chrtpoint.date = new Date(dateStartsFrom.setDate(dateStartsFrom.getDate() + chrtData.dates[index]));
     } else
-      chrtItem.date = new Date(chrtData.dates[index] * AppComponent.cSecToMSec); // data comes as seconds. JS uses milliseconds since Epoch.
-    chrtItem.value = chrtData.values[index];
-    return chrtItem;
+      chrtpoint.date = new Date(chrtData.dates[index] * AppComponent.cSecToMSec); // data comes as seconds. JS uses milliseconds since Epoch.
+    chrtpoint.value = chrtData.values[index];
+    return chrtpoint;
   }
 
   // Common function for both portfolios and bmrks to DateRanges from chartData.
@@ -431,10 +431,10 @@ export class AppComponent implements OnInit {
     this.m_backtestedPortfolios.length = 0;
   }
 
-  onClickBmrkSelectedForBacktest(benhcmarkStr: string) {
-    if (benhcmarkStr == '')
+  onClickBmrkSelectedForBacktest(benchmarkStr: string) {
+    if (benchmarkStr == '')
       return;
-    const bmrkArray: string[] = benhcmarkStr.trim().split(',');
+    const bmrkArray: string[] = benchmarkStr.trim().split(',');
     for (const item of bmrkArray) {
       const bmrkItem: BenchmarkEx = new BenchmarkEx();
       bmrkItem.ticker = item;
@@ -517,29 +517,29 @@ export class AppComponent implements OnInit {
 
   // Common function for both portfolios and bmrks to create chartGenerator TimeSeries data
   createCgTimeSeriesFromChrtData2(chrtData: ChartJs, name: string, isPrimary: boolean, leverage: number): CgTimeSeries { // Temporary until the method is finalized
-    const chartItem = new CgTimeSeries();
-    chartItem.name = name;
-    chartItem.chartResolution = ChartResolution[chrtData.chartResolution];
-    chartItem.linestyle = isPrimary ? LineStyle.Solid : LineStyle.Dashed;
-    chartItem.isPrimary = isPrimary;
-    chartItem.priceData = [];
+    const cgTimeSeries = new CgTimeSeries();
+    cgTimeSeries.name = name;
+    cgTimeSeries.chartResolution = ChartResolution[chrtData.chartResolution];
+    cgTimeSeries.linestyle = isPrimary ? LineStyle.Solid : LineStyle.Dashed;
+    cgTimeSeries.isPrimary = isPrimary;
+    cgTimeSeries.priceData = [];
+
+    for (let i = 0; i < chrtData.dates.length; i++) {
+      const chrtPoint: UiChartPoint = this.createUiChartPointFromChrtData(chrtData, i);
+      cgTimeSeries.priceData.push(chrtPoint);
+    }
 
     const isLeveraged: boolean = leverage != 1;
     if (isLeveraged) {
-      let preVal = chrtData.values[0]; // Initialize preVal with the first value in the array
-      for (let index = 1; index < chrtData.dates.length; index++) {
-        const curVal = chrtData.values[index];
-        const pctChg = curVal / preVal - 1;
-        const pctChgLev = pctChg * leverage;
-        chrtData.values[index] = parseFloat((chrtData.values[index - 1] * (1 + pctChgLev)).toFixed(4));
+      let preVal: number = cgTimeSeries.priceData[0].value; // Initialize preVal with the first value in the array
+      for (let i = 1; i < cgTimeSeries.priceData.length; i++) {
+        const curVal: number = cgTimeSeries.priceData[i].value;
+        const pctChg: number = curVal / preVal - 1;
+        const pctChgLev: number = pctChg * leverage;
+        cgTimeSeries.priceData[i].value = cgTimeSeries.priceData[i - 1].value * (1 + pctChgLev);
         preVal = curVal; // Update preVal for the next iteration
       }
     }
-
-    for (let i = 0; i < chrtData.dates.length; i++) {
-      const chrtItem = this.createUiChartPointFromChrtData(chrtData, i);
-      chartItem.priceData.push(chrtItem);
-    }
-    return chartItem;
+    return cgTimeSeries;
   }
 }
