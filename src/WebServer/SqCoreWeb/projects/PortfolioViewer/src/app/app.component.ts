@@ -137,11 +137,12 @@ export class AppComponent {
   m_enumExchangeId = ExchangeId;
 
   // LegacyDbTrades tabpage
-  m_legacyDbCompletionDateUtcStr: string = SqNgCommonUtilsTime.Date2PaddedIsoStr(SqNgCommonUtilsTime.ConvertDateLocToEt(new Date())); // convert the localDate to UTC then convert to DateStr format "YYYY-MM-DD". The HTML date <input> requires a YYYY-MM-DD formatted 'string' as value. E.g. <input type="date" value="2017-06-01" />
+  m_legacyDbInsCompletionDateUtcStr: string = SqNgCommonUtilsTime.Date2PaddedIsoStr(SqNgCommonUtilsTime.ConvertDateLocToEt(new Date())); // convert the localDate to UTC then convert to DateStr format "YYYY-MM-DD". The HTML date <input> requires a YYYY-MM-DD formatted 'string' as value. E.g. <input type="date" value="2017-06-01" />
   m_legacyDbInsTradesSyntaxCheckResult: string = '';
   m_legacyDbTradesTestAndInsertResult: string = '';
+  m_legacyDbInsTrades: TradeJs[] = [];
+  m_legacyDbInsTradesJsonStr: string = ''; // Trades are sent to legacyDb as a JSON-formatted string
   m_legacyDbTrades: TradeJs[] = [];
-  m_legacyDbTradesJsonStr: string = ''; // Trades are sent to legacyDb as a JSON-formatted string
 
   user = {
     name: 'Anonymous',
@@ -187,7 +188,7 @@ export class AppComponent {
           break;
         case 'PrtfVwr.TradesHist':
           console.log('PrtfVwr.TradesHist:' + msgObjStr);
-          this.processHistoricalTrades(msgObjStr);
+          this.m_trades = this.processHistoricalTrades(msgObjStr);
           break;
         case 'PrtfVwr.PrtfTickersFundamentalData':
           console.log('PrtfVwr.PrtfTickersFundamentalData:' + msgObjStr);
@@ -201,6 +202,13 @@ export class AppComponent {
         case 'PrtfVwr.LegacyDbTradesTestAndInsert':
           console.log('PrtfVwr.LegacyDbTradesTestAndInsert:' + msgObjStr);
           this.m_legacyDbTradesTestAndInsertResult = msgObjStr;
+          if (this.m_legacyDbTradesTestAndInsertResult.startsWith('OK'))
+            this.getLegacyDbPortfolioTradeHistory();
+          break;
+        case 'PrtfVwr.LegacyDbTradesHist':
+          console.log('PrtfVwr.LegacyDbTradesHist:' + msgObjStr);
+          this.m_legacyDbTrades = this.processHistoricalTrades(msgObjStr);
+          break;
       }
     };
   }
@@ -286,7 +294,7 @@ export class AppComponent {
       this.m_socket.send('GetTradesHist:' + this.m_portfolio?.id);
   }
 
-  processHistoricalTrades(msgObjStr: string) {
+  processHistoricalTrades(msgObjStr: string): TradeUi[] {
     console.log('PrtfVwr.processHistoricalTrades() START');
     const tradeObjects : object[] = JSON.parse(msgObjStr, function(key, value) {
       if (key == 'time')
@@ -295,13 +303,14 @@ export class AppComponent {
         return value;
     }); // The Json string contains enums as numbers, which is how we store it in RAM in JS. So, e.g. 'actionNumber as Action' type cast would be correct, but not necessary as both the input data and the output enum are 'numbers'
     // manually create an instance and then populate its properties with the values from the parsed JSON object.
-    this.m_trades = new Array(tradeObjects.length);
+    const trades: TradeUi[] = new Array(tradeObjects.length);
     for (let i = 0; i < tradeObjects.length; i++) {
-      this.m_trades[i] = new TradeUi();
-      this.m_trades[i].CopyFrom(tradeObjects[i] as TradeUi);
+      trades[i] = new TradeUi();
+      trades[i].CopyFrom(tradeObjects[i] as TradeUi);
     }
 
     this.onSortingTradesClicked(this.m_tradesTabSortColumn);
+    return trades;
   }
 
   onClickSelectedTradeItem(trade: TradeUi, event: MouseEvent) {
@@ -588,13 +597,13 @@ export class AppComponent {
   }
 
   onInputLegacyDbDateInsertion(event: Event) {
-    this.m_legacyDbCompletionDateUtcStr = (event.target as HTMLInputElement).value.trim();
+    this.m_legacyDbInsCompletionDateUtcStr = (event.target as HTMLInputElement).value.trim();
   }
 
   onClickConvertTradesStrToTradesJs() {
     this.m_legacyDbInsTradesSyntaxCheckResult = '';
     this.m_legacyDbTradesTestAndInsertResult = '';
-    this.m_legacyDbTrades.length = 0;
+    this.m_legacyDbInsTrades.length = 0;
     const tradesStrInputElement = document.getElementById('inputTradesStr') as HTMLTextAreaElement;
     const tradesStr: string = tradesStrInputElement.value;
 
@@ -607,7 +616,7 @@ export class AppComponent {
         return;
       } else if (tradeDataProcessResult.tradeObj != null) {
         this.m_legacyDbInsTradesSyntaxCheckResult = 'Syntax OK';
-        this.m_legacyDbTrades.push(tradeDataProcessResult.tradeObj);
+        this.m_legacyDbInsTrades.push(tradeDataProcessResult.tradeObj);
       }
     }
   }
@@ -653,7 +662,7 @@ export class AppComponent {
       return { tradeObj: null, errorStr: validTradeDtStr };
 
     const tradeDt: Date = new Date(trade[5]);
-    const completionDateStr: string[] = this.m_legacyDbCompletionDateUtcStr.split('-');
+    const completionDateStr: string[] = this.m_legacyDbInsCompletionDateUtcStr.split('-');
     if (isNaN(tradeDt.getTime())) { // If tradeDt is invalid, assume it only contains the time part.
       const timeStr: string = trade[5];
       tradeDt.setUTCFullYear(parseInt(completionDateStr[0], 10), parseInt(completionDateStr[1], 10) - 1, parseInt(completionDateStr[2], 10));
@@ -713,17 +722,22 @@ export class AppComponent {
 
   onClickTestAndInsertLegacyDbTrades() {
     // Trades are sent to legacyDb as a JSON-formatted string
-    this.m_legacyDbTradesJsonStr = '[';
-    for (let i =0; i < this.m_legacyDbTrades.length; i++) {
-      const tradeJs: string = this.tradeStringifyHelper(this.m_legacyDbTrades[i]);
-      this.m_legacyDbTradesJsonStr += tradeJs;
+    this.m_legacyDbInsTradesJsonStr = '[';
+    for (let i =0; i < this.m_legacyDbInsTrades.length; i++) {
+      const tradeJs: string = this.tradeStringifyHelper(this.m_legacyDbInsTrades[i]);
+      this.m_legacyDbInsTradesJsonStr += tradeJs;
 
-      if (i < this.m_legacyDbTrades.length - 1) // Only add comma if it's not the last element
-        this.m_legacyDbTradesJsonStr += ',';
+      if (i < this.m_legacyDbInsTrades.length - 1) // Only add comma if it's not the last element
+        this.m_legacyDbInsTradesJsonStr += ',';
     }
-    this.m_legacyDbTradesJsonStr += ']';
+    this.m_legacyDbInsTradesJsonStr += ']';
 
     if (this.m_socket != null && this.m_socket.readyState == this.m_socket.OPEN)
-      this.m_socket.send('LegacyDbTradesTestAndInsert:legacyPfName:' + this.m_portfolio?.legacyDbPortfName + '&trades' + this.m_legacyDbTradesJsonStr);
+      this.m_socket.send('LegacyDbTradesTestAndInsert:legacyPfName:' + this.m_portfolio?.legacyDbPortfName + '&trades' + this.m_legacyDbInsTradesJsonStr);
+  }
+
+  getLegacyDbPortfolioTradeHistory() {
+    if (this.m_socket != null && this.m_socket.readyState == this.m_socket.OPEN)
+      this.m_socket.send('LegacyDbTradesHist:legacyPfName:' + this.m_portfolio?.legacyDbPortfName);
   }
 }

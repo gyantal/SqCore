@@ -101,6 +101,10 @@ public class PrtfVwrWs
                 Utils.Logger.Info($"PrtfVwrWs.OnWsReceiveAsync(): LegacyDbTradesTestAndInsert: '{msgObjStr}'");
                 LegacyDbTestAndInsertTrades(webSocket, msgObjStr);
                 break;
+            case "LegacyDbTradesHist":
+                Utils.Logger.Info($"PrtfVwrWs.OnWsReceiveAsync(): LegacyDbTradesHist: '{msgObjStr}'");
+                LegacyDbGetTradesHistroy(webSocket, msgObjStr);
+                break;
             default:
                 Utils.Logger.Info($"PrtfVwrWs.OnWsReceiveAsync(): Unrecognized message from client, {msgCode},{msgObjStr}");
                 break;
@@ -348,6 +352,18 @@ public class PrtfVwrWs
           testAndInsertTradeResult = $"OK. Trades are successfully inserted for portfolio '{legacyPrtfName}'.";
 
         byte[] encodedMsg = Encoding.UTF8.GetBytes("PrtfVwr.LegacyDbTradesTestAndInsert:" + testAndInsertTradeResult);
+        if (webSocket!.State == WebSocketState.Open)
+            webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+    }
+
+    public static void LegacyDbGetTradesHistroy(WebSocket webSocket, string p_msg) // p_msg : legacyPfName: LegacyDb: Test SqCore InsertTrades
+    {
+        int prtfNameStartInd = p_msg.IndexOf(":");
+        if (prtfNameStartInd == -1)
+            return;
+        string legacyPrtfName = p_msg[(prtfNameStartInd + 1)..];
+        List<Trade>? tradesHist = MemDb.gMemDb.GetLegacyPortfolioTradeHistoryToList(legacyPrtfName);
+        byte[] encodedMsg = Encoding.UTF8.GetBytes("PrtfVwr.LegacyDbTradesHist:" + Utils.CamelCaseSerialize(tradesHist));
         if (webSocket!.State == WebSocketState.Open)
             webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
     }
