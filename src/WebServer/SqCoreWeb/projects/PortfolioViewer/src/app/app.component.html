@@ -262,6 +262,7 @@
       <tr>
         <th>S.No</th>
         <th>TradeAction</th>
+        <th>AssetType</th>
         <th>Symbol</th>
         <th>Qty</th>
         <th>Price</th>
@@ -273,6 +274,7 @@
       <tr *ngFor="let item of this.m_legacyDbInsTrades let i = index">
         <td>{{i + 1}}</td>
         <td>{{m_enumTradeAction[item.action]}}</td>
+        <td>{{m_enumAssetType[item.assetType]}}</td>
         <td>{{item.symbol}}</td>
         <td>{{item.quantity}}</td>
         <td>{{m_enumCurrencyId[item.currency] == 'USD' ? '$' : ''}}{{item.price | number:'1.2-2'}}</td>
@@ -292,8 +294,7 @@
         <th>Currency</th>
         <th>TradeAction</th>
         <th>AssetType</th>
-        <th>Date</th>
-        <th>ExchangeId</th>
+        <th (click)="onSortingLegacyDbTradesClicked('time')">Date</th>
       </tr>
     </thead>
     <tbody *ngFor="let item of m_legacyDbTrades">
@@ -304,8 +305,7 @@
         <td>{{m_enumCurrencyId[item.currency] == 'Unknown' ? 'USD' : m_enumCurrencyId[item.currency]}}</td> <!-- Displaying the currencyId as 'USD' in the UI, while 'USD' is stored as 'unknown' in the database. -->
         <td>{{m_enumTradeAction[item.action]}}</td>
         <td>{{m_enumAssetType[item.assetType]}}</td>
-        <td>{{item.time | date : 'yyyy-MM-dd HH:mm'}}</td>
-        <td>{{m_enumExchangeId[item.exchangeId]}}</td>
+        <td [ngClass]="{'highlightLatestTrades': (item.time | date:'yyyy-MM-dd') == (m_legacyDbTradesMaxDate | date:'yyyy-MM-dd')}">{{item.time | date : 'yyyy-MM-dd HH:mm'}}</td>
       </tr>
     </tbody>
   </table>

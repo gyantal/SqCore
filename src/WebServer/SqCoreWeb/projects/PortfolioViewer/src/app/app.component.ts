@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { PortfolioJs, PrtfRunResultJs, UiPrtfRunResult, prtfsParseHelper, statsParseHelper, updateUiWithPrtfRunResult, TradeAction, AssetType, CurrencyId, ExchangeId, fundamentalDataParseHelper, TickerClosePrice, SeasonalityData, getSeasonalityData, UiSeasonalityChartPoint, getDetailedStats, ChartResolution } from '../../../../TsLib/sq-common/backtestCommon';
-import { SqNgCommonUtilsTime } from '../../../sq-ng-common/src/lib/sq-ng-common.utils_time';
+import { minDate, SqNgCommonUtilsTime } from '../../../sq-ng-common/src/lib/sq-ng-common.utils_time';
 import { drawBarChartFromSeasonalityData } from '../../../../TsLib/sq-common/chartSimple';
 import { BacktestDetailedStatistics } from '../../../../TsLib/sq-common/backtestStatistics';
 import * as d3 from 'd3';
@@ -121,8 +121,6 @@ export class AppComponent {
   m_editedTradeOptionFields: OptionFieldsUi = new OptionFieldsUi(); // parts of the m_editedTrade.Symbol in case of Options
   m_editedTradeFutureFields: FuturesFieldsUi = new FuturesFieldsUi(); // parts of the m_editedTrade.Symbol in case of Futures
   m_isEditedTradeDirty: boolean = false;
-  m_tradesTabSortColumn: string = 'time';
-  m_isTradesTabSortDirAscend: boolean = false;
 
   // Trades tabpage: UI handling
   m_isEditedTradeSectionVisible: boolean = false; // toggle the m_editedTrade widgets on the UI
@@ -142,7 +140,12 @@ export class AppComponent {
   m_legacyDbTradesTestAndInsertResult: string = '';
   m_legacyDbInsTrades: TradeJs[] = [];
   m_legacyDbInsTradesJsonStr: string = ''; // Trades are sent to legacyDb as a JSON-formatted string
-  m_legacyDbTrades: TradeJs[] = [];
+  m_legacyDbTrades: TradeUi[] = [];
+  m_legacyDbTradesMaxDate: Date = minDate;
+
+  // common for both trades and legacyDbTrades
+  m_tradesTabSortColumn: string = 'time';
+  m_isTradesTabSortDirAscend: boolean = false;
 
   user = {
     name: 'Anonymous',
@@ -189,6 +192,7 @@ export class AppComponent {
         case 'PrtfVwr.TradesHist':
           console.log('PrtfVwr.TradesHist:' + msgObjStr);
           this.m_trades = this.processHistoricalTrades(msgObjStr);
+          this.onSortingTradesClicked(this.m_tradesTabSortColumn);
           break;
         case 'PrtfVwr.PrtfTickersFundamentalData':
           console.log('PrtfVwr.PrtfTickersFundamentalData:' + msgObjStr);
@@ -208,6 +212,8 @@ export class AppComponent {
         case 'PrtfVwr.LegacyDbTradesHist':
           console.log('PrtfVwr.LegacyDbTradesHist:' + msgObjStr);
           this.m_legacyDbTrades = this.processHistoricalTrades(msgObjStr);
+          this.m_legacyDbTradesMaxDate = this.getLegacyDbTradesMaxDate(this.m_legacyDbTrades);
+          this.onSortingLegacyDbTradesClicked(this.m_tradesTabSortColumn);
           break;
       }
     };
@@ -281,6 +287,11 @@ export class AppComponent {
     this.m_activeTab = activeTab;
     if (this.m_activeTab == 'Trades')
       this.getTradesHistory();
+
+    if (this.m_activeTab == 'LegacyDbTrades') {
+      this.getLegacyDbPortfolioTradeHistory();
+      this.m_isTradesTabSortDirAscend = false; // Resetting the sorting to Descending order (when the user switches between Trades and LegacyDb Trades tabs, the sorting for LegacyDb Trades changes, but it should always remain in descending order).
+    }
   }
 
   onHistPeriodChangeClicked() { // send this when user changes the historicalPosDates
@@ -308,8 +319,6 @@ export class AppComponent {
       trades[i] = new TradeUi();
       trades[i].CopyFrom(tradeObjects[i] as TradeUi);
     }
-
-    this.onSortingTradesClicked(this.m_tradesTabSortColumn);
     return trades;
   }
 
@@ -537,13 +546,7 @@ export class AppComponent {
 
   onSortingTradesClicked(sortColumn: string) { // sort the trades data table
     this.m_tradesTabSortColumn = sortColumn;
-    this.m_trades = this.m_trades.sort((n1, n2) => {
-      if (this.m_isTradesTabSortDirAscend)
-        return (n1[sortColumn] > n2[sortColumn]) ? 1 : ((n1[sortColumn] < n2[sortColumn]) ? -1 : 0);
-      else
-        return (n2[sortColumn] > n1[sortColumn]) ? 1 : ((n2[sortColumn] < n1[sortColumn]) ? -1 : 0);
-    });
-    this.m_isTradesTabSortDirAscend = !this.m_isTradesTabSortDirAscend;
+    this.sortTrades(this.m_trades, this.m_isTradesTabSortDirAscend, this.m_tradesTabSortColumn);
   }
 
   onClickNextOrPrevDate(nextOrPrev: string) {
@@ -606,6 +609,10 @@ export class AppComponent {
     this.m_legacyDbInsTrades.length = 0;
     const tradesStrInputElement = document.getElementById('inputTradesStr') as HTMLTextAreaElement;
     const tradesStr: string = tradesStrInputElement.value;
+    if (tradesStr == '') { // check if the tradesStr has data
+      this.m_legacyDbInsTradesSyntaxCheckResult = 'Error. No trade was recognized';
+      return;
+    }
 
     const tradeRows: string[] = tradesStr.trim().split('\n'); // Split the data by newline to get each row
     for (let i = 0; i < tradeRows.length; i++) {
@@ -629,6 +636,8 @@ export class AppComponent {
 
     tradeRowStr = tradeRowStr.startsWith('+') ? tradeRowStr.substring(2) : tradeRowStr.startsWith('\t') ? tradeRowStr.substring(1) : tradeRowStr; // removing the '+' and '\t' from the tradeRecord
     const trade: string[] = tradeRowStr.split('\t');
+    if (trade.length < 2) // check to validate the tradeStr has valid trade data
+      return { tradeObj: null, errorStr: `Error. Trade "${trade}" is invalid.` };
     const quantity = Number(trade[2].replace(/,/g, '')); // replace the comma and convert to number
     if (isNaN(quantity) || !isFinite(quantity) || !Number.isInteger(quantity)) // Check if quantity is a valid number (including floats) and is finite
       return { tradeObj: null, errorStr: `Error. Quantity ${trade[2]} at row ${rowInd + 1} is invalid.` };
@@ -672,6 +681,16 @@ export class AppComponent {
     }
     tradeDt.setUTCFullYear(parseInt(completionDateStr[0], 10));
     tradeObj.time = tradeDt;
+    switch (trade[8]) { // Validate and process AssetType
+      case 'STK':
+        tradeObj.assetType = AssetType.Stock;
+        break;
+      case 'OPT':
+        tradeObj.assetType = AssetType.Option;
+        break;
+      default:
+        return { tradeObj: null, errorStr: `Error. AssetType: '${trade[8]}' at row ${rowInd + 1} is invalid.` };
+    }
     tradeObj.symbol = trade[1];
     return { tradeObj, errorStr };
   }
@@ -739,5 +758,29 @@ export class AppComponent {
   getLegacyDbPortfolioTradeHistory() {
     if (this.m_socket != null && this.m_socket.readyState == this.m_socket.OPEN)
       this.m_socket.send('LegacyDbTradesHist:legacyPfName:' + this.m_portfolio?.legacyDbPortfName);
+  }
+
+  onSortingLegacyDbTradesClicked(sortColumn: string) { // sort the LegacyDbTrades data table
+    this.m_tradesTabSortColumn = sortColumn;
+    this.sortTrades(this.m_legacyDbTrades, this.m_isTradesTabSortDirAscend, this.m_tradesTabSortColumn);
+  }
+
+  sortTrades(trades: TradeUi[], isSortDirAscend: boolean, sortColumn: string) { // sort trades or legacyDbTrades
+    trades = trades.sort((n1, n2) => {
+      if (isSortDirAscend)
+        return (n1[sortColumn] > n2[sortColumn]) ? 1 : ((n1[sortColumn] < n2[sortColumn]) ? -1 : 0);
+      else
+        return (n2[sortColumn] > n1[sortColumn]) ? 1 : ((n2[sortColumn] < n1[sortColumn]) ? -1 : 0);
+    });
+    this.m_isTradesTabSortDirAscend = !this.m_isTradesTabSortDirAscend;
+  }
+
+  getLegacyDbTradesMaxDate(trades: TradeUi[]): Date {
+    let maxDate = minDate;
+    for (let i = 0; i < trades.length; i++) {
+      if (trades[i].time > maxDate)
+        maxDate = trades[i].time;
+    }
+    return maxDate;
   }
 }

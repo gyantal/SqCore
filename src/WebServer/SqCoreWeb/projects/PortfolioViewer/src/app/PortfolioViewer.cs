@@ -103,7 +103,7 @@ public class PrtfVwrWs
                 break;
             case "LegacyDbTradesHist":
                 Utils.Logger.Info($"PrtfVwrWs.OnWsReceiveAsync(): LegacyDbTradesHist: '{msgObjStr}'");
-                LegacyDbGetTradesHistroy(webSocket, msgObjStr);
+                LegacyDbGetTradesHistory(webSocket, msgObjStr);
                 break;
             default:
                 Utils.Logger.Info($"PrtfVwrWs.OnWsReceiveAsync(): Unrecognized message from client, {msgCode},{msgObjStr}");
@@ -356,7 +356,7 @@ public class PrtfVwrWs
             webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
     }
 
-    public static void LegacyDbGetTradesHistroy(WebSocket webSocket, string p_msg) // p_msg : legacyPfName: LegacyDb: Test SqCore InsertTrades
+    public static void LegacyDbGetTradesHistory(WebSocket webSocket, string p_msg) // p_msg : legacyPfName: LegacyDb: Test SqCore InsertTrades
     {
         int prtfNameStartInd = p_msg.IndexOf(":");
         if (prtfNameStartInd == -1)

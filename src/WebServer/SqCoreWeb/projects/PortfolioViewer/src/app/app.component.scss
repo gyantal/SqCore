@@ -204,9 +204,15 @@ thead {
 
 #inputTradesStr {
   width: 50rem;
-  height: 20rem;
+  height: 10rem;
 }
 
 #userWarnId {
   color: #FF0000;
+}
+
+.highlightLatestTrades {
+  color: #070707;
+  font-weight: bolder;
+  background-color: #FFAE42;
 }
