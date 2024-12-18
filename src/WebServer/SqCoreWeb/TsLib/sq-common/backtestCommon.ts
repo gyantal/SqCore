@@ -511,9 +511,9 @@ export function updateUiWithPrtfRunResult(prtfRunResult: Nullable<PrtfRunResultJ
 
   d3.selectAll('#pfRunResultChrt > *').remove();
   const lineChrtDiv = document.getElementById('pfRunResultChrt') as HTMLElement;
-  const margin = {top: 30, right: 60, bottom: 30, left: 50 };
-  const chartWidth = uiChrtWidth * 0.9 - margin.left - margin.right; // 90% of the PanelChart Width
-  const chartHeight = uiChrtHeight * 0.9 - margin.top - margin.bottom; // 90% of the PanelChart Height
+  const margin = {top: 30, right: 30, bottom: 30, left: 50 };
+  const chartWidth = uiChrtWidth * 0.98 - margin.left - margin.right; // 98% of the PanelChart Width
+  const chartHeight = uiChrtHeight * 0.95 - margin.top - margin.bottom; // 95% of the PanelChart Height
   const chrtData = uiPrtfRunResult.chrtValues.map((r:{ date: Date; value: number; }) => ({date: new Date(r.date), value: r.value}));
   const xMin = d3.min(chrtData, (r:{ date: Date; }) => r.date);
   const xMax = d3.max(chrtData, (r:{ date: Date; }) => r.date);

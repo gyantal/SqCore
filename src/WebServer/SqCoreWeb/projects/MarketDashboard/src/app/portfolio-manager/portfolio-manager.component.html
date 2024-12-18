@@ -135,7 +135,7 @@
   </div>
   <div id="resizer" (mouseover)="onMouseOverResizer('resizer')"></div>
   <div id="panelPrtfDetails">
-    <div id="panelChart">Panel Chart
+    <div id="panelChart">Twr-PV:
       <div id="pfRunResultChrt"></div>
     </div>
     <div id="resizer2" (mouseover)="onMouseOverResizer('resizer2')"></div>
@@ -145,12 +145,12 @@
           Statistics as of ({{todayDate | date : 'yyyy-MM-dd'}})
           <table id="pfStatsTable">
             <tr>
-              <td>PV Start Value:{{uiPrtfRunResult.startPortfolioValue | currency:'USD':'symbol':'1.0'}}</td>
-              <td>PV Final Value:{{uiPrtfRunResult.endPortfolioValue | currency:'USD':'symbol':'1.0'}}</td>
-              <td>TotalReturn:{{uiPrtfRunResult.totalReturn | number:'1.2-2'}}%</td>
+              <td>$PV Start: {{uiPrtfRunResult.startPortfolioValue | currency:'USD':'symbol':'1.0'}}</td>
+              <td>$PV Final(PrevClose, non-RT): {{uiPrtfRunResult.endPortfolioValue | currency:'USD':'symbol':'1.0'}}</td>
+              <td>Twr-PV Return: {{uiPrtfRunResult.totalReturn | number:'1.2-2'}}%</td>
             </tr>
             <tr>
-              <td><b>CAGR:</b> {{uiPrtfRunResult.cAGR | number:'1.2-2'}}%</td>
+              <td><b>Twr-PV CAGR:</b> {{uiPrtfRunResult.cAGR | number:'1.2-2'}}%</td>
               <td><b>MaxDD:</b> {{uiPrtfRunResult.maxDD | number:'1.2-2'}}%</td>
               <td><b>Sharpe:</b> {{uiPrtfRunResult.sharpe | number:'1.2-2'}}</td>
             </tr>

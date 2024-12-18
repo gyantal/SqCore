@@ -78,11 +78,11 @@ export function prtfRunResultChrt(chrtData: { date: Date; value: number; }[], li
       .style('stroke', 'white')
       .style('stroke-width', '3.5px')
       .style('opacity', 0.8)
-      .attr('dx', -30)
+      .attr('dx', -50)
       .attr('dy', '-1em');
   focus.append('text')
       .attr('class', 'y4')
-      .attr('dx', -30)
+      .attr('dx', -50)
       .attr('dy', '-1em');
 
   // append the rectangle to capture mouse
