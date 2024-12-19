@@ -10,9 +10,9 @@
         <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'quantity'}" (click)="onSortingPositionsClicked('quantity')">Qty</th>
         <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'avgPrice'}" (click)="onSortingPositionsClicked('avgPrice')">AvgPrice</th>
         <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'priorClose'}" (click)="onSortingPositionsClicked('priorClose')">Prior<br>Close</th>
-        <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'estPrice'}" (click)="onSortingPositionsClicked('estPrice')">EstPrice</th>
-        <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'pctChgTod'}" (click)="onSortingPositionsClicked('pctChgTod')">Chg%<br>Today</th>
-        <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'plTod'}" (click)="onSortingPositionsClicked('plTod')">P&L<br>Today</th>
+        <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'estPrice'}" (click)="onSortingPositionsClicked('estPrice')">Price(Cl-Rt) on Date</th>
+        <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'pctChgTod'}" (click)="onSortingPositionsClicked('pctChgTod')">Chg% on Date</th>
+        <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'plTod'}" (click)="onSortingPositionsClicked('plTod')">P&L on Date</th>
         <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'costBasis'}" (click)="onSortingPositionsClicked('costBasis')">Cost<br>Basis</th>
         <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'mktVal'}" (click)="onSortingPositionsClicked('mktVal')">MktVal</th>
         <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'plPctTotal'}" (click)="onSortingPositionsClicked('plPctTotal')">P&L%<br>Total</th>
@@ -44,12 +44,12 @@
 <div [hidden]="m_activeTab != 'Portfolio Report'">
   <table id="pfStatsTable">
     <tr>
-      <td>PV Start Value:{{m_uiPrtfRunResult.startPortfolioValue | currency:'USD':'symbol':'1.0'}}</td>
-      <td>TWR-PV (PrevClose, non-RT):{{m_uiPrtfRunResult.endPortfolioValue | currency:'USD':'symbol':'1.0'}}</td>
-      <td>TWR-Return:{{m_uiPrtfRunResult.totalReturn | number:'1.2-2'}}%</td>
+      <td>$PV Start: {{m_uiPrtfRunResult.startPortfolioValue | currency:'USD':'symbol':'1.0'}}</td>
+      <td>$PV Final(PrevClose, non-RT): {{m_uiPrtfRunResult.endPortfolioValue | currency:'USD':'symbol':'1.0'}}</td>
+      <td>Twr-PV Return: {{m_uiPrtfRunResult.totalReturn | number:'1.2-2'}}%</td>
     </tr>
     <tr>
-      <td><b>CAGR:</b> {{m_uiPrtfRunResult.cAGR | number:'1.2-2'}}%</td>
+      <td><b>Twr-PV CAGR:</b> {{m_uiPrtfRunResult.cAGR | number:'1.2-2'}}%</td>
       <td><b>MaxDD:</b> {{m_uiPrtfRunResult.maxDD | number:'1.2-2'}}%</td>
       <td><b>Sharpe:</b> {{m_uiPrtfRunResult.sharpe | number:'1.2-2'}}</td>
     </tr>

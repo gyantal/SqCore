@@ -139,7 +139,6 @@ export class AppComponent {
   m_legacyDbInsTradesSyntaxCheckResult: string = '';
   m_legacyDbTradesTestAndInsertResult: string = '';
   m_legacyDbInsTrades: TradeJs[] = [];
-  m_legacyDbInsTradesJsonStr: string = ''; // Trades are sent to legacyDb as a JSON-formatted string
   m_legacyDbTrades: TradeUi[] = [];
   m_legacyDbTradesMaxDate: Date = minDate;
 
@@ -191,7 +190,7 @@ export class AppComponent {
           break;
         case 'PrtfVwr.TradesHist':
           console.log('PrtfVwr.TradesHist:' + msgObjStr);
-          this.m_trades = this.processHistoricalTrades(msgObjStr);
+          this.m_trades = AppComponent.processHistoricalTrades(msgObjStr);
           this.onSortingTradesClicked(this.m_tradesTabSortColumn);
           break;
         case 'PrtfVwr.PrtfTickersFundamentalData':
@@ -211,8 +210,8 @@ export class AppComponent {
           break;
         case 'PrtfVwr.LegacyDbTradesHist':
           console.log('PrtfVwr.LegacyDbTradesHist:' + msgObjStr);
-          this.m_legacyDbTrades = this.processHistoricalTrades(msgObjStr);
-          this.m_legacyDbTradesMaxDate = this.getLegacyDbTradesMaxDate(this.m_legacyDbTrades);
+          this.m_legacyDbTrades = AppComponent.processHistoricalTrades(msgObjStr);
+          this.m_legacyDbTradesMaxDate = AppComponent.getLegacyDbTradesMaxDate(this.m_legacyDbTrades);
           this.onSortingLegacyDbTradesClicked(this.m_tradesTabSortColumn);
           break;
       }
@@ -305,7 +304,7 @@ export class AppComponent {
       this.m_socket.send('GetTradesHist:' + this.m_portfolio?.id);
   }
 
-  processHistoricalTrades(msgObjStr: string): TradeUi[] {
+  static processHistoricalTrades(msgObjStr: string): TradeUi[] {
     console.log('PrtfVwr.processHistoricalTrades() START');
     const tradeObjects : object[] = JSON.parse(msgObjStr, function(key, value) {
       if (key == 'time')
@@ -741,18 +740,18 @@ export class AppComponent {
 
   onClickTestAndInsertLegacyDbTrades() {
     // Trades are sent to legacyDb as a JSON-formatted string
-    this.m_legacyDbInsTradesJsonStr = '[';
+    let legacyDbInsTradesJsonStr = '[';
     for (let i =0; i < this.m_legacyDbInsTrades.length; i++) {
       const tradeJs: string = this.tradeStringifyHelper(this.m_legacyDbInsTrades[i]);
-      this.m_legacyDbInsTradesJsonStr += tradeJs;
+      legacyDbInsTradesJsonStr += tradeJs;
 
       if (i < this.m_legacyDbInsTrades.length - 1) // Only add comma if it's not the last element
-        this.m_legacyDbInsTradesJsonStr += ',';
+        legacyDbInsTradesJsonStr += ',';
     }
-    this.m_legacyDbInsTradesJsonStr += ']';
+    legacyDbInsTradesJsonStr += ']';
 
     if (this.m_socket != null && this.m_socket.readyState == this.m_socket.OPEN)
-      this.m_socket.send('LegacyDbTradesTestAndInsert:legacyPfName:' + this.m_portfolio?.legacyDbPortfName + '&trades' + this.m_legacyDbInsTradesJsonStr);
+      this.m_socket.send('LegacyDbTradesTestAndInsert:legacyPfName:' + this.m_portfolio?.legacyDbPortfName + '&trades' + legacyDbInsTradesJsonStr);
   }
 
   getLegacyDbPortfolioTradeHistory() {
@@ -775,7 +774,7 @@ export class AppComponent {
     this.m_isTradesTabSortDirAscend = !this.m_isTradesTabSortDirAscend;
   }
 
-  getLegacyDbTradesMaxDate(trades: TradeUi[]): Date {
+  static getLegacyDbTradesMaxDate(trades: TradeUi[]): Date {
     let maxDate = minDate;
     for (let i = 0; i < trades.length; i++) {
       if (trades[i].time > maxDate)
