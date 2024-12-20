@@ -101,7 +101,7 @@ public class LegacyDb : IDisposable
         }
     }
 
-    public List<Trade>? GetTradeHistory(string p_legacyDbPortfName)
+    public List<Trade>? GetTradeHistory(string p_legacyDbPortfName, int p_numTop)
     {
         if (m_connection?.State != System.Data.ConnectionState.Open)
         {
@@ -118,7 +118,7 @@ public class LegacyDb : IDisposable
         }
 
         // Step 2: Query trades using the obtained portfolioId
-        string queryStr = $"SELECT portfolioitem.*, COALESCE(stock.ticker, 'USD') AS ticker FROM portfolioitem LEFT JOIN stock ON portfolioitem.assetsubtableid = stock.id WHERE portfolioitem.portfolioid = {portfolioId} ORDER BY portfolioitem.Date";
+        string queryStr = $"SELECT TOP {p_numTop} portfolioitem.*, COALESCE(stock.ticker, 'USD') AS ticker FROM portfolioitem LEFT JOIN stock ON portfolioitem.assetsubtableid = stock.id WHERE portfolioitem.portfolioid = {portfolioId} ORDER BY portfolioitem.Date";
         SqlCommand command = new(queryStr, m_connection);
 
         List<Trade> trades = new();

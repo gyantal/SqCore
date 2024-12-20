@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Fin.Base;
 
@@ -10,9 +11,9 @@ public partial class MemDb
         m_legacyDb.TestIsConnectionWork();
     }
 
-    public List<Trade>? GetLegacyPortfolioTradeHistoryToList(string p_legacyDbPortfName)
+    public List<Trade>? GetLegacyPortfolioTradeHistoryToList(string p_legacyDbPortfName, int p_numTop = Int32.MaxValue)
     {
-        return m_legacyDb.GetTradeHistory(p_legacyDbPortfName); // assume tradeHistory is ordered by Trade.Time
+        return m_legacyDb.GetTradeHistory(p_legacyDbPortfName, p_numTop); // assume tradeHistory is ordered by Trade.Time
     }
 
     public List<(string Ticker, int Id)> GetLegacyStockIds(List<string> p_tickers)
