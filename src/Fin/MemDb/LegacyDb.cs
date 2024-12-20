@@ -149,6 +149,7 @@ public class LegacyDb : IDisposable
                         Id = reader.GetInt32(reader.GetOrdinal("ID")),
                         Time = reader.GetDateTime(reader.GetOrdinal("Date")),
                         Action = MapLegacyDbTransactionTypeToTradeAction(reader.GetByte(reader.GetOrdinal("TransactionType"))),
+                        AssetType = MapLegacyDbAssetTypeToAssetType(reader.GetByte(reader.GetOrdinal("AssetTypeID"))),
                         Symbol = ticker,
                         Quantity = reader.GetInt32(reader.GetOrdinal("Volume")),
                         Price = reader.GetFloat(reader.GetOrdinal("Price")),
@@ -192,7 +193,7 @@ public class LegacyDb : IDisposable
         SqlCommand command = new(queryStr, m_connection);
         command.Parameters.AddWithValue("@PortfolioID", portfolioId);
         command.Parameters.AddWithValue("@TransactionType", MapTradeActionToLegacyDbTransactionType(p_newTrade.Action));
-        command.Parameters.AddWithValue("@AssetTypeID", 2);
+        command.Parameters.AddWithValue("@AssetTypeID", MapAssetTypeToLegacyDbAssetType(p_newTrade.AssetType));
         command.Parameters.AddWithValue("@AssetSubTableID", GetStockId(p_newTrade.Symbol!));
         command.Parameters.AddWithValue("@Volume", p_newTrade.Quantity);
         command.Parameters.AddWithValue("@Price", p_newTrade.Price);
@@ -225,6 +226,13 @@ public class LegacyDb : IDisposable
         // Step1: Check the connection state
         if (m_connection?.State != System.Data.ConnectionState.Open)
             return "LegacyDb Error. Connection to SQL Server has not established successfully";
+
+        foreach (Trade trade in p_newTrades)
+        {
+            if (trade.AssetType != AssetType.Stock)
+                return "LegacyDb Error. Only AssetType.Stock is supported.";
+        }
+
         // Step2: Check the if the PortfolioId exists
         int portfolioId = GetPortfolioId(p_legacyDbPortfName);
         if (portfolioId == -1)
@@ -254,12 +262,12 @@ public class LegacyDb : IDisposable
         for (int i = 0; i < p_newTrades.Count; i++)
         {
             Trade trade = p_newTrades[i];
-            queryBuilder.Append($"({portfolioId}, {MapTradeActionToLegacyDbTransactionType(trade.Action)}, 2,");
+            queryBuilder.Append($"({portfolioId}, {MapTradeActionToLegacyDbTransactionType(trade.Action)}, {MapAssetTypeToLegacyDbAssetType(trade.AssetType)}, ");
             for(int j = 0; j < stockIdsResult.Count; j++) // Extract the stockId from existing stockIdsResult
             {
                 if (trade.Symbol == stockIdsResult[j].Ticker)
                 {
-                    queryBuilder.Append($"{stockIdsResult[j].Id},");
+                    queryBuilder.Append($"{stockIdsResult[j].Id}, ");
                     break;
                 }
             }
@@ -394,6 +402,33 @@ public class LegacyDb : IDisposable
             TradeAction.Buy => 4,
             TradeAction.Sell => 5,
             TradeAction.Exercise => 10,
+            _ => 0 // Unknown or unhandled cases
+        };
+    }
+
+    static AssetType MapLegacyDbAssetTypeToAssetType(byte p_legacyDbAssetType)
+    {
+        return p_legacyDbAssetType switch
+        {
+            0 => AssetType.Unknown,
+            1 => AssetType.CurrencyCash,
+            2 => AssetType.Stock,
+            _ => AssetType.Unknown
+        };
+    }
+
+    static byte MapAssetTypeToLegacyDbAssetType(AssetType p_assetType)
+    {
+        return p_assetType switch
+        {
+            AssetType.CurrencyCash => 1,
+            AssetType.Stock => 2,
+            AssetType.Futures => 3,
+            AssetType.Bond => 4,
+            AssetType.Option => 5,
+            AssetType.Commodity => 6,
+            AssetType.RealEstate => 7,
+            // AssetType.BenchmarkIndex => 8,
             _ => 0 // Unknown or unhandled cases
         };
     }
