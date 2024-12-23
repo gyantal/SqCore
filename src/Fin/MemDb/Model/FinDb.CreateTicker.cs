@@ -50,6 +50,9 @@ public partial class FinDb
         // Step 4: For each unique entry, pass the whole entry to CreateTicker
         foreach (string entry in uniqueNewEntries)
             await CreateTickerAsync(entry, mapFilesDir);
+
+        // QC Cloud backtests are one-time only, but in SqCore they run for weeks. This price cache is useful intraday, but after our daily price crawler runs, we have to clear this price cache.
+        QuantConnect.Lean.Engine.DataFeeds.TextSubscriptionDataSourceReader.BaseDataSourceCache.Clear();
     }
     public static async Task CreateTickerAsync(string entry, string mapFilesDir)
     {

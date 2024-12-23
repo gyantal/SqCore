@@ -171,6 +171,9 @@ public partial class FinDb
         if (nErrors > 0)
             HealthMonitorMessage.SendAsync($"FinDb.CrawlData() #{nErrors} errors", HealthMonitorMessageID.SqCoreWebCsError).TurnAsyncToSyncTask();
 
+        // QC Cloud backtests are one-time only, but in SqCore they run for weeks. This price cache is useful intraday, but after our daily price crawler runs, we have to clear this price cache.
+        QuantConnect.Lean.Engine.DataFeeds.TextSubscriptionDataSourceReader.BaseDataSourceCache.Clear();
+
         return true;
     }
 

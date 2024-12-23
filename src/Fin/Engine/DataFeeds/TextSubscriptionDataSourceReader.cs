@@ -23,7 +23,13 @@ namespace QuantConnect.Lean.Engine.DataFeeds
         private bool _shouldCacheDataPoints;
 
         private static int CacheSize = 100;
-        private static volatile Dictionary<string, List<BaseData>> BaseDataSourceCache = new Dictionary<string, List<BaseData>>(100);
+
+        // SqCore Change ORIGINAL:
+        // private static volatile Dictionary<string, List<BaseData>> BaseDataSourceCache = new Dictionary<string, List<BaseData>>(100);
+        // SqCore Change NEW:
+        // private to public change. QC Cloud backtests are one-time only, but in SqCore they run for weeks. This price cache is useful intraday, but after our daily price crawler runs, we have to clear this price cache.
+        public static volatile Dictionary<string, List<BaseData>> BaseDataSourceCache = new Dictionary<string, List<BaseData>>(100);
+        // SqCore Change END
         private static Queue<string> CacheKeys = new Queue<string>(100);
 
         /// <summary>

@@ -101,8 +101,6 @@ namespace QuantConnect.Algorithm.CSharp
             ProcessAlgorithmParam(algorithmParamQuery, out _tickers, out _weights, out _rebalancePeriodDays);
             if (_rebalancePeriodDays == -1) // if invalid value (because e.g. AlgorithmParam str is empty)
                 _rebalancePeriodDays = 30; // default value
-            // _forcedStartDate = new DateTime(2000, 1, 2);
-            // _forcedEndDate = new DateTime(2023, 02, 28); // means Local time, not UTC
 
             // *** Step 1: general initializations
             SetCash(1000000);
@@ -324,9 +322,6 @@ namespace QuantConnect.Algorithm.CSharp
                         rawClose = bar.Close; // Probably bug in QC: if there is a Split for the daily bar, then QC SplitAdjust that bar, even though we asked RAW data. QC only does it for the Split day. We can undo it, because the Split.ReferencePrice has the RAW price.
                     if (rawClose != null) // we have a split or dividend on Sunday, but there is no bar, so there is no price, which is fine
                     {
-                        if (occuredSplit != null)
-                            rawClose = occuredSplit.ReferencePrice; // ReferencePrice is RAW, not adjusted. Fixing QC bug of giving SplitAdjusted bar on Split day.
-                                                                    // clPrice = slice.Splits[_symbol].Price; // Price is an alias to Value. Value is this: For streams of data this is the price now, for OHLC packets this is the closing price.            
                         if (SqBacktestConfig.SqDailyTradingAtMOC) // SqDailyTradingAtMOC sends price at 16:00, which is right. No need the change. Without it, price comes 00:00 next morning, so we adjust it back.
                         {
                             _rawCloses[ticker].Add(new QcPrice() { ReferenceDate = slice.Time.Date, Close = (decimal)rawClose });
@@ -340,16 +335,9 @@ namespace QuantConnect.Algorithm.CSharp
                     }
                     if (occuredSplit != null)  // Split.SplitOccurred comes on the correct day with slice.Time: 8/25/2022 12:00:00
                     {
-                        if (SqBacktestConfig.SqDailyTradingAtMOC) // SqDailyTradingAtMOC sends price at 16:00, which is right. No need the change. Without it, price comes 00:00 next morning, so we adjust it back.
-                            _splits[ticker].Add(new QcSplit() { ReferenceDate = slice.Time.Date, Split = occuredSplit });
-                        else
-                            _splits[ticker].Add(new QcSplit() { ReferenceDate = slice.Time.Date.AddDays(-1), Split = occuredSplit });
-                        decimal refPrice = occuredSplit.ReferencePrice;    // Contains RAW price (before Split adjustment). Not used here.
                         decimal splitAdjMultiplicator = occuredSplit.SplitFactor;
-                        for (int i = 0; i < _adjCloses[ticker].Count; i++)  // Not-chosen option: if we 'have to' use QC bug 'wrongly-adjusted' rawClose, we can skip the last item. In that case we don't apply the split adjustment to the last item, which is the same day as the day of Split.
-                        {
+                        for (int i = 0; i < _adjCloses[ticker].Count - 1; i++)  // Not-chosen option: if we 'have to' use QC bug 'wrongly-adjusted' rawClose, we can skip the last item. In that case we don't apply the split adjustment to the last item, which is the same day as the day of Split.
                             _adjCloses[ticker][i].Close *= splitAdjMultiplicator;
-                        }
                     }
                 }
 
@@ -368,7 +356,6 @@ namespace QuantConnect.Algorithm.CSharp
                 foreach (string ticker in _tickers)
                 {
                     Symbol symbol = _symbolsDaily[ticker];
-                    Split occuredSplit = (slice.Splits.ContainsKey(symbol) && slice.Splits[symbol].Type == SplitType.SplitOccurred) ? slice.Splits[symbol] : null; // split.Type can be Warning and SplitOccured. Ignore 1-day early Split Warnings. Just use the occured
                     if (slice.Dividends.ContainsKey(symbol))
                     {
                         Dividend dividend = slice.Dividends[symbol];
@@ -378,9 +365,7 @@ namespace QuantConnect.Algorithm.CSharp
                             _dividends[ticker].Add(new QcDividend() { ReferenceDate = slice.Time.Date.AddDays(-1), Dividend = dividend });
                         decimal divAdjMultiplicator = 1 - dividend.Distribution / dividend.ReferencePrice;
                         for (int i = 0; i < _adjCloses[ticker].Count; i++)
-                        {
                             _adjCloses[ticker][i].Close *= divAdjMultiplicator;
-                        }
                         // Log($"Dividend on {slice.Time.ToString()}: {ticker} ${dividend.Distribution} when ReferencePrice was {dividend.ReferencePrice}.");
                     }
                 }
@@ -403,9 +388,7 @@ namespace QuantConnect.Algorithm.CSharp
                 List<QcPrice> lastLbTdPrices = new List<QcPrice>();
                 int startIndex = IsTradeInSqCore ? Math.Max(0, qcAdjCloses.Count - _lookbackTradingDays - 1) : Math.Max(0, qcAdjCloses.Count - _lookbackTradingDays);
                 for (int i = startIndex; i < qcAdjCloses.Count; i++)
-                {
                     lastLbTdPrices.Add(new QcPrice() { ReferenceDate = qcAdjCloses[i].ReferenceDate, Close = qcAdjCloses[i].Close });
-                }
                 if (IsTradeInQcCloud)
                 {
                     // add the last lookbackTradingDays items to the new dictionary from YF
@@ -413,7 +396,7 @@ namespace QuantConnect.Algorithm.CSharp
                         lastLbTdPrices.Add(new QcPrice() { ReferenceDate = this.Time.Date, Close = lastRawClose });
                     else // if lastLbTdPrices is empty, then not finding this date is fine. If lastLbTdPrices has at least 1 items, we expect that we find this date.
                         if (qcAdjCloses.Count > 0)
-                        throw new Exception($"Cannot find date {this.Time.Date.ToString()} in the YF.");
+                            throw new Exception($"Cannot find date {this.Time.Date.ToString()} in the YF.");
                 }
 
                 usedAdjCloses[ticker] = lastLbTdPrices;

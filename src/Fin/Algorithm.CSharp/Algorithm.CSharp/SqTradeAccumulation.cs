@@ -11,14 +11,20 @@ using QuantConnect.Data.Market;
 using System.Text;
 using System.Globalization;
 using System.IO;
+using System.Web;
+using System.Collections.Specialized;
 #endregion
 namespace QuantConnect.Algorithm.CSharp
 {
     public class SqTradeAccumulation : QCAlgorithm
     {
-        DateTime _startDate = DateTime.MinValue;
-        DateTime _endDate = DateTime.MaxValue;
+        StartDateAutoCalcMode _startDateAutoCalcMode = StartDateAutoCalcMode.Unknown;
+        DateTime _forcedStartDate; // user can force a startdate
+        DateTime _startDate = DateTime.MinValue; // real startDate. We expect PV chart to start from here. There can be some warmUp days before that, for which data is needed.
+        DateTime _earliestCashDay = DateTime.MinValue;
         TimeSpan _warmUp = TimeSpan.Zero;
+        DateTime _forcedEndDate;
+        DateTime _endDate = DateTime.MaxValue;
         OrderTicket _lastOrderTicket = null;
         private Dictionary<DateTime, List<Trade>> _tradesByDate; //  Contains only Buy and Sell trades. Same as this.PortTradeHist but that is a List, this is a Dict.
         private Dictionary<DateTime, List<Trade>> _cashTransactionsByDate; // Contains only Deposit and Withdrawal
@@ -28,16 +34,17 @@ namespace QuantConnect.Algorithm.CSharp
         // private List<Trade> _executedTrades;
         private decimal _initialCash;
         private decimal _yestPV;
-        private List<(DateTime date, decimal pvBefore, decimal pvAfter)> _portfolioValues;
+        private List<(DateTime date, decimal pvBefore, decimal pvAfter, decimal cash)> _portfolioValues;
 
         public override void Initialize()
         {
-            _endDate = DateTime.Now;
+            NameValueCollection algorithmParamQuery = HttpUtility.ParseQueryString(AlgorithmParam);
+            QCAlgorithmUtils.ProcessAlgorithmParam(algorithmParamQuery, out _forcedStartDate, out _forcedEndDate, out _startDateAutoCalcMode);
 
             _tradesByDate = new Dictionary<DateTime, List<Trade>>();
             _cashTransactionsByDate = new Dictionary<DateTime, List<Trade>>();
             // _executedTrades = new List<Trade>();
-            _portfolioValues = new List<(DateTime date, decimal pvBefore, decimal pvAfter)>();
+            _portfolioValues = new List<(DateTime date, decimal pvBefore, decimal pvAfter, decimal cash)>();
 
             // Populate the _tradesByDate, _cashTransactionsByDate dictionaries based on the type of transaction
             DateTime prevDate = DateTime.MinValue; // For checking if the trades are sorted by date
@@ -90,16 +97,35 @@ namespace QuantConnect.Algorithm.CSharp
                 if (_initialCash <= 0)
                     throw new Exception("Initial cash balance is not positive.");
 
-                _startDate = firstCashDate;
+                _earliestCashDay = firstCashDate;
                 _cashDates.RemoveAt(0);
                 _cashTransactionsByDate.Remove(firstCashDate); // Remove the processed date
             }
             else
                 throw new Exception("No cash transactions found.");
 
-            // Ensure the start date is not later than the first trade date
-            if (_tradeDates.Count > 0 && _startDate > _tradeDates[0])
-                _startDate = _tradeDates[0];
+            // startDate and warmup determination
+            SetWarmUp(_warmUp);
+
+            if (_forcedStartDate == DateTime.MinValue) // auto calculate if user didn't give a forced startDate. Otherwise, we are obliged to use that user specified forced date.
+                _startDate = (_tradeDates.Count > 0 && _tradeDates[0] < _earliestCashDay) ? _tradeDates[0] : _earliestCashDay;
+            else
+                _startDate = _forcedStartDate;
+
+            Log($"EarliestCashDay: {_earliestCashDay: yyyy-MM-dd}, PV startDate: {_startDate: yyyy-MM-dd}");
+
+            // endDate determination
+            if (_forcedEndDate == DateTime.MaxValue)
+                _endDate = DateTime.Now;
+            else
+                _endDate = _forcedEndDate;
+
+            if (_endDate < _startDate)
+            {
+                string errMsg = $"StartDate ({_startDate:yyyy-MM-dd}) should be earlier then EndDate  ({_endDate:yyyy-MM-dd}).";
+                Log(errMsg);
+                throw new ArgumentOutOfRangeException(errMsg);
+            }
 
             SetStartDate(_startDate.AddDays(-1));
             SetEndDate(_endDate);
@@ -172,40 +198,7 @@ namespace QuantConnect.Algorithm.CSharp
                     string ticker = trade.Symbol;
                     int adjustedQuantity = trade.Action == TradeAction.Sell ? -trade.Quantity : trade.Quantity; // In the database, we only store positive quantities, even for Sell transactions. Here we need to convert them to their negative equivalent. 
                     decimal tradePrice = (decimal)trade.Price;
-                    decimal splitFactor = 1m;
-                    if (slice.Splits.ContainsKey(ticker))
-                    {
-                        Split split = slice.Splits[ticker];
-                        if (split.Type == SplitType.SplitOccurred)
-                        {
-                            splitFactor = split.SplitFactor;
-                            adjustedQuantity = (int)(adjustedQuantity / splitFactor);
-                            tradePrice *= splitFactor;
-                        }
-                    }
-                    // if (slice.Dividends.ContainsKey(ticker)) // In the QC system, dividend handling occurs before the slice arrives. Since the FixPrice trade comes later, the dividends need to be applied retroactively to it as well.
-                    // {
-                    //     Dividend dividend = slice.Dividends[ticker];
-                    //     decimal adjustedDividend = dividend.Distribution * splitFactor;
-                    //     decimal totalDividendCorrection = adjustedQuantity * dividend.Distribution;
-                    //     Portfolio.CashBook["USD"].AddAmount(totalDividendCorrection);
-                    // }
                     _lastOrderTicket = FixPriceOrder(ticker, adjustedQuantity, tradePrice);
-
-                    // // TradeBar tradeBar = slice.Bars[ticker];
-                    // TradeBar tradeBar;
-                    // decimal closePrice;
-                    // if (!slice.Bars.TryGetValue(ticker, out tradeBar))
-                    // {
-                    //     Console.WriteLine($"No tradebar for {ticker} on {tradeDate}.");
-                    //     // throw new Exception($"No tradebar for {ticker} on {tradeDate}.");
-                    //     closePrice = 100m;
-                    // }
-                    // else 
-                    //     closePrice = tradeBar.Close;
-                    
-                    // if ((closePrice / tradePrice > 1.1m) || (closePrice / tradePrice < 0.9m))
-                    //     Log($"Significant price difference: {ticker}. ClosePrice: {closePrice}, FixPrice: {tradePrice}.");
                 }
                 _tradeDates.RemoveAt(0);
                 _tradesByDate.Remove(tradeDate);
@@ -213,8 +206,9 @@ namespace QuantConnect.Algorithm.CSharp
             decimal pvAfter = Portfolio.TotalPortfolioValue;
             // if(pvAfter / pvBefore < 0.9m || pvAfter / pvBefore > 1.1m)
             //     Log($"Significant intraday PV change: {slice.Time.Date}. ClosePV: {pvAfter}, PV open: {pvBefore}.");
+            decimal cash = Portfolio.Cash;
 
-            _portfolioValues.Add((slice.Time.Date, pvBefore, pvAfter));
+            _portfolioValues.Add((slice.Time.Date, pvBefore, pvAfter, cash));
             _yestPV = pvAfter;
         }
         public override void OnOrderEvent(OrderEvent orderEvent)
@@ -270,15 +264,15 @@ namespace QuantConnect.Algorithm.CSharp
 
         //     File.WriteAllText(fileName, csv.ToString());
         // }
-        private void WritePortfolioValuesToCsv(List<(DateTime date, decimal pvBefore, decimal pvAfter)> portfolioValues, string fileName)
+        private void WritePortfolioValuesToCsv(List<(DateTime date, decimal pvBefore, decimal pvAfter, decimal cash)> portfolioValues, string fileName)
         {
             StringBuilder csv = new StringBuilder();
             csv.AppendLine("Date,pvBefore,pvAfter");
 
-            foreach ((DateTime date, decimal pvBefore, decimal pvAfter) entry in portfolioValues)
+            foreach ((DateTime date, decimal pvBefore, decimal pvAfter, decimal cash) entry in portfolioValues)
             {
                 string date = entry.date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
-                csv.AppendLine($"{date},{entry.pvBefore},{entry.pvAfter}");
+                csv.AppendLine($"{date},{entry.pvBefore},{entry.pvAfter},{entry.cash}");
             }
 
             File.WriteAllText(fileName, csv.ToString());

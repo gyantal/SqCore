@@ -87,7 +87,7 @@ namespace QuantConnect.Lean.Engine.DataFeeds.Enumerators
                 // eventArgs.Date comes from ((SubscriptionDataReader)enumerator)._tradeableDates.Current. That is the startTime of that tradeable date. So, we 
                 DateTime splitDate;
                 if (_config.Resolution == Resolution.Daily && SqBacktestConfig.SqDailyTradingAtMOC) // don't change the original QC method if it is per Minute resolution
-                    splitDate = eventArgs.Date.AddHours(-8); // 2024-11-27: We shift splits by -8 hours, and dividends by +16 hours. Intended. Correct. We double checked.
+                    splitDate = eventArgs.Date.AddHours(16);  // 2024-12-23: We shift splits by +16 hours, and dividends by +16 hours too. Intended. Correct. We double checked.
                 else
                     splitDate = eventArgs.Date;
 

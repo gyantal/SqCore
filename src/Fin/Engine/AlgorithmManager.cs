@@ -307,6 +307,45 @@ namespace QuantConnect.Lean.Engine
                     Utils.Logger.Error($"AlgorithmManager.Run(): Stopping, encountered a runtime error at {algorithm.UtcTime} UTC.");
                     return;
                 }
+                // SqCore Change NEW:
+                // When we changed Split date shift from -8h to 16h, we had to move the MarginCallModel.GetMarginCallOrders() After the split adjustments HandleSplits()
+                // perform check for settlement of unsettled funds
+                if (time >= nextSettlementScanTime || (_liveMode && nextSettlementScanTime > DateTime.UtcNow))
+                {
+                    algorithm.Portfolio.ScanForCashSettlement(algorithm.UtcTime);
+
+                    nextSettlementScanTime = time + settlementScanFrequency;
+                }
+
+                // before we call any events, let the algorithm know about universe changes
+                if (timeSlice.SecurityChanges != SecurityChanges.None)
+                {
+                    try
+                    {
+                        var algorithmSecurityChanges = new SecurityChanges(timeSlice.SecurityChanges)
+                        {
+                            // by default for user code we want to filter out custom securities
+                            FilterCustomSecurities = true,
+                            // by default for user code we want to filter out internal securities
+                            FilterInternalSecurities = true
+                        };
+
+                        algorithm.OnSecuritiesChanged(algorithmSecurityChanges);
+                        algorithm.OnFrameworkSecuritiesChanged(algorithmSecurityChanges);
+                    }
+                    catch (Exception err)
+                    {
+                        algorithm.SetRuntimeError(err, "OnSecuritiesChanged");
+                        return;
+                    }
+                }
+
+                // apply dividends
+                HandleDividends(timeSlice, algorithm, _liveMode);
+
+                // apply splits
+                HandleSplits(timeSlice, algorithm, _liveMode);
+                // SqCore Change END
 
                 // perform margin calls, in live mode we can also use realtime to emit these
                 if (time >= nextMarginCallTime || (_liveMode && nextMarginCallTime > DateTime.UtcNow))
@@ -355,43 +394,44 @@ namespace QuantConnect.Lean.Engine
 
                     nextMarginCallTime = time + marginCallFrequency;
                 }
+                // SqCore Change ORIGINAL:
+                // // perform check for settlement of unsettled funds
+                // if (time >= nextSettlementScanTime || (_liveMode && nextSettlementScanTime > DateTime.UtcNow))
+                // {
+                //     algorithm.Portfolio.ScanForCashSettlement(algorithm.UtcTime);
 
-                // perform check for settlement of unsettled funds
-                if (time >= nextSettlementScanTime || (_liveMode && nextSettlementScanTime > DateTime.UtcNow))
-                {
-                    algorithm.Portfolio.ScanForCashSettlement(algorithm.UtcTime);
+                //     nextSettlementScanTime = time + settlementScanFrequency;
+                // }
 
-                    nextSettlementScanTime = time + settlementScanFrequency;
-                }
+                // // before we call any events, let the algorithm know about universe changes
+                // if (timeSlice.SecurityChanges != SecurityChanges.None)
+                // {
+                //     try
+                //     {
+                //         var algorithmSecurityChanges = new SecurityChanges(timeSlice.SecurityChanges)
+                //         {
+                //             // by default for user code we want to filter out custom securities
+                //             FilterCustomSecurities = true,
+                //             // by default for user code we want to filter out internal securities
+                //             FilterInternalSecurities = true
+                //         };
 
-                // before we call any events, let the algorithm know about universe changes
-                if (timeSlice.SecurityChanges != SecurityChanges.None)
-                {
-                    try
-                    {
-                        var algorithmSecurityChanges = new SecurityChanges(timeSlice.SecurityChanges)
-                        {
-                            // by default for user code we want to filter out custom securities
-                            FilterCustomSecurities = true,
-                            // by default for user code we want to filter out internal securities
-                            FilterInternalSecurities = true
-                        };
+                //         algorithm.OnSecuritiesChanged(algorithmSecurityChanges);
+                //         algorithm.OnFrameworkSecuritiesChanged(algorithmSecurityChanges);
+                //     }
+                //     catch (Exception err)
+                //     {
+                //         algorithm.SetRuntimeError(err, "OnSecuritiesChanged");
+                //         return;
+                //     }
+                // }
 
-                        algorithm.OnSecuritiesChanged(algorithmSecurityChanges);
-                        algorithm.OnFrameworkSecuritiesChanged(algorithmSecurityChanges);
-                    }
-                    catch (Exception err)
-                    {
-                        algorithm.SetRuntimeError(err, "OnSecuritiesChanged");
-                        return;
-                    }
-                }
+                // // apply dividends
+                // HandleDividends(timeSlice, algorithm, _liveMode);
 
-                // apply dividends
-                HandleDividends(timeSlice, algorithm, _liveMode);
-
-                // apply splits
-                HandleSplits(timeSlice, algorithm, _liveMode);
+                // // apply splits
+                // HandleSplits(timeSlice, algorithm, _liveMode);
+                // SqCore Change END
 
                 //Update registered consolidators for this symbol index
                 try

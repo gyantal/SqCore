@@ -725,38 +725,42 @@ namespace QuantConnect.Securities
 
             security.Holdings.SetHoldings(avgPrice, (int)quantity);
 
+            // SqCore Change ORIGINAL:
             // build a 'next' value to update the market prices in light of the split factor
-            var next = security.GetLastData();
-            if (next == null)
-            {
-                // sometimes we can get splits before we receive data which
-                // will cause this to return null, in this case we can't possibly
-                // have any holdings or price to set since we haven't received
-                // data yet, so just do nothing
-                _baseCurrencyCash.AddAmount(leftOver * split.ReferencePrice * split.SplitFactor);
-                return;
-            }
-            next.Value *= split.SplitFactor;
+            // var next = security.GetLastData();
+            // if (next == null)
+            // {
+            //     // sometimes we can get splits before we receive data which
+            //     // will cause this to return null, in this case we can't possibly
+            //     // have any holdings or price to set since we haven't received
+            //     // data yet, so just do nothing
+            //     _baseCurrencyCash.AddAmount(leftOver * split.ReferencePrice * split.SplitFactor);
+            //     return;
+            // }
+            // next.Value *= split.SplitFactor;
 
-            // make sure to modify open/high/low as well for tradebar data types
-            var tradeBar = next as TradeBar;
-            if (tradeBar != null)
-            {
-                tradeBar.Open *= split.SplitFactor;
-                tradeBar.High *= split.SplitFactor;
-                tradeBar.Low *= split.SplitFactor;
-            }
+            // // make sure to modify open/high/low as well for tradebar data types
+            // var tradeBar = next as TradeBar;
+            // if (tradeBar != null)
+            // {
+            //     tradeBar.Open *= split.SplitFactor;
+            //     tradeBar.High *= split.SplitFactor;
+            //     tradeBar.Low *= split.SplitFactor;
+            // }
 
-            // make sure to modify bid/ask as well for tradebar data types
-            var tick = next as Tick;
-            if (tick != null)
-            {
-                tick.AskPrice *= split.SplitFactor;
-                tick.BidPrice *= split.SplitFactor;
-            }
+            // // make sure to modify bid/ask as well for tradebar data types
+            // var tick = next as Tick;
+            // if (tick != null)
+            // {
+            //     tick.AskPrice *= split.SplitFactor;
+            //     tick.BidPrice *= split.SplitFactor;
+            // }
 
-            security.SetMarketPrice(next);
-            _baseCurrencyCash.AddAmount(leftOver * next.Price);
+            // security.SetMarketPrice(next);
+            // _baseCurrencyCash.AddAmount(leftOver * next.Price);
+            // SqCore Change NEW:
+            _baseCurrencyCash.AddAmount(leftOver * split.ReferencePrice * split.SplitFactor);
+            // SqCore Change END
 
             // security price updated
             InvalidateTotalPortfolioValue();

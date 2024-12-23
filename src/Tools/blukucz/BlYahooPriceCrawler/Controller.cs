@@ -409,7 +409,7 @@ namespace BlYahooPriceCrawler
             Dictionary<string, List<YFRecord>> yfData = ReadYahooCsvFiles(tickers, "D:/Temp/YFHist/");
 
             // int[] p_nDayinFuture = [-252, -189, -126, -63, -21, 3, 5, 10, 21, 42, 63, 84, 105, 126, 189];
-            int[] p_nDayinFuture = [-252, -189, -126, -63, -21, -15, -10, -5, 1, 2, 3, 4, 5, 10, 15, 21, 42, 63, 84, 105, 126, 189, 252 ];
+            int[] p_nDayinFuture = [-252, -189, -126, -63, -21, -15, -10, -5, 1, 2, 3, 4, 5, 10, 15, 21, 42, 63, 84, 105, 126, 189, 252];
             float stopLossPercentage = 99999f; // Use a big number (e.g. 9999) to avoid stop-loss.
             bool useMOC = true;
             List<PerformanceResult> performances = CalculatePerformances(recommendationsFromCsv, yfData, p_nDayinFuture, stopLossPercentage, useMOC);
@@ -417,5 +417,140 @@ namespace BlYahooPriceCrawler
             string outputCsvFile = "D:/Temp/recommendationResult.csv";
             WritePerformanceResultsToCsv(outputCsvFile, performances, p_nDayinFuture);
         }
+
+        public static void SAQuantRatingScoreAggregator()
+        {
+            string inputDirectory = @"d:\Temp\SAQR\";
+            string outputFile = @"d:\Temp\AggregatedSAQRScores.csv";
+
+            // Dictionary to store tickers and their date-QuantScore pairs
+            Dictionary<string, List<(string Date, double QuantScore)>> tickerData = [];
+
+            // Read all files from the directory
+            foreach (string filePath in Directory.GetFiles(inputDirectory, "*.csv"))
+            {
+                string fileName = Path.GetFileNameWithoutExtension(filePath);
+                string ticker = fileName.Split('_')[0]; // Extract ticker from file name
+
+                if (tickerData.ContainsKey(ticker))
+                    continue; // Skip if the ticker is already added
+
+                tickerData[ticker] = [];
+                // Read the file line by line
+                foreach (string? line in File.ReadLines(filePath).Skip(1)) // Skip header
+                {
+                    string[] columns = line.Split(',');
+
+                    if (columns.Length >= 4 && double.TryParse(columns[3], out double quantScore))
+                    {
+                        string date = DateTime.ParseExact(columns[0], "MM/dd/yyyy", CultureInfo.InvariantCulture).ToString("yyyy-MM-dd");
+                        tickerData[ticker].Add((date, quantScore));
+                    }
+                }
+            }
+
+            // Aggregate all unique dates
+            List<string> allDates = [.. tickerData
+                .SelectMany(kvp => kvp.Value.Select(pair => pair.Date))
+                .Distinct()
+                .OrderBy(date => date)];
+
+            // Write the output CSV
+            using (StreamWriter writer = new(outputFile))
+            {
+                // Write header
+                writer.WriteLine("Date," + string.Join(",", tickerData.Keys.OrderBy(ticker => ticker)));
+
+                // Write rows
+                foreach (string date in allDates)
+                {
+                    List<string> row = [date];
+                    foreach (string? ticker in tickerData.Keys.OrderBy(ticker => ticker))
+                    {
+                        double score = tickerData[ticker].FirstOrDefault(pair => pair.Date == date).QuantScore;
+                        row.Add(score > 0 ? score.ToString("F2") : ""); // Write score or leave empty
+                    }
+                    writer.WriteLine(string.Join(",", row));
+                }
+            }
+        }
+
+        public static void SteveCressRecommendationQRs()
+        {
+            string aggregatedFile = @"d:\Temp\AggregatedSAQRScores.csv";
+            string recommendationFile = @"d:\Temp\SteveCressRecommendationQRs.csv";
+            string outputFile = @"d:\Temp\SteveCressRecommendationQRs_WithScores.csv";
+
+            // Step 1: Load AggregatedScores.csv into a structured dictionary
+            Dictionary<string, SortedDictionary<DateTime, string>> aggregatedData = LoadAggregatedData(aggregatedFile);
+
+            // Step 2: Process SteveCressRecommendationQRs.csv
+            List<string> outputLines = [];
+
+            foreach (string line in File.ReadLines(recommendationFile))
+            {
+                string[] columns = line.Split(',');
+                if (columns.Length < 2) continue;
+
+                string ticker = columns[0];
+                string date = columns[1];
+
+                string quantScore = GetScoreForDate(aggregatedData, ticker, date);
+                outputLines.Add($"{ticker},{date},{quantScore}");
+            }
+
+            // Step 3: Write the output
+            File.WriteAllLines(outputFile, outputLines);
+        }
+
+        static Dictionary<string, SortedDictionary<DateTime, string>> LoadAggregatedData(string filePath)
+        {
+            Dictionary<string, SortedDictionary<DateTime, string>> result = [];
+
+            List<string> lines = File.ReadLines(filePath).ToList();
+            List<string> headers = lines[0].Split(',').Skip(1).ToList(); // Skip "Date" column
+
+            foreach (string? line in lines.Skip(1))
+            {
+                string[] columns = line.Split(',');
+                DateTime date = DateTime.ParseExact(columns[0], "yyyy-MM-dd", CultureInfo.InvariantCulture);
+
+                for (int i = 1; i < columns.Length; i++)
+                {
+                    string ticker = headers[i - 1];
+                    string score = columns[i];
+
+                    // Add or update the ticker's data
+                    if (!result.ContainsKey(ticker))
+                        result[ticker] = [];
+
+                    // Add the date-score pair
+                    result[ticker][date] = score;
+                }
+            }
+
+            return result;
+        }
+
+        static string GetScoreForDate(Dictionary<string, SortedDictionary<DateTime, string>> data, string ticker, string dateStr)
+        {
+            if (!data.ContainsKey(ticker))
+                return ""; // Ticker not found
+
+            SortedDictionary<DateTime, string> tickerData = data[ticker];
+            DateTime date = DateTime.ParseExact(dateStr, "yyyy-MM-dd", CultureInfo.InvariantCulture);
+
+            // Exact match
+            if (tickerData.ContainsKey(date))
+                return tickerData[date];
+
+            // Find the closest earlier date
+            List<DateTime> previousDates = tickerData.Keys.Where(d => d <= date).ToList();
+            if (previousDates.Any())
+                return tickerData[previousDates.Last()];
+
+            return ""; // No previous data available
+        }
+
     }
 }
