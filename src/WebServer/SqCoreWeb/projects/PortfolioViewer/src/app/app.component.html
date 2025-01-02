@@ -222,24 +222,26 @@
   <table class="tableCommon">
     <thead>
       <tr>
+        <th [ngClass]="{'activeSortTableHeader':m_tradesTabSortColumn == 'action'}" (click)="onSortingTradesClicked('action')">TradeAction</th>
+        <th [ngClass]="{'activeSortTableHeader':m_tradesTabSortColumn == 'assetType'}" (click)="onSortingTradesClicked('assetType')">AssetType</th>
         <th [ngClass]="{'activeSortTableHeader':m_tradesTabSortColumn == 'underlyingSymbol'}" (click)="onSortingTradesClicked('underlyingSymbol')">Symbol</th>
         <th [ngClass]="{'activeSortTableHeader':m_tradesTabSortColumn == 'quantity'}" (click)="onSortingTradesClicked('quantity')">Qty</th>
         <th [ngClass]="{'activeSortTableHeader':m_tradesTabSortColumn == 'price'}" (click)="onSortingTradesClicked('price')">Price</th>
         <th [ngClass]="{'activeSortTableHeader':m_tradesTabSortColumn == 'currency'}" (click)="onSortingTradesClicked('currency')">Currency</th>
-        <th [ngClass]="{'activeSortTableHeader':m_tradesTabSortColumn == 'action'}" (click)="onSortingTradesClicked('action')">TradeAction</th>
-        <th [ngClass]="{'activeSortTableHeader':m_tradesTabSortColumn == 'assetType'}" (click)="onSortingTradesClicked('assetType')">AssetType</th>
+        <th>MktVal</th>
         <th [ngClass]="{'activeSortTableHeader':m_tradesTabSortColumn == 'time'}" (click)="onSortingTradesClicked('time')">Date</th>
         <th [ngClass]="{'activeSortTableHeader':m_tradesTabSortColumn == 'exchangeId'}" (click)="onSortingTradesClicked('exchangeId')">ExchangeId</th>
       </tr>
     </thead>
     <tbody *ngFor="let item of m_trades">
       <tr (click)="onClickSelectedTradeItem(item, $event)" [ngClass]="{'tradedRowSelected': item.isSelected}">
+        <td>{{m_enumTradeAction[item.action]}}</td>
+        <td>{{m_enumAssetType[item.assetType]}}</td>
         <td>{{item.underlyingSymbol}}</td>
         <td>{{item.quantity}}</td>
         <td>{{item.price | number:'1.2-2'}}</td>
         <td>{{m_enumCurrencyId[item.currency] == 'Unknown' ? 'USD' : m_enumCurrencyId[item.currency]}}</td> <!-- Displaying the currencyId as 'USD' in the UI, while 'USD' is stored as 'unknown' in the database. -->
-        <td>{{m_enumTradeAction[item.action]}}</td>
-        <td>{{m_enumAssetType[item.assetType]}}</td>
+        <td>{{item.quantity * item.price | number:'1.0-0'}}</td>
         <td>{{item.time | date : 'yyyy-MM-dd HH:mm'}}</td>
         <td>{{m_enumExchangeId[item.exchangeId]}}</td>
       </tr>
@@ -255,8 +257,7 @@
   CompletionDate parts (year, month, day) are used in this case to create the final UTC trade date. By default it is the UtcNow time converted to a date.
   If the default is somehow wrong, the user can change it.">CompletionDate (in UTC): <input type="date" [value]="m_legacyDbInsCompletionDateUtcStr" (input)="onInputLegacyDbDateInsertion($event)"></label>&nbsp;
   <button (click)="onClickConvertTradesStrToTradesJs()">Convert</button>
-  <div *ngIf="m_legacyDbInsTradesSyntaxCheckResult != null" [ngStyle]="{color: m_legacyDbInsTradesSyntaxCheckResult.includes('Error') ? '#FF0000' : '#008000'}">{{m_legacyDbInsTradesSyntaxCheckResult}}
-  </div>
+  <div *ngIf="m_legacyDbInsTradesSyntaxCheckResult != null" [ngStyle]="{color: m_legacyDbInsTradesSyntaxCheckResult.includes('Error') ? '#FF0000' : '#008000'}">{{m_legacyDbInsTradesSyntaxCheckResult}}</div>
   <table class="tableCommon" *ngIf="this.m_legacyDbInsTrades.length != 0">
     <thead>
       <tr>
@@ -266,8 +267,9 @@
         <th>Symbol</th>
         <th>Qty</th>
         <th>Price</th>
-        <th>Date</th>
         <th>Currency</th>
+        <th>MktVal</th>
+        <th>Date</th>
       </tr>
     </thead>
     <tbody>
@@ -278,8 +280,9 @@
         <td>{{item.symbol}}</td>
         <td>{{item.quantity}}</td>
         <td>{{m_enumCurrencyId[item.currency] == 'USD' ? '$' : ''}}{{item.price | number:'1.2-2'}}</td>
-        <td>{{item.time | date : 'yyyy-MM-dd HH:mm'}}</td>
         <td>{{m_enumCurrencyId[item.currency] == 'Unknown' ? 'USD' : m_enumCurrencyId[item.currency]}}</td> <!-- Displaying the currencyId as 'USD' in the UI, while 'USD' is stored as 'unknown' in the database. -->
+        <td class="mktVal">{{m_enumCurrencyId[item.currency] == 'USD' ? '$' : ''}}{{item.quantity * item.price | number:'1.0-0'}}</td>
+        <td>{{item.time | date : 'yyyy-MM-dd HH:mm'}}</td>
       </tr>
     </tbody>
   </table><br>
@@ -288,23 +291,25 @@
   <table class="tableCommon" *ngIf="this.m_legacyDbTrades.length != 0">
     <thead>
       <tr>
+        <th>TradeAction</th>
+        <th>AssetType</th>
         <th>Symbol</th>
         <th>Qty</th>
         <th>Price</th>
         <th>Currency</th>
-        <th>TradeAction</th>
-        <th>AssetType</th>
+        <th>MktVal</th>
         <th (click)="onSortingLegacyDbTradesClicked('time')">Date</th>
       </tr>
     </thead>
     <tbody *ngFor="let item of m_legacyDbTrades">
       <tr>
-        <td>{{item.symbol}}</td>
-        <td>{{item.quantity}}</td>
-        <td>{{item.price | number:'1.2-2'}}</td>
-        <td>{{m_enumCurrencyId[item.currency] == 'Unknown' ? 'USD' : m_enumCurrencyId[item.currency]}}</td> <!-- Displaying the currencyId as 'USD' in the UI, while 'USD' is stored as 'unknown' in the database. -->
         <td>{{m_enumTradeAction[item.action]}}</td>
         <td>{{m_enumAssetType[item.assetType]}}</td>
+        <td>{{item.symbol}}</td>
+        <td>{{item.quantity}}</td>
+        <td>{{m_enumCurrencyId[item.currency] == 'Unknown' ? '$' : ''}}{{item.price | number:'1.2-2'}}</td>
+        <td>{{m_enumCurrencyId[item.currency] == 'Unknown' ? 'USD' : m_enumCurrencyId[item.currency]}}</td> <!-- Displaying the currencyId as 'USD' in the UI, while 'USD' is stored as 'unknown' in the database. -->
+        <td class="mktVal">{{m_enumCurrencyId[item.currency] == 'Unknown' ? '$' : ''}}{{item.quantity * item.price | number:'1.0-0'}}</td>
         <td [ngClass]="{'highlightLatestTrades': (item.time | date:'yyyy-MM-dd') == (m_legacyDbTradesMaxDate | date:'yyyy-MM-dd')}">{{item.time | date : 'yyyy-MM-dd HH:mm'}}</td>
       </tr>
     </tbody>

@@ -212,6 +212,7 @@ export class AppComponent {
           console.log('PrtfVwr.LegacyDbTradesHist:' + msgObjStr);
           this.m_legacyDbTrades = AppComponent.processHistoricalTrades(msgObjStr);
           this.m_legacyDbTradesMaxDate = AppComponent.getLegacyDbTradesMaxDate(this.m_legacyDbTrades);
+          this.m_isTradesTabSortDirAscend = false;
           this.onSortingLegacyDbTradesClicked(this.m_tradesTabSortColumn);
           break;
       }
@@ -287,10 +288,8 @@ export class AppComponent {
     if (this.m_activeTab == 'Trades')
       this.getTradesHistory();
 
-    if (this.m_activeTab == 'LegacyDbTrades') {
+    if (this.m_activeTab == 'LegacyDbTrades')
       this.getLegacyDbPortfolioTradeHistory();
-      this.m_isTradesTabSortDirAscend = false; // Resetting the sorting to Descending order (when the user switches between Trades and LegacyDb Trades tabs, the sorting for LegacyDb Trades changes, but it should always remain in descending order).
-    }
   }
 
   onHistPeriodChangeClicked() { // send this when user changes the historicalPosDates
@@ -625,6 +624,9 @@ export class AppComponent {
         this.m_legacyDbInsTrades.push(tradeDataProcessResult.tradeObj);
       }
     }
+
+    if (this.m_legacyDbInsTradesSyntaxCheckResult == 'Syntax OK') // empty the textarea, if syntax check is OK
+      tradesStrInputElement.value = '';
   }
 
   validateAndProcessTradeData(tradeRowStr: string, rowInd:number): { tradeObj: TradeJs | null; errorStr: string | null } {

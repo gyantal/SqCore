@@ -216,3 +216,8 @@ thead {
   font-weight: bolder;
   background-color: #FFAE42;
 }
+
+.mktVal { // It was used to emphasize the mktVal field in the legacyDbTrades data table since it was a calculated field.
+  font-style: italic;
+  color: darkgrey;
+}
