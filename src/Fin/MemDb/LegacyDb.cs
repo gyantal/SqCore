@@ -118,7 +118,8 @@ public class LegacyDb : IDisposable
         }
 
         // Step 2: Query trades using the obtained portfolioId
-        string queryStr = $"SELECT TOP {p_numTop} portfolioitem.*, COALESCE(stock.ticker, 'USD') AS ticker FROM portfolioitem LEFT JOIN stock ON portfolioitem.assetsubtableid = stock.id WHERE portfolioitem.portfolioid = {portfolioId} ORDER BY portfolioitem.Date";
+        string topOrEmptyStr = p_numTop == Int32.MaxValue ? string.Empty : $"TOP {p_numTop}";
+        string queryStr = $"SELECT {topOrEmptyStr} portfolioitem.*, COALESCE(stock.ticker, 'USD') AS ticker FROM portfolioitem LEFT JOIN stock ON portfolioitem.assetsubtableid = stock.id WHERE portfolioitem.portfolioid = {portfolioId} ORDER BY portfolioitem.Date";
         SqlCommand command = new(queryStr, m_connection);
 
         List<Trade> trades = new();
@@ -262,20 +263,20 @@ public class LegacyDb : IDisposable
         for (int i = 0; i < p_newTrades.Count; i++)
         {
             Trade trade = p_newTrades[i];
-            queryBuilder.Append($"({portfolioId}, {MapTradeActionToLegacyDbTransactionType(trade.Action)}, {MapAssetTypeToLegacyDbAssetType(trade.AssetType)}, ");
+            queryBuilder.Append($"({portfolioId},{MapTradeActionToLegacyDbTransactionType(trade.Action)},{MapAssetTypeToLegacyDbAssetType(trade.AssetType)},");
             for(int j = 0; j < stockIdsResult.Count; j++) // Extract the stockId from existing stockIdsResult
             {
                 if (trade.Symbol == stockIdsResult[j].Ticker)
                 {
-                    queryBuilder.Append($"{stockIdsResult[j].Id}, ");
+                    queryBuilder.Append($"{stockIdsResult[j].Id},");
                     break;
                 }
             }
-            queryBuilder.Append($"{trade.Quantity}, {trade.Price}, '{trade.Time:yyyy-MM-dd HH:mm:ss}', ");
+            queryBuilder.Append($"{trade.Quantity},{trade.Price},'{trade.Time:yyyy-MM-dd HH:mm:ss}',");
             queryBuilder.Append(string.IsNullOrEmpty(trade.Note) ? "NULL" : $"'<Note><UserNote Text=\"{trade.Note}\" /></Note>'");
 
             if (i < p_newTrades.Count - 1)
-                queryBuilder.Append("), "); // If it's not the last ticker, add a closing parenthesis and a comma separator
+                queryBuilder.Append("),"); // If it's not the last ticker, add a closing parenthesis and a comma separator
             else
                 queryBuilder.Append(")"); // If it's the last ticker, add a closing parenthesis without a comma
         }
@@ -406,18 +407,19 @@ public class LegacyDb : IDisposable
         };
     }
 
-    static AssetType MapLegacyDbAssetTypeToAssetType(byte p_legacyDbAssetType)
+    static AssetType MapLegacyDbAssetTypeToAssetType(byte p_legacyDbAssetType) // See LegacyDb SqlDB: SELECT [ID] ,[Name] FROM [dbo].[AssetType]
     {
         return p_legacyDbAssetType switch
         {
             0 => AssetType.Unknown,
             1 => AssetType.CurrencyCash,
             2 => AssetType.Stock,
-            _ => AssetType.Unknown
+            5 => AssetType.Option, // Warning. 2025-01-01: we don't fully support yet options from LegacyDb.
+            _ => throw new NotImplementedException("Not supported LegacyDbAssetType. (e.g. Futures, Bond, Commodity, RealEstate, BenchmarkIndex)")
         };
     }
 
-    static byte MapAssetTypeToLegacyDbAssetType(AssetType p_assetType)
+    static byte MapAssetTypeToLegacyDbAssetType(AssetType p_assetType) // See LegacyDb SqlDB: SELECT [ID] ,[Name] FROM [dbo].[AssetType]
     {
         return p_assetType switch
         {
@@ -429,7 +431,7 @@ public class LegacyDb : IDisposable
             AssetType.Commodity => 6,
             AssetType.RealEstate => 7,
             // AssetType.BenchmarkIndex => 8,
-            _ => 0 // Unknown or unhandled cases
+            _ => throw new NotImplementedException("AssetType is not supported as LegacyDbAssetType.")
         };
     }
 
