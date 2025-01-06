@@ -75,5 +75,10 @@ namespace QuantConnect.Data.Auxiliary
             _cache.AddOrUpdate(symbol, factorFile, (s, c) => factorFile);
             return factorFile;
         }
+
+        public void ClearCache()
+        {
+            _cache.Clear();
+        }
     }
 }

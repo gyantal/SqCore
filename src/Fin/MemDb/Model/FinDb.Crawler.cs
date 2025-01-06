@@ -6,6 +6,7 @@ using System.IO.Compression;
 using System.Text;
 using System.Threading.Tasks;
 using NLog;
+using QuantConnect.Data.Auxiliary;
 using SqCommon;
 using YahooFinanceApi;
 
@@ -173,6 +174,8 @@ public partial class FinDb
 
         // QC Cloud backtests are one-time only, but in SqCore they run for weeks. This price cache is useful intraday, but after our daily price crawler runs, we have to clear this price cache.
         QuantConnect.Lean.Engine.DataFeeds.TextSubscriptionDataSourceReader.BaseDataSourceCache.Clear();
+        gFinDb.MapFileProvider.ClearCache();
+        gFinDb.FactorFileProvider.ClearCache();
 
         return true;
     }
@@ -367,6 +370,10 @@ public partial class FinDb
             string backupFileName = p_finDataDir + $"factor_files{Path.DirectorySeparatorChar}{p_ticker.ToLower()}_{dayOfWeek}.csv";
             File.Move(tickerFactorFilePath, backupFileName, true);
         }
+
+        // (List<SqDivSplit> Dividends, List<SqDivSplit> Splits) oldData = ReverseEngineerCSV(p_ticker);
+        // List<FactorFileDivSplit> finalData = DiffFunction(oldData, divSplitHistoryCumList);
+
         TextWriter factFileTextWriter = new StreamWriter(tickerFactorFilePath);
 
         string firstLine = (divSplitHistoryCumList.Count > 0) ? $"{p_startDate:yyyyMMdd},{divSplitHistoryCumList[0].DividendFactorCum},{divSplitHistoryCumList[0].SplitFactorCum},1" : $"{rawClosesFromYfList[0].ReferenceDate:yyyyMMdd},1,1,1";
@@ -555,5 +562,79 @@ public partial class FinDb
         }
         else
             throw new FileNotFoundException($"The '{p_csvFileName}' file is not found in the '{p_zipFilePath}' archive.");
+    }
+
+    static (List<SqDivSplit> Dividends, List<SqDivSplit> Splits) ReverseEngineerCSV(string factorFilePath)
+    {
+        List<SqDivSplit> dividends = new();
+        List<SqDivSplit> splits = new();
+
+        string[] lines = File.ReadAllLines(factorFilePath);
+        double cumulativeDividend = 1.0;
+        double cumulativeSplit = 1.0;
+
+        for (int i = lines.Length - 2; i >= 1; i--) // Skip the header and last line
+        {
+            string[] lineParts = lines[i].Split(',');
+            DateTime date = DateTime.ParseExact(lineParts[0], "yyyyMMdd", CultureInfo.InvariantCulture);
+            double currentDividendFactor = double.Parse(lineParts[1]);
+            double currentSplitFactor = double.Parse(lineParts[2]);
+
+            double dailyDividend = (cumulativeDividend - currentDividendFactor) * cumulativeSplit;
+            double dailySplit = cumulativeSplit / currentSplitFactor;
+
+            if (Math.Abs(dailyDividend) > 1e-8) // Add only significant dividends
+                dividends.Add(new SqDivSplit { ReferenceDate = date, DividendValue = dailyDividend });
+            if (Math.Abs(dailySplit - 1.0) > 1e-8) // Add only significant splits
+                splits.Add(new SqDivSplit { ReferenceDate = date, SplitFactor = dailySplit });
+
+            cumulativeDividend = currentDividendFactor;
+            cumulativeSplit = currentSplitFactor;
+        }
+
+        return (dividends, splits);
+    }
+
+    static List<FactorFileDivSplit> DiffFunction(List<FactorFileDivSplit> oldData, List<FactorFileDivSplit> newData)
+    {
+        List<FactorFileDivSplit> finalData = new();
+
+        int oldIndex = 0;
+        int newIndex = 0;
+
+        while (oldIndex < oldData.Count && newIndex < newData.Count)
+        {
+            FactorFileDivSplit oldEntry = oldData[oldIndex];
+            FactorFileDivSplit newEntry = newData[newIndex];
+
+            if (oldEntry.ReferenceDate < newEntry.ReferenceDate)
+            {
+                finalData.Add(oldEntry); // Keep the old data
+                oldIndex++;
+            }
+            else if (oldEntry.ReferenceDate > newEntry.ReferenceDate)
+            {
+                finalData.Add(newEntry); // Add new data
+                newIndex++;
+            }
+            else
+            {
+                // Compare the factors
+                if (Math.Abs(oldEntry.DividendFactorCum - newEntry.DividendFactorCum) > 1e-8 || Math.Abs(oldEntry.SplitFactorCum - newEntry.SplitFactorCum) > 1e-8)
+                    Console.WriteLine($"Conflict at {oldEntry.ReferenceDate}: old={oldEntry}, new={newEntry}"); // Log or handle the conflict
+
+                finalData.Add(newEntry); // Use the new entry, but could merge if needed
+                oldIndex++;
+                newIndex++;
+            }
+        }
+
+        // Add any remaining data
+        while (oldIndex < oldData.Count)
+            finalData.Add(oldData[oldIndex++]);
+        while (newIndex < newData.Count)
+            finalData.Add(newData[newIndex++]);
+
+        return finalData;
     }
 }

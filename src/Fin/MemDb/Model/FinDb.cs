@@ -22,9 +22,10 @@ public partial class FinDb : IDisposable
 {
     public static readonly FinDb gFinDb = new();   // Singleton pattern. The C# base class Lazy<T> is unnecessary overhead each time Instance => LazyComposer.Value; is accessed.
 
-    // Try to have our own globals, which is easily accessible, rather than the Composer.Instance Globals. Much slower to access them.
+    // Try to have our own globals, which is easily accessible, rather than the Composer.Instance Globals. Much slower to access them. These objects are singleton globals, and created the first time Composer.Instance.GetExportedValueByTypeName<?>(?); is called.
     public LocalDiskMapFileProvider MapFileProvider { get; set; } = null!; // ignore warning CS8618 Non-nullable property X must contain a non-null value when exiting constructor.
     public SubscriptionDataReaderHistoryProvider HistoryProvider { get; set; } = null!;
+    public LocalDiskFactorFileProvider FactorFileProvider { get; set; } = null!;
     // public LeanEngineSystemHandlers EngineSystemHandlers { get; set; } = null!; // ignore warning CS8618 Non-nullable property X must contain a non-null value when exiting constructor.
     // public LeanEngineAlgorithmHandlers EngineAlgorithmHandlers { get; set; } = null!; // ignore warning CS8618 Non-nullable property X must contain a non-null value when exiting constructor.
 
@@ -59,11 +60,11 @@ public partial class FinDb : IDisposable
             // class SecurityIdentifier.GenerateEquity() uses MapFileProvider as Composer.Instance.GetExportedValueByTypeName(), which is the global MapFileProvider.
             // in the future we try to eliminate this slow Composer.Instance globals, but at the moment, maybe too many code parts in Backtesting uses it.
             // However, in our code, we should use FinDb globals, and not the Composer.Instance globals which we will delete later.
-            var dataProviderTypeName = Config.Get("data-provider", "DefaultDataProvider");
-            var dataProv = Composer.Instance.GetExportedValueByTypeName<IDataProvider>(dataProviderTypeName);
+            string dataProviderTypeName = Config.Get("data-provider", "DefaultDataProvider");
+            IDataProvider dataProv = Composer.Instance.GetExportedValueByTypeName<IDataProvider>(dataProviderTypeName);
 
-            var mapFileProviderTypeName = Config.Get("map-file-provider", "LocalDiskMapFileProvider");
-            var mapProv = Composer.Instance.GetExportedValueByTypeName<IMapFileProvider>(mapFileProviderTypeName);
+            string mapFileProviderTypeName = Config.Get("map-file-provider", "LocalDiskMapFileProvider");
+            IMapFileProvider mapProv = Composer.Instance.GetExportedValueByTypeName<IMapFileProvider>(mapFileProviderTypeName);
             mapProv.Initialize(dataProv);
 
             MapFileProvider = (LocalDiskMapFileProvider)mapProv;
@@ -75,9 +76,10 @@ public partial class FinDb : IDisposable
 
             // Factor files contains dividends. (and maybe splits. Check it later)
             // Data/daily/*.zip files contain raw price TradeBar data, without dividends.
-            var factorFileProviderTypeName = Config.Get("factor-file-provider", "LocalDiskFactorFileProvider");
-            var factorFileProv = Composer.Instance.GetExportedValueByTypeName<IFactorFileProvider>(factorFileProviderTypeName);
+            string factorFileProviderTypeName = Config.Get("factor-file-provider", "LocalDiskFactorFileProvider");
+            IFactorFileProvider factorFileProv = Composer.Instance.GetExportedValueByTypeName<IFactorFileProvider>(factorFileProviderTypeName);
             factorFileProv.Initialize(mapProv, dataProv);
+            FactorFileProvider = (LocalDiskFactorFileProvider)factorFileProv;
 
             // var historyProviderName = Config.Get("history-provider", "SubscriptionDataReaderHistoryProvider");
             // var historyProvider = Composer.Instance.GetExportedValueByTypeName<IHistoryProvider>(historyProviderName);

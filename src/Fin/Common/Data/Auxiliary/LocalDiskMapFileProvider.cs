@@ -68,5 +68,10 @@ namespace QuantConnect.Data.Auxiliary
             }
             return new MapFileResolver(MapFile.GetMapFiles(mapFileDirectory, market, securityType, _dataProvider));
         }
+
+        public void ClearCache()
+        {
+            _cache.Clear();
+        }
     }
 }
