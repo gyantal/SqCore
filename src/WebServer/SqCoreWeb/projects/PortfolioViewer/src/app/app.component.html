@@ -10,15 +10,15 @@
         <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'quantity'}" (click)="onSortingPositionsClicked('quantity')">Qty</th>
         <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'avgPrice'}" (click)="onSortingPositionsClicked('avgPrice')">AvgPrice</th>
         <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'priorClose'}" (click)="onSortingPositionsClicked('priorClose')">Prior<br>Close</th>
-        <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'estPrice'}" (click)="onSortingPositionsClicked('estPrice')">Price(Cl-Rt) on Date</th>
-        <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'pctChgTod'}" (click)="onSortingPositionsClicked('pctChgTod')">Chg% on Date</th>
-        <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'plTod'}" (click)="onSortingPositionsClicked('plTod')">P&L on Date</th>
+        <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'estPrice'}" (click)="onSortingPositionsClicked('estPrice')">Price(Cl-Rt)<br>on Date</th>
+        <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'pctChgTod'}" (click)="onSortingPositionsClicked('pctChgTod')">Chg%<br>on Date</th>
+        <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'plTod'}" (click)="onSortingPositionsClicked('plTod')">P&L<br>on Date</th>
         <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'costBasis'}" (click)="onSortingPositionsClicked('costBasis')">Cost<br>Basis</th>
         <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'mktVal'}" (click)="onSortingPositionsClicked('mktVal')">MktVal</th>
         <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'plPctTotal'}" (click)="onSortingPositionsClicked('plPctTotal')">P&L%<br>Total</th>
         <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'plTotal'}" (click)="onSortingPositionsClicked('plTotal')">P&L<br>Total</th>
-        <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'sharesOutstanding'}" (click)="onSortingPositionsClicked('sharesOutstanding')">SharesOutstanding</th>
-        <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'marketCap'}" (click)="onSortingPositionsClicked('marketCap')">MarketCap</th>
+        <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'sharesOutstanding'}" (click)="onSortingPositionsClicked('sharesOutstanding')">Shares<br>Outstanding</th>
+        <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'marketCap'}" (click)="onSortingPositionsClicked('marketCap')">Market<br>Cap</th>
       </tr>
     </thead>
     <tbody>
@@ -281,7 +281,7 @@
         <td>{{item.quantity}}</td>
         <td>{{m_enumCurrencyId[item.currency] == 'USD' ? '$' : ''}}{{item.price | number:'1.2-2'}}</td>
         <td>{{m_enumCurrencyId[item.currency] == 'Unknown' ? 'USD' : m_enumCurrencyId[item.currency]}}</td> <!-- Displaying the currencyId as 'USD' in the UI, while 'USD' is stored as 'unknown' in the database. -->
-        <td class="mktVal">{{m_enumCurrencyId[item.currency] == 'USD' ? '$' : ''}}{{item.quantity * item.price | number:'1.0-0'}}</td>
+        <td class="downplayedGreyedText">{{m_enumCurrencyId[item.currency] == 'USD' ? '$' : ''}}{{item.quantity * item.price | number:'1.0-0'}}</td>
         <td>{{item.time | date : 'yyyy-MM-dd HH:mm'}}</td>
       </tr>
     </tbody>
@@ -309,7 +309,7 @@
         <td>{{item.quantity}}</td>
         <td>{{m_enumCurrencyId[item.currency] == 'Unknown' ? '$' : ''}}{{item.price | number:'1.2-2'}}</td>
         <td>{{m_enumCurrencyId[item.currency] == 'Unknown' ? 'USD' : m_enumCurrencyId[item.currency]}}</td> <!-- Displaying the currencyId as 'USD' in the UI, while 'USD' is stored as 'unknown' in the database. -->
-        <td class="mktVal">{{m_enumCurrencyId[item.currency] == 'Unknown' ? '$' : ''}}{{item.quantity * item.price | number:'1.0-0'}}</td>
+        <td class="downplayedGreyedText">{{m_enumCurrencyId[item.currency] == 'Unknown' ? '$' : ''}}{{item.quantity * item.price | number:'1.0-0'}}</td>
         <td [ngClass]="{'highlightLatestTrades': (item.time | date:'yyyy-MM-dd') == (m_legacyDbTradesMaxDate | date:'yyyy-MM-dd')}">{{item.time | date : 'yyyy-MM-dd HH:mm'}}</td>
       </tr>
     </tbody>

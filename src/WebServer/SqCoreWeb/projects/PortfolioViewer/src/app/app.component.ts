@@ -205,8 +205,11 @@ export class AppComponent {
         case 'PrtfVwr.LegacyDbTradesTestAndInsert':
           console.log('PrtfVwr.LegacyDbTradesTestAndInsert:' + msgObjStr);
           this.m_legacyDbTradesTestAndInsertResult = msgObjStr;
-          if (this.m_legacyDbTradesTestAndInsertResult.startsWith('OK'))
+          if (this.m_legacyDbTradesTestAndInsertResult.startsWith('OK')) {
             this.getLegacyDbPortfolioTradeHistory();
+            const tradesStrInputElement = document.getElementById('inputTradesStr') as HTMLTextAreaElement;
+            tradesStrInputElement.value = ''; // empty the textarea, if the trades are processed and pushed into the Sql database
+          }
           break;
         case 'PrtfVwr.LegacyDbTradesHist':
           console.log('PrtfVwr.LegacyDbTradesHist:' + msgObjStr);
@@ -624,9 +627,6 @@ export class AppComponent {
         this.m_legacyDbInsTrades.push(tradeDataProcessResult.tradeObj);
       }
     }
-
-    if (this.m_legacyDbInsTradesSyntaxCheckResult == 'Syntax OK') // empty the textarea, if syntax check is OK
-      tradesStrInputElement.value = '';
   }
 
   validateAndProcessTradeData(tradeRowStr: string, rowInd:number): { tradeObj: TradeJs | null; errorStr: string | null } {
