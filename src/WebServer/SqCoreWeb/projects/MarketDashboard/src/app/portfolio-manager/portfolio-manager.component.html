@@ -90,9 +90,9 @@
           </div>
         </div>
         <div>
-          <div class="prtfCommon prtfFields">Algorithm:</div>
+          <div class="prtfCommon prtfFields">Algorithm:<span class="requiredAndNotFound" *ngIf="editedPortfolio.type == 'Simulation' && !editedPortfolio.algorithm">*</span></div>
           <div class="prtfCommon prtfUserValues">
-            <input class="pfItemLongInput" type="text" placeholder="Enter Portfolio Algorithm" [(ngModel)]="editedPortfolio.algorithm" [value]="editedPortfolio.algorithm">
+            <input class="pfItemLongInput" type="text" placeholder="Enter Portfolio Algorithm" [(ngModel)]="editedPortfolio.algorithm">
           </div>
         </div>
         <div>

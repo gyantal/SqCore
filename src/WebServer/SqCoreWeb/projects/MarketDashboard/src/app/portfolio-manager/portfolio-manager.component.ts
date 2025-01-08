@@ -372,6 +372,11 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
       return;
     }
 
+    if (this.editedPortfolio.type == 'Simulation' && this.editedPortfolio.algorithm == '') { // Algorithm should be not empty , if the portoflioType is Simlumation
+      this.isCreateOrEditPortfolioPopupVisible = true;
+      return;
+    }
+
     if (this.editedPortfolio.type == 'LegacyDbTrades' && this.editedPortfolio.legacyDbPortfName == '') { // For protfolioType LegacyDbTrades the LegacyPortfolioName field shouldn't be left empty
       this.isCreateOrEditPortfolioPopupVisible = true;
       return;
