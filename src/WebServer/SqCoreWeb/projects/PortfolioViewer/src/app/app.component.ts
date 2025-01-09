@@ -209,6 +209,8 @@ export class AppComponent {
             this.getLegacyDbPortfolioTradeHistory();
             const tradesStrInputElement = document.getElementById('inputTradesStr') as HTMLTextAreaElement;
             tradesStrInputElement.value = ''; // empty the textarea, if the trades are processed and pushed into the Sql database
+            this.m_legacyDbInsTradesSyntaxCheckResult = '';
+            this.m_legacyDbInsTrades.length = 0;
           }
           break;
         case 'PrtfVwr.LegacyDbTradesHist':
@@ -681,6 +683,8 @@ export class AppComponent {
       tradeDt.setHours(parseInt(timeParts[0], 10), parseInt(timeParts[1], 10), parseInt(timeParts[2], 10)); // Set the time on tradeDt to the parsed hours, minutes, and seconds
     }
     tradeDt.setUTCFullYear(parseInt(completionDateStr[0], 10));
+    if (tradeDt > new Date()) // if we register 31 December trades on 2nd Jan next year, we don’t want trades to be registered in the far future at the new year’s end.
+      return { tradeObj: null, errorStr: `Error. TradeDate is in the future: '${trade[5]}' at row ${rowInd + 1} is invalid.` };
     tradeObj.time = tradeDt;
     switch (trade[8]) { // Validate and process AssetType
       case 'STK':
