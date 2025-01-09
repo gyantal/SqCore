@@ -1,0 +1,26 @@
+{
+    "manifest_version": 3,
+    "name": "Quant Ratings Downloader",
+    "version": "1.87",
+    "description": "Downloads Quant Ratings for a list of tickers from Seeking Alpha.",
+    "permissions": [
+        "tabs", "scripting", "activeTab", "downloads"
+    ],
+    "host_permissions": [
+        "https://seekingalpha.com/*"
+    ],
+    "background": {
+        "service_worker": "background.js"
+    },
+    "action": {
+        "default_popup": "popup.html",
+        "default_title": "Start Quant Ratings Download",
+        "default_icon": "icon.webp"
+    },
+    "icons": {
+        "16": "icon.webp",
+        "48": "icon.webp",
+        "128": "icon.webp"
+    }
+}
+
