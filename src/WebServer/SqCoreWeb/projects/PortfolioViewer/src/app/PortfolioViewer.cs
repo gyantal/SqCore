@@ -362,7 +362,7 @@ public class PrtfVwrWs
         if (prtfNameStartInd == -1)
             return;
         string legacyPrtfName = p_msg[(prtfNameStartInd + 1)..];
-        List<Trade>? tradesHist = MemDb.gMemDb.GetLegacyPortfolioTradeHistoryToList(legacyPrtfName, 50); // Because some portfolios have 2,000 trades, to speed up SQL query times, we decided that TOP 50 trades are plenty.
+        List<Trade>? tradesHist = MemDb.gMemDb.GetLegacyPortfolioTradeHistoryToList(legacyPrtfName, false, 50); // Because some portfolios have 2,000 trades, to speed up SQL query times, we decided that TOP 50 trades are plenty.
         byte[] encodedMsg = Encoding.UTF8.GetBytes("PrtfVwr.LegacyDbTradesHist:" + Utils.CamelCaseSerialize(tradesHist));
         if (webSocket!.State == WebSocketState.Open)
             webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);

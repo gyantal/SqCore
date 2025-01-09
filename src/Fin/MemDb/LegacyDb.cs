@@ -101,7 +101,7 @@ public class LegacyDb : IDisposable
         }
     }
 
-    public List<Trade>? GetTradeHistory(string p_legacyDbPortfName, int p_numTop)
+    public List<Trade>? GetTradeHistory(string p_legacyDbPortfName, bool p_isAscending, int p_numLimit) // result will be ordered by Date. Ascending by default (QC backtest needs Ascending, the oldest first) or Descending (PortfolioViewer LegacyDbInsert needs Descending, latest first)
     {
         if (m_connection?.State != System.Data.ConnectionState.Open)
         {
@@ -118,8 +118,9 @@ public class LegacyDb : IDisposable
         }
 
         // Step 2: Query trades using the obtained portfolioId
-        string topOrEmptyStr = p_numTop == Int32.MaxValue ? string.Empty : $"TOP {p_numTop}";
-        string queryStr = $"SELECT {topOrEmptyStr} portfolioitem.*, COALESCE(stock.ticker, 'USD') AS ticker FROM portfolioitem LEFT JOIN stock ON portfolioitem.assetsubtableid = stock.id WHERE portfolioitem.portfolioid = {portfolioId} ORDER BY portfolioitem.Date";
+        string descendingOrEmptyStr = p_isAscending == true ? string.Empty : " DESC";
+        string limitOrEmptyStr = p_numLimit == Int32.MaxValue ? string.Empty : $" TOP {p_numLimit}"; // We cannot use LIMIT because it is a MySQL-specific clause and is not supported in Microsoft SQL Server (MSSQL). see: https://stackoverflow.com/questions/31704424/incorrect-syntax-near-limit-using-mssql
+        string queryStr = $"SELECT{limitOrEmptyStr} portfolioitem.*, COALESCE(stock.ticker, 'USD') AS ticker FROM portfolioitem LEFT JOIN stock ON portfolioitem.assetsubtableid = stock.id WHERE portfolioitem.portfolioid = {portfolioId} ORDER BY portfolioitem.Date{descendingOrEmptyStr}";
         SqlCommand command = new(queryStr, m_connection);
 
         List<Trade> trades = new();
