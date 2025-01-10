@@ -1,6 +1,21 @@
 <b>Portfolio Viewer</b>&nbsp;<span id="userWarnId" *ngIf="m_userWarning">({{m_userWarning}})</span>&nbsp;PortfolioName: {{m_portfolio?.name}}<br>
 <button [ngClass]="{'activeTabItem':m_activeTab == 'Positions'}" (click)="onActiveTabCicked('Positions')">Positions</button>&nbsp;<button [ngClass]="{'activeTabItem':m_activeTab == 'Portfolio Report'}" (click)="onActiveTabCicked('Portfolio Report')">Portfolio Report</button>&nbsp;<button [ngClass]="{'activeTabItem':m_activeTab == 'Trades'}" (click)="onActiveTabCicked('Trades')">Trades*</button>&nbsp;<button [ngClass]="{'activeTabItem':m_activeTab == 'Portfolio Performance Accumulator'}" (click)="onActiveTabCicked('Portfolio Performance Accumulator')">Portfolio Performance Accumulator</button>&nbsp;<button [ngClass]="{'activeTabItem':m_activeTab == 'LegacyDbTrades'}" (click)="onActiveTabCicked('LegacyDbTrades')" *ngIf="m_portfolio?.legacyDbPortfName">LegacyDbTrades</button>
-<div [hidden]="m_activeTab != 'Positions'">&nbsp;
+<div [hidden]="m_activeTab != 'Positions'">
+  <table id="pfStatsTable">
+    <tr>
+      <td>$PV Start: {{m_uiPrtfRunResult.startPortfolioValue | currency:'USD':'symbol':'1.0'}}</td>
+    </tr>
+    <tr>
+      <td>Twr-PV on PrevDate: {{m_uiPrtfRunResult.prevDateTwrPv | number:'1.2-2'}}%</td>
+      <td>Twr-PV on Date: {{m_uiPrtfRunResult.onDateTwrPv | number:'1.2-2'}}%</td>
+      <td><b>Twr-P&L% on Date: {{(m_uiPrtfRunResult.onDateTwrPv / m_uiPrtfRunResult.prevDateTwrPv) | percent:'1.2-2'}}</b></td>
+    </tr>
+    <tr>
+      <td title="Positions-$PV on PrevDate does not equal $PV on PrevDate, if there were intraday trades on the current day">Positions-$PV on PrevDate (ClosePr): ${{m_uiPrtfRunResult.onDatePosPv | number:'1.2-2'}}</td>
+      <td title="Positions-$PV on Date equals $PV at market close">Positions-$PV = $PV on Date (ClosePr or RT): ${{m_uiPrtfRunResult.prevDatePosPv | number:'1.2-2'}}</td>
+      <td><b>Positions-$P&L on Date: {{(m_uiPrtfRunResult.prevDatePosPv - m_uiPrtfRunResult.onDatePosPv) | number:'1.2-2'}} ({{(m_uiPrtfRunResult.prevDatePosPv - m_uiPrtfRunResult.onDatePosPv) / m_uiPrtfRunResult.prevDatePosPv | percent:'1.2-2' }})</b></td>
+    </tr>
+  </table>&nbsp;
   <header>Historical Positions EndDate: <input type="Date" [(ngModel)]="m_histPosEndDate" (change)="onHistPeriodChangeClicked()"></header>&nbsp;
   <table class="tableCommon">
     <thead>

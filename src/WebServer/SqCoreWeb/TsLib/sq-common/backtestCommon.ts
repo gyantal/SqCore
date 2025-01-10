@@ -96,6 +96,11 @@ export class UiChrtGenPrtfRunResult extends UiPrtfRunResultCommon {
 export class UiPrtfRunResult extends UiPrtfRunResultCommon { // PrtfRun Results requires position values to display
   public chrtValues: UiChartPoint[] = []; // used in PrtfRunResults in portfolioManager app
   public prtfPosValues: UiPrtfPositions[] = [];
+
+  public onDateTwrPv: number = 0;
+  public prevDateTwrPv: number = 0;
+  public onDatePosPv: number = 0; // Positions-$PV = $PV on Date (ClosePr or RT)
+  public prevDatePosPv: number = 0; // Positions-$PV on PrevDate (ClosePr)
 }
 
 // chart values
@@ -508,6 +513,43 @@ export function updateUiWithPrtfRunResult(prtfRunResult: Nullable<PrtfRunResultJ
     chartItem.value = prtfRunResult.chrtData.values[i];
     uiPrtfRunResult.chrtValues.push(chartItem);
   }
+
+  for (let i = 0; i < uiPrtfRunResult.prtfPosValues.length; i++) {
+    const prtfPos = prtfRunResult.prtfPoss[i];
+    const prtfPosVal: UiPrtfPositions = uiPrtfRunResult.prtfPosValues[i];
+
+    uiPrtfRunResult.onDatePosPv += prtfPos.estPrice * prtfPos.quantity; // Calculate posPvOnDate
+    uiPrtfRunResult.prevDatePosPv += prtfPos.backtestLastPrice * prtfPos.quantity; // Calculate posPvPrevDate
+
+    if (prtfPosVal.sqTicker.startsWith('C')) { // Add cash
+      uiPrtfRunResult.onDatePosPv += prtfPosVal.priorClose;
+      uiPrtfRunResult.prevDatePosPv += prtfPosVal.priorClose;
+    }
+  }
+
+  const chrtDataCount: number = uiPrtfRunResult.chrtValues.length - 1;
+  const curDate: Date = uiPrtfRunResult.chrtValues[chrtDataCount].date;
+  // Converting the date to a string format (yyyy-mm-dd) for comparison since we're only interested in the date part and not the time.
+  const todayDateStr: string = SqNgCommonUtilsTime.Date2PaddedIsoStr(new Date());
+  const curDateStr: string = SqNgCommonUtilsTime.Date2PaddedIsoStr(curDate);
+
+  // Find the prevDate TWR-PV
+  // The chartValues contain multiple entries for the same date towards the end.
+  // To retrieve the previous date's value, we compare the dates and stop at the first match.
+  for (let i = chrtDataCount; i >= 0; i--) {
+    const chrtDateStr: string = SqNgCommonUtilsTime.Date2PaddedIsoStr(uiPrtfRunResult.chrtValues[i].date);
+    if (curDateStr != chrtDateStr) {
+      uiPrtfRunResult.prevDateTwrPv = uiPrtfRunResult.chrtValues[i].value;
+      break;
+    }
+  }
+
+  // Calculate onDateTwrPv
+  if (curDateStr == todayDateStr) {
+    const pvPctChgMultToday: number = uiPrtfRunResult.onDatePosPv / uiPrtfRunResult.prevDatePosPv;
+    uiPrtfRunResult.onDateTwrPv = pvPctChgMultToday * uiPrtfRunResult.prevDateTwrPv;
+  } else
+    uiPrtfRunResult.onDateTwrPv = uiPrtfRunResult.chrtValues[chrtDataCount].value;
 
   d3.selectAll('#pfRunResultChrt > *').remove();
   const lineChrtDiv = document.getElementById('pfRunResultChrt') as HTMLElement;
