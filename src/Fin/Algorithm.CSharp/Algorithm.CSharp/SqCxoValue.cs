@@ -48,7 +48,6 @@ namespace QuantConnect.Algorithm.CSharp
         private Dictionary<string, List<QcPrice>> _rawCloses = new Dictionary<string, List<QcPrice>>();
         private Dictionary<string, List<QcPrice>> _adjCloses = new Dictionary<string, List<QcPrice>>();
         private Dictionary<string, List<QcDividend>> _dividends = new Dictionary<string, List<QcDividend>>();
-        private Dictionary<string, List<QcSplit>> _splits = new Dictionary<string, List<QcSplit>>();
         private Dictionary<string, Dictionary<DateTime, decimal>>? _rawClosesFromYfDicts = null;
          DateTime _bnchmarkStartTime;
         private Dividends _sliceDividends;
@@ -75,7 +74,6 @@ namespace QuantConnect.Algorithm.CSharp
                 _rawCloses.Add(ticker, new List<QcPrice>());
                 _adjCloses.Add(ticker, new List<QcPrice>());
                 _dividends.Add(ticker, new List<QcDividend>());
-                _splits.Add(ticker, new List<QcSplit>());
             }
 
             // *** Only in QcCloud: YF data download. Part 1

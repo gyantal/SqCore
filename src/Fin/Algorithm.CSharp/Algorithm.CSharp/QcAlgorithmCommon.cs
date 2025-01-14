@@ -25,12 +25,6 @@ namespace QuantConnect.Algorithm.CSharp
         public Dividend Dividend;
     }
 
-    class QcSplit
-    {
-        public DateTime ReferenceDate;
-        public Split Split;
-    }
-
     class YfSplit
     {
         public DateTime ReferenceDate;

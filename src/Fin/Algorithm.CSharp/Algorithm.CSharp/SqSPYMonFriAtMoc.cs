@@ -60,7 +60,6 @@ namespace QuantConnect.Algorithm.CSharp
 
         List<QcPrice> _rawCloses = new List<QcPrice>(); // comes from QC.OnData(). We use this in SqCore.
         List<QcDividend> _dividends = new List<QcDividend>();
-        List<QcSplit> _splits = new List<QcSplit>();
         List<QcPrice> _adjCloses = new List<QcPrice>();
 
         // keep both List and Dictionary for YF raw price data. List is used for building and adjustment processing. Also, it can be used later if sequential, timely data marching is needed

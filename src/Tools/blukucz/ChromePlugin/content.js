@@ -129,13 +129,16 @@ async function main() {
             const ticker = getTickerFromURL();
             await downloadCSV(tableData, `${ticker}_quant_ratings.csv`);
             chrome.runtime.sendMessage({ action: "done" }); // Success
+	        alert("Download complete!");
         } else {
             console.warn("No data found in Table 3!");
             chrome.runtime.sendMessage({ action: "error", reason: "No data found" }); // Send error message
+	        // alert("No QuantRatings data found!");
         }
     } catch (error) {
         console.error("Error processing data:", error);
         chrome.runtime.sendMessage({ action: "error", reason: error.message }); // Notify background script
+	    alert("An error occurred: " + error.message);
     }
 
     setTimeout(() => window.close(), 1000); // Close the tab after 1 second
