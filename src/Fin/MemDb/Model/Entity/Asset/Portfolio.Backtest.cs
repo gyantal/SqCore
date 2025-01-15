@@ -320,8 +320,9 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
         foreach (var item in prtfPositions.Portfolio.CashBook.Values)
         {
             posCashItem.SqTicker = "C/" + item.Symbol.ToString();
-            posCashItem.BacktestLastPrice = (float)item.Amount;
-            posCashItem.Quantity = 1.0f; // overwrite the default invalid value float.NaN
+            posCashItem.Quantity = (float)item.Amount;
+            posCashItem.AvgPrice = 1.0f; // for Cash positions the price is the FX Exchange rate for that currency. So, FX rate yesterday vs. realtime can be put into PrevDayPrice vs. realtime price. For USD, as base currency, the FX exchange rate is always 1.0
+            posCashItem.BacktestLastPrice = 1.0f;
             p_prtfPoss.Add(posCashItem);
         }
         return null; // No Error
