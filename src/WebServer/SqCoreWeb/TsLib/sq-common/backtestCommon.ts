@@ -514,17 +514,10 @@ export function updateUiWithPrtfRunResult(prtfRunResult: Nullable<PrtfRunResultJ
     uiPrtfRunResult.chrtValues.push(chartItem);
   }
 
-  for (let i = 0; i < uiPrtfRunResult.prtfPosValues.length; i++) {
+  for (let i = 0; i < prtfRunResult.prtfPoss.length; i++) {
     const prtfPos = prtfRunResult.prtfPoss[i];
-    const prtfPosVal: UiPrtfPositions = uiPrtfRunResult.prtfPosValues[i];
-
-    uiPrtfRunResult.onDatePosPv += prtfPos.estPrice * prtfPos.quantity; // Calculate posPvOnDate
+    uiPrtfRunResult.onDatePosPv += prtfPos.sqTicker.startsWith('C') ? prtfPos.backtestLastPrice * prtfPos.quantity : prtfPos.estPrice * prtfPos.quantity; // Calculate posPvOnDate
     uiPrtfRunResult.prevDatePosPv += prtfPos.backtestLastPrice * prtfPos.quantity; // Calculate posPvPrevDate
-
-    if (prtfPosVal.sqTicker.startsWith('C')) { // Add cash
-      uiPrtfRunResult.onDatePosPv += prtfPosVal.priorClose;
-      uiPrtfRunResult.prevDatePosPv += prtfPosVal.priorClose;
-    }
   }
 
   const chrtDataCount: number = uiPrtfRunResult.chrtValues.length - 1;
