@@ -367,9 +367,6 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
       return;
     }
 
-    if (!this.editedPortfolio.name || (this.editedPortfolio.type == 'Simulation' && this.editedPortfolio.algorithm == '') || (this.editedPortfolio.type == 'LegacyDbTrades' && this.editedPortfolio.legacyDbPortfName == '')) // the portfolio name field shouldn't be left empty. Algorithm should be not empty , if the portoflioType is Simlumation. For protfolioType LegacyDbTrades the LegacyPortfolioName field shouldn't be left empty
-      return;
-
     if (this._parentWsConnection && this._parentWsConnection.readyState === WebSocket.OPEN)
       this._parentWsConnection.send(`PortfMgr.CreateOrEditPortfolio:id=${this.editedPortfolio.id}&name=${urlEncodeChars(this.editedPortfolio.name)}&prntFId=${this.editedPortfolio.parentFolderId}&currency=${this.editedPortfolio.baseCurrency}&type=${this.editedPortfolio.type}&algo=${this.editedPortfolio.algorithm}&algoP=${urlEncodeChars(this.editedPortfolio.algorithmParam)}&trdHis=${this.editedPortfolio.tradeHistoryId}&access=${this.editedPortfolio.sharedAccess}&note=${urlEncodeChars(this.editedPortfolio.note)}&legPrtfNm=${urlEncodeChars(this.editedPortfolio.legacyDbPortfName)}`);
     this.isCreateOrEditPortfolioPopupVisible = false;
