@@ -130,7 +130,7 @@
       <span>
         <!-- Disabling the Create Or Save Portfolio button for the below casees
           1. The portfolio name field shouldn't be left empty.
-          2. Algorithm should not be empty, if the portoflioType is Simlumation.
+          2. Algorithm should not be empty, if the portfolioType is Simlumation.
           3. For protfolioType LegacyDbTrades the LegacyPortfolioName field shouldn't be left empty. -->
         <button id="createPortfolioButton" (click)="onCreateOrEditPortfolioClicked()"
         [disabled]="!isViewedPortfolioSaveAllowed || editedPortfolio.name == '' ||
