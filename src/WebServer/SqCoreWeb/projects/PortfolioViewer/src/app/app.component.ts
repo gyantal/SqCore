@@ -126,6 +126,8 @@ export class AppComponent {
   m_isEditedTradeSectionVisible: boolean = false; // toggle the m_editedTrade widgets on the UI
   m_editedTradeTotalValue: number = 0; // UI helper variable, which is not part of the TradeJs data. Used for displaying/editing the total$Value on UI
   m_isCopyToClipboardDialogVisible: boolean = false;
+  m_tradesTabSortColumn: string = 'time';
+  m_isTradesTabSortDirAscend: boolean = false;
 
   // Trades tabpage: UI handling enums
   // How to pass enum value into Angular HTML? Answer: assign the Enum Type to a member variable. See. https://stackoverflow.com/questions/69549927/how-to-pass-enum-value-in-angular-template-as-an-input
@@ -141,10 +143,8 @@ export class AppComponent {
   m_legacyDbInsTrades: TradeJs[] = [];
   m_legacyDbTrades: TradeUi[] = [];
   m_legacyDbTradesMaxDate: Date = minDate;
-
-  // common for both trades and legacyDbTrades
-  m_tradesTabSortColumn: string = 'time';
-  m_isTradesTabSortDirAscend: boolean = false;
+  m_legacyDbTradesTabSortColumn: string = 'time';
+  m_isLegacyDbTradesTabSortDirAscend: boolean = false;
 
   user = {
     name: 'Anonymous',
@@ -217,8 +217,8 @@ export class AppComponent {
           console.log('PrtfVwr.LegacyDbTradesHist:' + msgObjStr);
           this.m_legacyDbTrades = AppComponent.processHistoricalTrades(msgObjStr);
           this.m_legacyDbTradesMaxDate = AppComponent.getLegacyDbTradesMaxDate(this.m_legacyDbTrades);
-          this.m_isTradesTabSortDirAscend = false;
-          this.onSortingLegacyDbTradesClicked(this.m_tradesTabSortColumn);
+          this.m_isLegacyDbTradesTabSortDirAscend = false;
+          this.onSortingLegacyDbTradesClicked(this.m_legacyDbTradesTabSortColumn);
           break;
       }
     };
@@ -550,6 +550,7 @@ export class AppComponent {
   onSortingTradesClicked(sortColumn: string) { // sort the trades data table
     this.m_tradesTabSortColumn = sortColumn;
     this.sortTrades(this.m_trades, this.m_isTradesTabSortDirAscend, this.m_tradesTabSortColumn);
+    this.m_isTradesTabSortDirAscend = !this.m_isTradesTabSortDirAscend;
   }
 
   onClickNextOrPrevDate(nextOrPrev: string) {
@@ -766,8 +767,9 @@ export class AppComponent {
   }
 
   onSortingLegacyDbTradesClicked(sortColumn: string) { // sort the LegacyDbTrades data table
-    this.m_tradesTabSortColumn = sortColumn;
-    this.sortTrades(this.m_legacyDbTrades, this.m_isTradesTabSortDirAscend, this.m_tradesTabSortColumn);
+    this.m_legacyDbTradesTabSortColumn = sortColumn;
+    this.sortTrades(this.m_legacyDbTrades, this.m_isLegacyDbTradesTabSortDirAscend, this.m_legacyDbTradesTabSortColumn);
+    this.m_isLegacyDbTradesTabSortDirAscend = !this.m_isLegacyDbTradesTabSortDirAscend;
   }
 
   sortTrades(trades: TradeUi[], isSortDirAscend: boolean, sortColumn: string) { // sort trades or legacyDbTrades
@@ -777,7 +779,6 @@ export class AppComponent {
       else
         return (n2[sortColumn] > n1[sortColumn]) ? 1 : ((n2[sortColumn] < n1[sortColumn]) ? -1 : 0);
     });
-    this.m_isTradesTabSortDirAscend = !this.m_isTradesTabSortDirAscend;
   }
 
   static getLegacyDbTradesMaxDate(trades: TradeUi[]): Date {
