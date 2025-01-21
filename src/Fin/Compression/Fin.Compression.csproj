@@ -2,7 +2,12 @@
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
-    <NoWarn>0612,0618,0672,8669,SYSLIB0014</NoWarn>
+<!-- Warning NU1903: Package 'DotNetZip' 1.16.0 has a known high severity vulnerability
+DotNetZip is obsolete. It was written before System.IO.Compression that now can handle ZIP files.
+Suggestion is to use System.IO.Compression, but as on 2025-01-21, QuantConnect hasn't migrated to that. 
+It is unlikely they will do as it is a lot of rewrite, and code works as it is. 
+So, we have get used to this. But we don't want to see these compiler warning. -->
+    <NoWarn>CS0618;NU1903</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Common\SqCommon\SqCommon.csproj" />

@@ -256,7 +256,7 @@ namespace QuantConnect.Lean.Engine
                             }
                             return message;
                         }));
-                        Utils.Logger.Error("Engine.Run(): " + errorMessage);
+                        Utils.Logger.Error("Engine.Run(): (Todo: Eh. Not giving error location, just Exception msg. Recode that.)" + errorMessage);
                         AlgorithmHandlers.Results.RuntimeError(errorMessage);
                         SystemHandlers.Api.SetAlgorithmStatus(job.AlgorithmId, AlgorithmStatus.RuntimeError, errorMessage);
                     }

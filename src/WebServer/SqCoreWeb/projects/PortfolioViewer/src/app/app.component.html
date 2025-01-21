@@ -268,9 +268,10 @@
 </div>
 <div [hidden]="m_activeTab != 'LegacyDbTrades'"><br>
   <textarea id="inputTradesStr"></textarea><br>
-  <label title="Default: Today in UTC. The Dates from data rows are not complete. Year is always missing. If trades executed today, then Month and Day are also missing.
-  CompletionDate parts (year, month, day) are used in this case to create the final UTC trade date. By default it is the UtcNow time converted to a date.
-  If the default is somehow wrong, the user can change it.">CompletionDate (in UTC): <input type="date" [value]="m_legacyDbInsCompletionDateUtcStr" (input)="onInputLegacyDbDateInsertion($event)"></label>&nbsp;
+  <label title="Default: Today in UTC. The Dates from data rows are not complete. Year is always missing.
+If trades executed today, then Month and Day are also missing.
+CompletionDate parts (year, month, day) are used in this case to create the final UTC trade date. By default it is the UtcNow time converted to a date.
+If the default is somehow wrong, the user can change it.">CompletionDate (in UTC): <input type="date" [value]="m_legacyDbInsCompletionDateUtcStr" (input)="onInputLegacyDbDateInsertion($event)"></label>&nbsp;
   <button (click)="onClickConvertTradesStrToTradesJs()">Convert</button>
   <div *ngIf="m_legacyDbInsTradesSyntaxCheckResult != null" [ngStyle]="{color: m_legacyDbInsTradesSyntaxCheckResult.includes('Error') ? '#FF0000' : '#008000'}">{{m_legacyDbInsTradesSyntaxCheckResult}}</div>
   <table class="tableCommon" *ngIf="this.m_legacyDbInsTrades.length != 0">
