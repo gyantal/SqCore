@@ -45,3 +45,43 @@ input[type="date"]::-webkit-datetime-edit-year-field {
   border-left: none;
   left: 1px;
 }
+
+.dateWidget {
+  display: flex;
+  align-items: center;
+}
+
+#endDateCalendar[type="date"]::-webkit-datetime-edit-day-field, #endDateCalendar[type="date"]::-webkit-datetime-edit-month-field, #endDateCalendar[type="date"]::-webkit-datetime-edit-year-field {
+  display: none; /* Hide the day, month, and year fields */
+}
+
+#endDateCalendar {
+  width: 1rem;
+  height: 1.1rem;
+}
+
+#endDateCalendar::-webkit-calendar-picker-indicator {
+  cursor: pointer; /* Ensure the calendar picker icon is clickable */
+}
+
+.commonDateInput {
+  width: 1.8rem;
+  text-align: center;
+  height: 1rem;
+}
+
+#nextOrPrevDateButtonContainer {
+  display: flex;
+  flex-direction: column;
+}
+
+.nextOrPrevDateBtn {
+  height: 0.575rem;
+  width: 1.25rem;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.625rem;
+}

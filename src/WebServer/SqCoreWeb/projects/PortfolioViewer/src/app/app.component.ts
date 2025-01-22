@@ -107,7 +107,7 @@ export class AppComponent {
   m_userWarning: string | null = null;
 
   // Positions tabpage:
-  m_histPosEndDate: string = '';
+  m_histPosEndDateStr: string = SqNgCommonUtilsTime.Date2PaddedIsoStr(SqNgCommonUtilsTime.ConvertDateLocToUtc(new Date()));
   m_positionsTabSortColumn: string = 'plPct';
   m_isPositionsTabSortDirAscend: boolean = false;
 
@@ -170,6 +170,7 @@ export class AppComponent {
       const msgObjStr = event.data.substring(semicolonInd + 1);
       switch (msgCode) {
         case 'OnConnected':
+          this.initializeDateInputs();
           console.log('ws: OnConnected message arrived:' + event.data);
 
           const handshakeMsg: HandshakeMessage = JSON.parse(msgObjStr, function(this: any, key: string, value: any) {
@@ -260,7 +261,7 @@ export class AppComponent {
       tickers.push(item.sqTicker.split('/')[1]);
 
     if (this.m_socket != null && this.m_socket.readyState == this.m_socket.OPEN)
-      this.m_socket.send('GetFundamentalData:' + '?tickers=' + tickers + '&Date=' + this.m_histPosEndDate);
+      this.m_socket.send('GetFundamentalData:' + '?tickers=' + tickers + '&Date=' + this.m_histPosEndDateStr);
   }
 
   public processFundamentalData(msgObjStr: string) {
@@ -299,7 +300,7 @@ export class AppComponent {
 
   onHistPeriodChangeClicked() { // send this when user changes the historicalPosDates
     if (this.m_socket != null && this.m_socket.readyState == this.m_socket.OPEN)
-      this.m_socket.send('RunBacktest:' + '?pid=' + this.m_portfolioId + '&Date=' + this.m_histPosEndDate);
+      this.m_socket.send('RunBacktest:' + '?pid=' + this.m_portfolioId + '&Date=' + this.m_histPosEndDateStr);
   }
 
   getTradesHistory() { // send this when user clicks on Trades tab
@@ -788,5 +789,93 @@ export class AppComponent {
         maxDate = trades[i].time;
     }
     return maxDate;
+  }
+
+  initializeDateInputs(): void {
+    const calendarInput = document.getElementById('endDateCalendar') as HTMLInputElement;
+    const yearInput = document.getElementById('endDateYear') as HTMLInputElement;
+    const monthInput = document.getElementById('endDateMonth') as HTMLInputElement;
+    const dayInput = document.getElementById('endDateDay') as HTMLInputElement;
+
+    if (calendarInput != null && yearInput != null && monthInput != null && dayInput != null) {
+      const [year, month, day] = this.m_histPosEndDateStr.split('-');
+      // Set the values of year, month, day, and calendar inputs using histPosEndDateStr
+      yearInput.value = year;
+      monthInput.value = month;
+      dayInput.value = day;
+      calendarInput.value = this.m_histPosEndDateStr;
+    }
+  }
+
+  onChangeDateFromCalendarPicker(calendarInput: HTMLInputElement, yearInput: HTMLInputElement, monthInput: HTMLInputElement, dayInput: HTMLInputElement): void {
+    const [year, month, day] = calendarInput.value.split('-');
+    // Update the year, month, and day inputs based on the date selected by the user from the calendar
+    yearInput.value = year;
+    monthInput.value = month;
+    dayInput.value = day;
+  }
+
+  onChangeDatePart(type: 'year' | 'month' | 'day', inputElement: HTMLInputElement, calendarInput: HTMLInputElement): void {
+    let value: string = inputElement.value.trim();
+    const date: Date = new Date(calendarInput.value || this.m_histPosEndDateStr); // Use existing value or default date
+
+    switch (type) {
+      case 'year':
+        if (this.isValidYear(value))
+          date.setFullYear(parseInt(value, 10));
+        else
+          inputElement.value = date.getFullYear().toString();
+        break;
+      case 'month':
+        value = parseInt(value, 10).toString().padStart(2, '0'); // Pad single-digit month to 2 digits before validation
+        if (this.isValidMonth(value)) {
+          date.setMonth(parseInt(value, 10) - 1); // Subtracting 1 from the month value since JavaScript months are 0-indexed
+          inputElement.value = value;
+        } else
+          inputElement.value = (date.getMonth() + 1).toString().padStart(2, '0');
+        break;
+      case 'day':
+        value = parseInt(value, 10).toString().padStart(2, '0'); // Pad single-digit day to 2 digits before validation
+        if (this.isValidDay(value, date)) {
+          date.setDate(parseInt(value, 10));
+          inputElement.value = value;
+        } else
+          inputElement.value = date.getDate().toString().padStart(2, '0');
+        break;
+    }
+    calendarInput.value = date.toISOString().split('T')[0];
+  }
+
+  isValidYear(year: string): boolean {
+    const currentYear = new Date().getFullYear();
+    const yearInt = parseInt(year, 10);
+    return year.length == 4 && yearInt >= 1900 && yearInt <= currentYear;
+  }
+
+  isValidMonth(month: string): boolean {
+    const monthInt = parseInt(month, 10);
+    return month.length == 2 && monthInt >= 1 && monthInt <= 12;
+  }
+
+  isValidDay(day: string, date: Date): boolean {
+    const dayInt = parseInt(day, 10);
+    const maxDays = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate(); // Days in the month , calculating maxdays to handle the cases like Feb month
+    return day.length == 2 && dayInt >= 1 && dayInt <= maxDays;
+  }
+
+  onClickPosNextOrPrevDate(nextOrPrev: string): void {
+    const histPosEndDate: Date = new Date(this.m_histPosEndDateStr);
+    const dateAdjustment = nextOrPrev == 'next' ? 1 : -1;
+    let newDate: Date = new Date(histPosEndDate.setDate(histPosEndDate.getDate() + dateAdjustment));
+    const dayOfWeek = newDate.getDay();
+
+    // Adjust for weekends
+    if (dayOfWeek == 6) // Saturday
+      newDate = new Date(newDate.setDate(newDate.getDate() + (nextOrPrev == 'next' ? 2 : -1)));
+    else if (dayOfWeek == 0) // Sunday
+      newDate = new Date(newDate.setDate(newDate.getDate() + (nextOrPrev == 'next' ? 1 : -2)));
+
+    this.m_histPosEndDateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(SqNgCommonUtilsTime.ConvertDateLocToUtc(newDate)); // Update the date string
+    this.initializeDateInputs();
   }
 }
