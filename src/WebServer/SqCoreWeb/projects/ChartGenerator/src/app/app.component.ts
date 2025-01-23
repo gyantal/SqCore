@@ -210,12 +210,12 @@ export class AppComponent implements OnInit {
       const filteredPortfolios: PortfolioJsEx[] = this.m_backtestedPortfolios.filter((prtf) => prtf.name == item.name);// The m_backtestedPortfolios may contain the same portfolio name with different leverage values. So, we need to execute createCgTimeSeriesFromChrtData2() twice using the same chartData but with different leverage values.
       if (filteredPortfolios.length == 0) { // The backtestedPortfolios is populated only after "onConnected," meaning no portfolios will be added until the handshake provides the allPortfolios information (this.m_allPortfolios = handshakeMsg.prtfsToClient).
         const leverage = 1.0;
-        const chartItem = this.createCgTimeSeriesFromChrtData2(item.chrtData, item.name, true, leverage);
+        const chartItem = this.createCgTimeSeriesFromChrtData(item.chrtData, item.name, true, leverage);
         uiPrtfResItem.prtfChrtValues.push(chartItem);
       } else {
         for (const prtf of filteredPortfolios) {
           const leverage = prtf.leverage;
-          const chartItem = this.createCgTimeSeriesFromChrtData2(item.chrtData, item.name, true, leverage);
+          const chartItem = this.createCgTimeSeriesFromChrtData(item.chrtData, item.name, true, leverage);
           uiPrtfResItem.prtfChrtValues.push(chartItem);
         }
       }
@@ -229,7 +229,7 @@ export class AppComponent implements OnInit {
       const filteredBenchmarks: BenchmarkEx[] = this.m_backtestedBenchmarks.filter((benchmark) => benchmark.ticker == bmrkItem.sqTicker);
       for (const benchmark of filteredBenchmarks) {
         const leverage = benchmark.leverage;
-        const chartItem = this.createCgTimeSeriesFromChrtData2(bmrkItem.chrtData, bmrkItem.sqTicker, false, leverage);
+        const chartItem = this.createCgTimeSeriesFromChrtData(bmrkItem.chrtData, bmrkItem.sqTicker, false, leverage);
         uiPrtfResItem.bmrkChrtValues.push(chartItem);
       }
       this.m_seasonalityData.push(getSeasonalityData(bmrkItem.chrtData));
@@ -259,22 +259,6 @@ export class AppComponent implements OnInit {
     this.m_ultimateChrt.Init(lineChrtDiv, lineChrtTooltip, prtfAndBmrkChrtData);
     this.m_sqStatisticsbuilder.Init(prtfAndBmrkChrtData);
     this.onStartOrEndDateChanged(); // will recalculate CAGR and redraw chart
-  }
-
-  // Common function for both portfolios and bmrks to create chartGenerator TimeSeries data
-  createCgTimeSeriesFromChrtData(chrtData: ChartJs, name: string, isPrimary: boolean): CgTimeSeries {
-    const chartItem = new CgTimeSeries();
-    chartItem.name = name;
-    chartItem.chartResolution = ChartResolution[chrtData.chartResolution];
-    chartItem.linestyle = isPrimary ? LineStyle.Solid : LineStyle.Dashed;
-    chartItem.isPrimary = isPrimary;
-    chartItem.priceData = [];
-
-    for (let i = 0; i < chrtData.dates.length; i++) {
-      const chrtItem = this.createUiChartPointFromChrtData(chrtData, i);
-      chartItem.priceData.push(chrtItem);
-    }
-    return chartItem;
   }
 
   // Common function for both portfolios and bmrks to create UiChartPiont data from chartdata and index
@@ -516,7 +500,7 @@ export class AppComponent implements OnInit {
   }
 
   // Common function for both portfolios and bmrks to create chartGenerator TimeSeries data
-  createCgTimeSeriesFromChrtData2(chrtData: ChartJs, name: string, isPrimary: boolean, leverage: number): CgTimeSeries { // Temporary until the method is finalized
+  createCgTimeSeriesFromChrtData(chrtData: ChartJs, name: string, isPrimary: boolean, leverage: number): CgTimeSeries {
     const cgTimeSeries = new CgTimeSeries();
     cgTimeSeries.name = name;
     cgTimeSeries.chartResolution = ChartResolution[chrtData.chartResolution];
@@ -531,6 +515,7 @@ export class AppComponent implements OnInit {
 
     const isLeveraged: boolean = leverage != 1;
     if (isLeveraged) {
+      cgTimeSeries.name = name + ` x+${leverage}`; // If leveraged, append the leverage value to the portfolio/benchmark name. e.g., if the benchmark is SPY and leverage is 3, then name = SPY x+3.
       let preVal: number = cgTimeSeries.priceData[0].value; // Initialize preVal with the first value in the array
       for (let i = 1; i < cgTimeSeries.priceData.length; i++) {
         const curVal: number = cgTimeSeries.priceData[i].value;
