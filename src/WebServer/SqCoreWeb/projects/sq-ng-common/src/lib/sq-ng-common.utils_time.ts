@@ -113,10 +113,6 @@ export class SqNgCommonUtilsTime implements OnInit {
     return this.ConvertDateUtcToEt(dateUtc);
   }
 
-  public static ConvertDateLocToUtc(locDate: Date) {
-    return new Date(locDate.getUTCFullYear(), locDate.getUTCMonth(), locDate.getUTCDate(), locDate.getUTCHours(), locDate.getUTCMinutes());
-  }
-
   // https://stackoverflow.com/questions/542938/how-do-i-get-the-number-of-days-between-two-dates-in-javascript
   public static DateDiffNdays(startDate: Date, endDate: Date) {
     // Take the difference between the dates and divide by milliseconds per day.

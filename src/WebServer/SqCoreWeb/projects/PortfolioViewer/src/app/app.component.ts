@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { PortfolioJs, PrtfRunResultJs, UiPrtfRunResult, prtfsParseHelper, statsParseHelper, updateUiWithPrtfRunResult, TradeAction, AssetType, CurrencyId, ExchangeId, fundamentalDataParseHelper, TickerClosePrice, SeasonalityData, getSeasonalityData, UiSeasonalityChartPoint, getDetailedStats, ChartResolution } from '../../../../TsLib/sq-common/backtestCommon';
+import { PortfolioJs, PrtfRunResultJs, UiPrtfRunResult, prtfsParseHelper, statsParseHelper, updateUiWithPrtfRunResult, TradeAction, AssetType, CurrencyId, ExchangeId, fundamentalDataParseHelper, TickerClosePrice, SeasonalityData, getSeasonalityData, UiSeasonalityChartPoint, getDetailedStats, ChartResolution, updateUiWithPrtfRunResultUntilDate } from '../../../../TsLib/sq-common/backtestCommon';
 import { minDate, SqNgCommonUtilsTime } from '../../../sq-ng-common/src/lib/sq-ng-common.utils_time';
 import { drawBarChartFromSeasonalityData } from '../../../../TsLib/sq-common/chartSimple';
 import { BacktestDetailedStatistics } from '../../../../TsLib/sq-common/backtestStatistics';
@@ -107,9 +107,11 @@ export class AppComponent {
   m_userWarning: string | null = null;
 
   // Positions tabpage:
-  m_histPosEndDateStr: string = SqNgCommonUtilsTime.Date2PaddedIsoStr(SqNgCommonUtilsTime.ConvertDateLocToUtc(new Date()));
-  m_positionsTabSortColumn: string = 'plPct';
+  m_histPosEndDateStr: string = new Date().toISOString().split('T')[0];
+  m_positionsTabSortColumn: string = 'plPctTotal';
   m_isPositionsTabSortDirAscend: boolean = false;
+  m_histPrtfRunResultUntilDate: PrtfRunResultJs | null = null;
+  m_uiHistPrtfRunResultUntilDate: UiPrtfRunResult = new UiPrtfRunResult();
 
   // PortfolioReport tabpage:
   m_seasonalityData: SeasonalityData = new SeasonalityData();
@@ -189,6 +191,10 @@ export class AppComponent {
           this.processPortfolioRunResult(msgObjStr);
           this.m_isEditedTradeDirty = false;
           break;
+        case 'PrtfVwr.PrtfRunResultUntilDate':
+          console.log('PrtfVwr.PrtfRunResultUntilDate:' + msgObjStr);
+          this.processHistPortfolioRunResultUntilDate(msgObjStr);
+          break;
         case 'PrtfVwr.TradesHist':
           console.log('PrtfVwr.TradesHist:' + msgObjStr);
           this.m_trades = AppComponent.processHistoricalTrades(msgObjStr);
@@ -225,6 +231,15 @@ export class AppComponent {
     };
   }
 
+  public processHistPortfolioRunResultUntilDate(msgObjStr: string) {
+    console.log('PrtfVwr.processHistPortfolioRunResultUntilDate() START');
+    this.m_histPrtfRunResultUntilDate = JSON.parse(msgObjStr);
+    if (this.m_histPrtfRunResultUntilDate?.chrtData.chartResolution == ChartResolution.Minute || this.m_histPrtfRunResultUntilDate?.chrtData.chartResolution == ChartResolution.Minute5) // Check if the portfolio is of per minute resolution
+      this.m_userWarning = 'PerMinute strategies not fully supported';
+    updateUiWithPrtfRunResultUntilDate(this.m_histPrtfRunResultUntilDate, this.m_uiHistPrtfRunResultUntilDate, this.m_histPosEndDateStr);
+    this.getFundamentalData(this.m_histPrtfRunResultUntilDate);
+  }
+
   public processPortfolioRunResult(msgObjStr: string) {
     console.log('PrtfVwr.processPortfolioRunResult() START');
     this.m_prtfRunResult = JSON.parse(msgObjStr, function(this: any, key, value) {
@@ -240,8 +255,9 @@ export class AppComponent {
     if (this.m_prtfRunResult?.chrtData.chartResolution == ChartResolution.Minute || this.m_prtfRunResult?.chrtData.chartResolution == ChartResolution.Minute5) // Check if the portfolio is of per minute resolution
       this.m_userWarning = 'PerMinute strategies not fully supported';
     updateUiWithPrtfRunResult(this.m_prtfRunResult, this.m_uiPrtfRunResult, this.m_chrtWidth, this.m_chrtHeight);
+    updateUiWithPrtfRunResultUntilDate(this.m_prtfRunResult, this.m_uiHistPrtfRunResultUntilDate, this.m_histPosEndDateStr);
     this.onSortingPositionsClicked(this.m_positionsTabSortColumn);
-    this.getFundamentalData();
+    this.getFundamentalData(this.m_prtfRunResult);
     this.m_seasonalityData = getSeasonalityData(this.m_prtfRunResult!.chrtData);
     let isMonthlySeasonalityAvgArrayAllNaN: boolean = true; // This is added to resolve console errors when plotting the bar chart for mean and median. The seasonality data array contains only NaN values, e.g., for portfolioId = 7, which has data for only 5 days.
     for (let i = 0; i < this.m_seasonalityData.monthlySeasonalityAvg.length; i++) {
@@ -255,9 +271,9 @@ export class AppComponent {
     this.m_detailedStatistics = getDetailedStats(this.m_prtfRunResult!.chrtData, this.m_prtfRunResult!.name);
   }
 
-  getFundamentalData() {
+  getFundamentalData(prtfRunResult: PrtfRunResultJs | null) {
     const tickers: string[] = [];
-    for (const item of this.m_prtfRunResult?.prtfPoss) // Extract tickers from portfolio positions
+    for (const item of prtfRunResult?.prtfPoss) // Extract tickers from portfolio positions
       tickers.push(item.sqTicker.split('/')[1]);
 
     if (this.m_socket != null && this.m_socket.readyState == this.m_socket.OPEN)
@@ -277,7 +293,7 @@ export class AppComponent {
       return value; // the original property will not be removed if we return the original value, not undefined
     });
 
-    for (const prtfPosItem of this.m_uiPrtfRunResult.prtfPosValues) {
+    for (const prtfPosItem of this.m_uiHistPrtfRunResultUntilDate.prtfPosValues) {
       const ticker = prtfPosItem.sqTicker.split('/')[1]; // Extract ticker from prtfPosItem sqTicker, e.g. S/TLT => TLT
       const fundamentalDataItem = fundamentalData.find((item) => item.ticker == ticker);
 
@@ -300,7 +316,7 @@ export class AppComponent {
 
   onHistPeriodChangeClicked() { // send this when user changes the historicalPosDates
     if (this.m_socket != null && this.m_socket.readyState == this.m_socket.OPEN)
-      this.m_socket.send('RunBacktest:' + '?pid=' + this.m_portfolioId + '&Date=' + this.m_histPosEndDateStr);
+      this.m_socket.send('RunBacktestUntilDate:' + '?pid=' + this.m_portfolioId + '&Date=' + this.m_histPosEndDateStr);
   }
 
   getTradesHistory() { // send this when user clicks on Trades tab
@@ -595,7 +611,7 @@ export class AppComponent {
 
   onSortingPositionsClicked(sortColumn: string) { // sort the postions data table
     this.m_positionsTabSortColumn = sortColumn;
-    this.m_uiPrtfRunResult.prtfPosValues = this.m_uiPrtfRunResult.prtfPosValues.sort((n1, n2) => {
+    this.m_uiHistPrtfRunResultUntilDate.prtfPosValues = this.m_uiHistPrtfRunResultUntilDate.prtfPosValues.sort((n1, n2) => {
       if (this.m_isPositionsTabSortDirAscend)
         return (n1[sortColumn] > n2[sortColumn]) ? 1 : ((n1[sortColumn] < n2[sortColumn]) ? -1 : 0);
       else
@@ -813,6 +829,8 @@ export class AppComponent {
     yearInput.value = year;
     monthInput.value = month;
     dayInput.value = day;
+    this.m_histPosEndDateStr = calendarInput.value;
+    this.onHistPeriodChangeClicked();
   }
 
   onChangeDatePart(type: 'year' | 'month' | 'day', inputElement: HTMLInputElement, calendarInput: HTMLInputElement): void {
@@ -844,6 +862,8 @@ export class AppComponent {
         break;
     }
     calendarInput.value = date.toISOString().split('T')[0];
+    this.m_histPosEndDateStr = calendarInput.value;
+    this.onHistPeriodChangeClicked();
   }
 
   isValidYear(year: string): boolean {
@@ -859,7 +879,7 @@ export class AppComponent {
 
   isValidDay(day: string, date: Date): boolean {
     const dayInt = parseInt(day, 10);
-    const maxDays = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate(); // Days in the month , calculating maxdays to handle the cases like Feb month
+    const maxDays = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate(); // Calculates the maximum days in a month by moving to the next month's 0th day (0 as the day, refers to the last day of the current month)
     return day.length == 2 && dayInt >= 1 && dayInt <= maxDays;
   }
 
@@ -875,7 +895,8 @@ export class AppComponent {
     else if (dayOfWeek == 0) // Sunday
       newDate = new Date(newDate.setDate(newDate.getDate() + (nextOrPrev == 'next' ? 1 : -2)));
 
-    this.m_histPosEndDateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(SqNgCommonUtilsTime.ConvertDateLocToUtc(newDate)); // Update the date string
+    this.m_histPosEndDateStr = newDate.toISOString().split('T')[0];
     this.initializeDateInputs();
+    this.onHistPeriodChangeClicked();
   }
 }

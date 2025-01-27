@@ -32,6 +32,7 @@ class FundamentalData
 
 public class PrtfVwrWs
 {
+    static bool isPrtfRunResultUntilDate = false;
     public static async Task OnWsConnectedAsync(HttpContext context, WebSocket webSocket)
     {
         Utils.Logger.Debug($"PrtfVwrWs.OnConnectedAsync()) BEGIN");
@@ -55,7 +56,7 @@ public class PrtfVwrWs
         if (webSocket.State == WebSocketState.Open)
             await webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None); // takes 0.635ms
         if (queryStr != null)
-            PortfVwrGetPortfolioRunResults(webSocket, queryStr);
+            PortfVwrGetPortfolioRunResults(webSocket, queryStr, isPrtfRunResultUntilDate);
     }
 
     public static void OnWsClose(WebSocket webSocket)
@@ -75,7 +76,7 @@ public class PrtfVwrWs
         {
             case "RunBacktest":
                 Utils.Logger.Info($"PrtfVwrWs.OnWsReceiveAsync(): RunBacktest: '{msgObjStr}'");
-                PortfVwrGetPortfolioRunResults(webSocket, msgObjStr);
+                PortfVwrGetPortfolioRunResults(webSocket, msgObjStr, isPrtfRunResultUntilDate);
                 break;
             case "GetFundamentalData":
                 Utils.Logger.Info($"PrtfVwrWs.OnWsReceiveAsync(): GetFundamentalData: '{msgObjStr}'");
@@ -104,6 +105,11 @@ public class PrtfVwrWs
             case "LegacyDbTradesHist":
                 Utils.Logger.Info($"PrtfVwrWs.OnWsReceiveAsync(): LegacyDbTradesHist: '{msgObjStr}'");
                 LegacyDbGetTradesHistory(webSocket, msgObjStr);
+                break;
+            case "RunBacktestUntilDate":
+                Utils.Logger.Info($"PrtfVwrWs.OnWsReceiveAsync(): RunBacktestUntilDate: '{msgObjStr}'");
+                PortfVwrGetPortfolioRunResults(webSocket, msgObjStr, isPrtfRunResultUntilDate = true);
+                isPrtfRunResultUntilDate = false;
                 break;
             default:
                 Utils.Logger.Info($"PrtfVwrWs.OnWsReceiveAsync(): Unrecognized message from client, {msgCode},{msgObjStr}");
@@ -253,7 +259,7 @@ public class PrtfVwrWs
     // Here we get the p_msg in 2 forms
     // 1. when onConnected it comes as p_msg ="?pid=12".
     // 2. when user sends Historical Position Dates ?pid=12&Date=2022-01-01
-    public static void PortfVwrGetPortfolioRunResults(WebSocket webSocket, string p_msg) // p_msg ="?pid=12" or ?pid=12&Date=2022-01-01
+    public static void PortfVwrGetPortfolioRunResults(WebSocket webSocket, string p_msg, bool isPrtfRunResultUntilDate) // p_msg ="?pid=12" or ?pid=12&Date=2022-01-01
     {
         // forcedStartDate and forcedEndDate are determined by specifed algorithm, if null (ex: please refer SqPctAllocation.cs file)
         DateTime? p_forcedStartDate = null;
@@ -280,10 +286,11 @@ public class PrtfVwrWs
             p_forcedEndDate = Utils.Str2DateTimeUtc(endDtStr);
         }
         string? errMsg = MemDb.gMemDb.GetPortfolioRunResults(id, p_forcedStartDate, p_forcedEndDate, out PrtfRunResult prtfRunResultJs);
+        string prtfRunResult = isPrtfRunResultUntilDate ? "PrtfRunResultUntilDate" : "PrtfRunResult";
         // Send portfolio run result if available
         if (errMsg == null)
         {
-            byte[] encodedMsg = Encoding.UTF8.GetBytes("PrtfVwr.PrtfRunResult:" + Utils.CamelCaseSerialize(prtfRunResultJs));
+            byte[] encodedMsg = Encoding.UTF8.GetBytes($"PrtfVwr.{prtfRunResult}:" + Utils.CamelCaseSerialize(prtfRunResultJs));
             if (webSocket!.State == WebSocketState.Open)
                 webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
         }

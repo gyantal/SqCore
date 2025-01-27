@@ -462,6 +462,77 @@ export function statsParseHelper(_this: any, key: string, value: any): boolean {
   return false;
 }
 
+export function updateUiWithPrtfRunResultUntilDate(prtfRunResult: Nullable<PrtfRunResultJs>, uiPosPrtfRunResult: UiPrtfRunResult, histDateStr: string) {
+  if (prtfRunResult == null)
+    return;
+
+  uiPosPrtfRunResult.prtfPosValues.length = 0;
+  for (let i = 0; i < prtfRunResult.prtfPoss.length; i++) {
+    const posItem = new UiPrtfPositions();
+    posItem.sqTicker = prtfRunResult.prtfPoss[i].sqTicker;
+    posItem.quantity = prtfRunResult.prtfPoss[i].quantity;
+    posItem.avgPrice = prtfRunResult.prtfPoss[i].avgPrice;
+    posItem.priorClose = prtfRunResult.prtfPoss[i].backtestLastPrice;
+    posItem.costBasis = Math.round(posItem.avgPrice * posItem.quantity);
+    posItem.mktVal = Math.round(prtfRunResult.prtfPoss[i].estPrice * posItem.quantity); // mktVal - uses the RT price
+    if (!posItem.sqTicker.startsWith('C')) { // excluding the Cash Tickers
+      posItem.estPrice = prtfRunResult.prtfPoss[i].estPrice;
+      posItem.pctChgTod = (posItem.estPrice - posItem.priorClose) / posItem.priorClose;
+      posItem.plTod = Math.round(posItem.quantity * (posItem.estPrice - posItem.priorClose));
+      posItem.plTotal = Math.round(posItem.quantity * (posItem.estPrice - posItem.avgPrice));
+      posItem.plPctTotal = posItem.plTotal / Math.abs(posItem.costBasis);
+    }
+    uiPosPrtfRunResult.prtfPosValues.push(posItem);
+  }
+
+  uiPosPrtfRunResult.chrtValues.length = 0;
+  for (let i = 0; i < prtfRunResult.chrtData.dates.length; i++) {
+    const chartItem = new UiChartPoint();
+    chartItem.date = convertToDateBasedOnDateFormat(prtfRunResult.chrtData.dates[i], prtfRunResult.chrtData.dateTimeFormat);
+    chartItem.value = prtfRunResult.chrtData.values[i];
+    uiPosPrtfRunResult.chrtValues.push(chartItem);
+  }
+
+  uiPosPrtfRunResult.onDatePosPv = 0;
+  uiPosPrtfRunResult.prevDatePosPv = 0;
+  uiPosPrtfRunResult.onDateTwrPv = 0;
+  uiPosPrtfRunResult.prevDateTwrPv = 0;
+  for (let i = 0; i < prtfRunResult.prtfPoss.length; i++) {
+    const prtfPos = prtfRunResult.prtfPoss[i];
+    uiPosPrtfRunResult.onDatePosPv += prtfPos.sqTicker.startsWith('C') ? prtfPos.backtestLastPrice * prtfPos.quantity : prtfPos.estPrice * prtfPos.quantity; // Calculate posPvOnDate
+    uiPosPrtfRunResult.prevDatePosPv += prtfPos.backtestLastPrice * prtfPos.quantity; // Calculate posPvPrevDate
+  }
+
+  const chrtDataCount: number = prtfRunResult.chrtData.dates.length - 1;
+  // Converting the date to a string format (yyyy-mm-dd) for comparison since we're only interested in the date part and not the time.
+  const todayDateStr: string = new Date().toISOString().split('T')[0];
+
+  // Find the prevDate TWR-PV
+  // The chartValues contain multiple entries for the same date towards the end.
+  // To retrieve the previous date's value, we compare the dates and stop at the first match.
+  for (let i = chrtDataCount; i >= 0; i--) {
+    const chrtDateStr: string = SqNgCommonUtilsTime.Date2PaddedIsoStr(convertToDateBasedOnDateFormat(prtfRunResult.chrtData.dates[i], prtfRunResult.chrtData.dateTimeFormat));
+    if (chrtDateStr < histDateStr) {
+      uiPosPrtfRunResult.prevDateTwrPv = prtfRunResult.chrtData.values[i];
+      break;
+    }
+  }
+
+  // Calculate onDateTwrPv
+  if (histDateStr == todayDateStr) {
+    const pvPctChgMultToday: number = uiPosPrtfRunResult.onDatePosPv / uiPosPrtfRunResult.prevDatePosPv;
+    uiPosPrtfRunResult.onDateTwrPv = pvPctChgMultToday * uiPosPrtfRunResult.prevDateTwrPv;
+  } else {
+    for (let i = chrtDataCount; i >= 0; i--) { // Retrieve the onDateTwrPV where histDateStr matches chartDateStr
+      const chrtDateStr: string = SqNgCommonUtilsTime.Date2PaddedIsoStr(convertToDateBasedOnDateFormat(prtfRunResult.chrtData.dates[i], prtfRunResult.chrtData.dateTimeFormat));
+      if (histDateStr == chrtDateStr) {
+        uiPosPrtfRunResult.onDateTwrPv = prtfRunResult.chrtData.values[i];
+        break;
+      }
+    }
+  }
+}
+
 export function updateUiWithPrtfRunResult(prtfRunResult: Nullable<PrtfRunResultJs>, uiPrtfRunResult: UiPrtfRunResult, uiChrtWidth: number, uiChrtHeight: number) {
   if (prtfRunResult == null)
     return;
@@ -513,36 +584,6 @@ export function updateUiWithPrtfRunResult(prtfRunResult: Nullable<PrtfRunResultJ
     chartItem.value = prtfRunResult.chrtData.values[i];
     uiPrtfRunResult.chrtValues.push(chartItem);
   }
-
-  for (let i = 0; i < prtfRunResult.prtfPoss.length; i++) {
-    const prtfPos = prtfRunResult.prtfPoss[i];
-    uiPrtfRunResult.onDatePosPv += prtfPos.sqTicker.startsWith('C') ? prtfPos.backtestLastPrice * prtfPos.quantity : prtfPos.estPrice * prtfPos.quantity; // Calculate posPvOnDate
-    uiPrtfRunResult.prevDatePosPv += prtfPos.backtestLastPrice * prtfPos.quantity; // Calculate posPvPrevDate
-  }
-
-  const chrtDataCount: number = uiPrtfRunResult.chrtValues.length - 1;
-  const curDate: Date = uiPrtfRunResult.chrtValues[chrtDataCount].date;
-  // Converting the date to a string format (yyyy-mm-dd) for comparison since we're only interested in the date part and not the time.
-  const todayDateStr: string = SqNgCommonUtilsTime.Date2PaddedIsoStr(new Date());
-  const curDateStr: string = SqNgCommonUtilsTime.Date2PaddedIsoStr(curDate);
-
-  // Find the prevDate TWR-PV
-  // The chartValues contain multiple entries for the same date towards the end.
-  // To retrieve the previous date's value, we compare the dates and stop at the first match.
-  for (let i = chrtDataCount; i >= 0; i--) {
-    const chrtDateStr: string = SqNgCommonUtilsTime.Date2PaddedIsoStr(uiPrtfRunResult.chrtValues[i].date);
-    if (curDateStr != chrtDateStr) {
-      uiPrtfRunResult.prevDateTwrPv = uiPrtfRunResult.chrtValues[i].value;
-      break;
-    }
-  }
-
-  // Calculate onDateTwrPv
-  if (curDateStr == todayDateStr) {
-    const pvPctChgMultToday: number = uiPrtfRunResult.onDatePosPv / uiPrtfRunResult.prevDatePosPv;
-    uiPrtfRunResult.onDateTwrPv = pvPctChgMultToday * uiPrtfRunResult.prevDateTwrPv;
-  } else
-    uiPrtfRunResult.onDateTwrPv = uiPrtfRunResult.chrtValues[chrtDataCount].value;
 
   d3.selectAll('#pfRunResultChrt > *').remove();
   const lineChrtDiv = document.getElementById('pfRunResultChrt') as HTMLElement;

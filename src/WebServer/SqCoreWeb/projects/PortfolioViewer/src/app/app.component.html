@@ -6,14 +6,14 @@
       <td>$PV Start: {{m_uiPrtfRunResult.startPortfolioValue | currency:'USD':'symbol':'1.0'}}</td>
     </tr>
     <tr>
-      <td>Twr-PV on PrevDate: {{m_uiPrtfRunResult.prevDateTwrPv | number:'1.2-2'}}%</td>
-      <td>Twr-PV on Date: {{m_uiPrtfRunResult.onDateTwrPv | number:'1.2-2'}}%</td>
-      <td><b>Twr-P&L%</b> on Date: <b>{{(m_uiPrtfRunResult.onDateTwrPv / m_uiPrtfRunResult.prevDateTwrPv) - 1 | percent:'1.2-2'}}</b></td>
+      <td>Twr-PV on PrevDate: {{m_uiHistPrtfRunResultUntilDate.prevDateTwrPv | number:'1.2-2'}}%</td>
+      <td>Twr-PV on Date: {{m_uiHistPrtfRunResultUntilDate.onDateTwrPv | number:'1.2-2'}}%</td>
+      <td><b>Twr-P&L%</b> on Date: <b>{{(m_uiHistPrtfRunResultUntilDate.onDateTwrPv / m_uiHistPrtfRunResultUntilDate.prevDateTwrPv) - 1 | percent:'1.2-2'}}</b></td>
     </tr>
     <tr>
-      <td title="Positions-$PV on PrevDate does not equal $PV on PrevDate, if there were intraday trades on the current day">Positions-$PV on PrevDate (ClosePr): ${{m_uiPrtfRunResult.prevDatePosPv | number:'1.0-0'}}</td>
-      <td title="Positions-$PV on Date equals $PV at market close"><b>Positions-$PV</b> = $PV on Date (ClosePr or RT): <b>${{m_uiPrtfRunResult.onDatePosPv | number:'1.0-0'}}</b></td>
-      <td><b>Positions-$P&L</b> on Date: <span [ngStyle]="{color: (m_uiPrtfRunResult.onDatePosPv - m_uiPrtfRunResult.prevDatePosPv) < 0 ? 'red' : 'green'}"><b>${{(m_uiPrtfRunResult.onDatePosPv - m_uiPrtfRunResult.prevDatePosPv) | number:'1.0-0'}} ({{(m_uiPrtfRunResult.onDatePosPv - m_uiPrtfRunResult.prevDatePosPv) / m_uiPrtfRunResult.prevDatePosPv | percent:'1.2-2' }})</b></span></td>
+      <td title="Positions-$PV on PrevDate does not equal $PV on PrevDate, if there were intraday trades on the current day">Positions-$PV on PrevDate (ClosePr): ${{m_uiHistPrtfRunResultUntilDate.prevDatePosPv | number:'1.0-0'}}</td>
+      <td title="Positions-$PV on Date equals $PV at market close"><b>Positions-$PV</b> = $PV on Date (ClosePr or RT): <b>${{m_uiHistPrtfRunResultUntilDate.onDatePosPv | number:'1.0-0'}}</b></td>
+      <td><b>Positions-$P&L</b> on Date: <span [ngStyle]="{color: (m_uiHistPrtfRunResultUntilDate.onDatePosPv - m_uiHistPrtfRunResultUntilDate.prevDatePosPv) < 0 ? 'red' : 'green'}"><b>${{(m_uiHistPrtfRunResultUntilDate.onDatePosPv - m_uiHistPrtfRunResultUntilDate.prevDatePosPv) | number:'1.0-0'}} ({{(m_uiHistPrtfRunResultUntilDate.onDatePosPv - m_uiHistPrtfRunResultUntilDate.prevDatePosPv) / m_uiHistPrtfRunResultUntilDate.prevDatePosPv | percent:'1.2-2' }})</b></span></td>
     </tr>
   </table>&nbsp;
   <header>Historical Positions EndDate: <input type="Date" [(ngModel)]="m_histPosEndDateStr" (change)="onHistPeriodChangeClicked()"></header>&nbsp;
@@ -51,7 +51,7 @@
       </tr>
     </thead>
     <tbody>
-      <tr *ngFor="let item of m_uiPrtfRunResult.prtfPosValues">
+      <tr *ngFor="let item of m_uiHistPrtfRunResultUntilDate.prtfPosValues">
         <td>{{item.sqTicker}}</td>
         <td>{{item.name}}</td>
         <td>{{item.quantity | number:'1.0-0'}}</td>
