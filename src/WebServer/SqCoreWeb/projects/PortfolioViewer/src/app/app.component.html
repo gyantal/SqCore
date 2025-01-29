@@ -16,14 +16,13 @@
       <td><b>Positions-$P&L</b> on Date: <span [ngStyle]="{color: (m_uiHistPrtfRunResultUntilDate.onDatePosPv - m_uiHistPrtfRunResultUntilDate.prevDatePosPv) < 0 ? 'red' : 'green'}"><b>${{(m_uiHistPrtfRunResultUntilDate.onDatePosPv - m_uiHistPrtfRunResultUntilDate.prevDatePosPv) | number:'1.0-0'}} ({{(m_uiHistPrtfRunResultUntilDate.onDatePosPv - m_uiHistPrtfRunResultUntilDate.prevDatePosPv) / m_uiHistPrtfRunResultUntilDate.prevDatePosPv | percent:'1.2-2' }})</b></span></td>
     </tr>
   </table>&nbsp;
-  <header>Historical Positions EndDate: <input type="Date" [(ngModel)]="m_histPosEndDateStr" (change)="onHistPeriodChangeClicked()"></header>&nbsp;
    <!-- using template reference variables like (#yearInput, #monthInput and #dayInput) provides a way to reference DOM elements directly within the template without needing to query them using document.getElementById() or similar methods.
   Example: In (change)="onDatePartChange('year', yearInput, calendarInput)", the variable yearInput directly references the input element.
   These variables are scoped to the components template -->
-  <div class="dateWidget"> Customized Date Widget:&nbsp;
-    <input #yearInput type="text" id="endDateYear" class="commonDateInput" placeholder="YYYY" (change)="onChangeDatePart('year', yearInput, calendarInput)"/>
-    <input #monthInput type="text" id="endDateMonth" class="commonDateInput" placeholder="MM" (change)="onChangeDatePart('month', monthInput, calendarInput)"/>
-    <input #dayInput type="text" id="endDateDay" class="commonDateInput" placeholder="DD" (change)="onChangeDatePart('day', dayInput, calendarInput)"/>
+  <div class="dateWidget"> Historical Positions EndDate:&nbsp;
+    <input #yearInput type="text" class="commonDateInput" placeholder="YYYY" (change)="onChangeDatePart('year', yearInput, calendarInput)"/>
+    <input #monthInput type="text" class="commonDateInput" placeholder="MM" (change)="onChangeDatePart('month', monthInput, calendarInput)"/>
+    <input #dayInput type="text" class="commonDateInput" placeholder="DD" (change)="onChangeDatePart('day', dayInput, calendarInput)"/>
     <input #calendarInput type="date" id="endDateCalendar" class="commonDateInput" [value]="m_histPosEndDateStr" (change)="onChangeDateFromCalendarPicker(calendarInput, yearInput, monthInput, dayInput)"/>
     <div id="nextOrPrevDateButtonContainer">
       <button class="nextOrPrevDateBtn" (click)="onClickPosNextOrPrevDate('next')">&#43;</button>

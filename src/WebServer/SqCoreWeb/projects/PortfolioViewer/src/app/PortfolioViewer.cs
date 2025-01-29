@@ -32,7 +32,6 @@ class FundamentalData
 
 public class PrtfVwrWs
 {
-    static bool isPrtfRunResultUntilDate = false;
     public static async Task OnWsConnectedAsync(HttpContext context, WebSocket webSocket)
     {
         Utils.Logger.Debug($"PrtfVwrWs.OnConnectedAsync()) BEGIN");
@@ -56,7 +55,7 @@ public class PrtfVwrWs
         if (webSocket.State == WebSocketState.Open)
             await webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None); // takes 0.635ms
         if (queryStr != null)
-            PortfVwrGetPortfolioRunResults(webSocket, queryStr, isPrtfRunResultUntilDate);
+            PortfVwrGetPortfolioRunResults(webSocket, queryStr, "PrtfRunResult");
     }
 
     public static void OnWsClose(WebSocket webSocket)
@@ -76,7 +75,7 @@ public class PrtfVwrWs
         {
             case "RunBacktest":
                 Utils.Logger.Info($"PrtfVwrWs.OnWsReceiveAsync(): RunBacktest: '{msgObjStr}'");
-                PortfVwrGetPortfolioRunResults(webSocket, msgObjStr, isPrtfRunResultUntilDate);
+                PortfVwrGetPortfolioRunResults(webSocket, msgObjStr, "PrtfRunResult");
                 break;
             case "GetFundamentalData":
                 Utils.Logger.Info($"PrtfVwrWs.OnWsReceiveAsync(): GetFundamentalData: '{msgObjStr}'");
@@ -108,8 +107,7 @@ public class PrtfVwrWs
                 break;
             case "RunBacktestUntilDate":
                 Utils.Logger.Info($"PrtfVwrWs.OnWsReceiveAsync(): RunBacktestUntilDate: '{msgObjStr}'");
-                PortfVwrGetPortfolioRunResults(webSocket, msgObjStr, isPrtfRunResultUntilDate = true);
-                isPrtfRunResultUntilDate = false;
+                PortfVwrGetPortfolioRunResults(webSocket, msgObjStr, "PrtfRunResultUntilDate");
                 break;
             default:
                 Utils.Logger.Info($"PrtfVwrWs.OnWsReceiveAsync(): Unrecognized message from client, {msgCode},{msgObjStr}");
@@ -258,12 +256,12 @@ public class PrtfVwrWs
 
     // Here we get the p_msg in 2 forms
     // 1. when onConnected it comes as p_msg ="?pid=12".
-    // 2. when user sends Historical Position Dates ?pid=12&Date=2022-01-01
-    public static void PortfVwrGetPortfolioRunResults(WebSocket webSocket, string p_msg, bool isPrtfRunResultUntilDate) // p_msg ="?pid=12" or ?pid=12&Date=2022-01-01
+    // 2. when user sends Historical Position Dates ?pid=12&endDate=2022-01-01
+    public static void PortfVwrGetPortfolioRunResults(WebSocket webSocket, string p_msg, string p_outputMsgCode) // p_msg ="?pid=12" or ?pid=12&endDate=2022-01-01
     {
         // forcedStartDate and forcedEndDate are determined by specifed algorithm, if null (ex: please refer SqPctAllocation.cs file)
-        DateTime? p_forcedStartDate = null;
-        DateTime? p_forcedEndDate = null;
+        DateTime? forcedStartDate = null;
+        DateTime? forcedEndDate = null;
 
         int idStartInd = p_msg.IndexOf("pid=");
         if (idStartInd == -1)
@@ -276,21 +274,22 @@ public class PrtfVwrWs
         if (!int.TryParse(idStr, out int id))
             throw new Exception($"PortfVwrGetPortfolioRunResults(), cannot find id {idStr}");
 
-        // Check if p_msg contains "Date" to determine its format
-        if (p_msg.Contains("Date")) // p_msg = "?pid=12&Date=2022-01-01"
+        // Check if p_msg contains "endDate" to determine its format
+        if (p_msg.Contains("endDate")) // p_msg = "?pid=12&endDate=2022-01-01"
         {
-            int dateInd = p_msg.IndexOf("&Date=");
+            int dateInd = p_msg.IndexOf("&endDate=");
             if (dateInd == -1)
                 return;
-            string endDtStr = p_msg[(dateInd + "&Date=".Length)..];
-            p_forcedEndDate = Utils.Str2DateTimeUtc(endDtStr);
+            string endDtStr = p_msg[(dateInd + "&endDate=".Length)..];
+            DateTime endDateMorning = Utils.Str2DateTimeUtc(endDtStr); // DateTime.Parse() fills the Hour/Minute/Sec components with 00:00:00 refering to the start of the day.
+            DateTime endDateEoD = endDateMorning.Add(new TimeSpan(23, 59, 0)); // We want to run the backtest until the End of the day on that date.
+            forcedEndDate = endDateEoD;
         }
-        string? errMsg = MemDb.gMemDb.GetPortfolioRunResults(id, p_forcedStartDate, p_forcedEndDate, out PrtfRunResult prtfRunResultJs);
-        string prtfRunResult = isPrtfRunResultUntilDate ? "PrtfRunResultUntilDate" : "PrtfRunResult";
+        string? errMsg = MemDb.gMemDb.GetPortfolioRunResults(id, forcedStartDate, forcedEndDate, out PrtfRunResult prtfRunResultJs);
         // Send portfolio run result if available
         if (errMsg == null)
         {
-            byte[] encodedMsg = Encoding.UTF8.GetBytes($"PrtfVwr.{prtfRunResult}:" + Utils.CamelCaseSerialize(prtfRunResultJs));
+            byte[] encodedMsg = Encoding.UTF8.GetBytes($"PrtfVwr.{p_outputMsgCode}:" + Utils.CamelCaseSerialize(prtfRunResultJs));
             if (webSocket!.State == WebSocketState.Open)
                 webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
         }

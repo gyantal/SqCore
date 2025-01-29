@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ElementRef, ViewChild } from '@angular/core';
 import { PortfolioJs, PrtfRunResultJs, UiPrtfRunResult, prtfsParseHelper, statsParseHelper, updateUiWithPrtfRunResult, TradeAction, AssetType, CurrencyId, ExchangeId, fundamentalDataParseHelper, TickerClosePrice, SeasonalityData, getSeasonalityData, UiSeasonalityChartPoint, getDetailedStats, ChartResolution, updateUiWithPrtfRunResultUntilDate } from '../../../../TsLib/sq-common/backtestCommon';
 import { minDate, SqNgCommonUtilsTime } from '../../../sq-ng-common/src/lib/sq-ng-common.utils_time';
 import { drawBarChartFromSeasonalityData } from '../../../../TsLib/sq-common/chartSimple';
@@ -95,6 +95,11 @@ class FundamentalData {
   styleUrls: ['./app.component.scss']
 })
 export class AppComponent {
+  @ViewChild('calendarInput') calendarInput!: ElementRef<HTMLInputElement>;
+  @ViewChild('yearInput') yearInput!: ElementRef<HTMLInputElement>;
+  @ViewChild('monthInput') monthInput!: ElementRef<HTMLInputElement>;
+  @ViewChild('dayInput') dayInput!: ElementRef<HTMLInputElement>;
+
   // General fields
   m_portfolioId = -1; // -1 is invalid ID
   m_portfolio: PortfolioJs | null = null;
@@ -107,7 +112,7 @@ export class AppComponent {
   m_userWarning: string | null = null;
 
   // Positions tabpage:
-  m_histPosEndDateStr: string = new Date().toISOString().split('T')[0];
+  m_histPosEndDateStr: string = new Date().toISOString().substring(0, 10);
   m_positionsTabSortColumn: string = 'plPctTotal';
   m_isPositionsTabSortDirAscend: boolean = false;
   m_histPrtfRunResultUntilDate: PrtfRunResultJs | null = null;
@@ -165,6 +170,10 @@ export class AppComponent {
     this.m_chrtHeight = window.innerHeight as number * 0.5; // 50% of window height
   }
 
+  ngAfterViewInit(): void {
+    this.initializeDateInputs();
+  }
+
   ngOnInit(): void {
     this.m_socket.onmessage = async (event) => {
       const semicolonInd = event.data.indexOf(':');
@@ -172,9 +181,7 @@ export class AppComponent {
       const msgObjStr = event.data.substring(semicolonInd + 1);
       switch (msgCode) {
         case 'OnConnected':
-          this.initializeDateInputs();
           console.log('ws: OnConnected message arrived:' + event.data);
-
           const handshakeMsg: HandshakeMessage = JSON.parse(msgObjStr, function(this: any, key: string, value: any) {
             // eslint-disable-next-line no-invalid-this
             const _this: any = this; // use 'this' only once, so we don't have to write 'eslint-disable-next-line' before all lines when 'this' is used
@@ -316,7 +323,7 @@ export class AppComponent {
 
   onHistPeriodChangeClicked() { // send this when user changes the historicalPosDates
     if (this.m_socket != null && this.m_socket.readyState == this.m_socket.OPEN)
-      this.m_socket.send('RunBacktestUntilDate:' + '?pid=' + this.m_portfolioId + '&Date=' + this.m_histPosEndDateStr);
+      this.m_socket.send('RunBacktestUntilDate:' + '?pid=' + this.m_portfolioId + '&endDate=' + this.m_histPosEndDateStr);
   }
 
   getTradesHistory() { // send this when user clicks on Trades tab
@@ -518,7 +525,7 @@ export class AppComponent {
   onTimeChange(event: Event) {
     this.m_isEditedTradeDirty = true;
     const timeStr: string = (event.target as HTMLInputElement).value;
-    const dateStr: string = this.m_editedTrade.time.toISOString().split('T')[0]; // we extract the date from the current m_editedTrade.time and combine it with the new time to create a new Date object.
+    const dateStr: string = this.m_editedTrade.time.toISOString().substring(0, 10); // we extract the date from the current m_editedTrade.time and combine it with the new time to create a new Date object.
     this.m_editedTrade.time = new Date(dateStr + 'T' + timeStr);
   }
 
@@ -808,19 +815,12 @@ export class AppComponent {
   }
 
   initializeDateInputs(): void {
-    const calendarInput = document.getElementById('endDateCalendar') as HTMLInputElement;
-    const yearInput = document.getElementById('endDateYear') as HTMLInputElement;
-    const monthInput = document.getElementById('endDateMonth') as HTMLInputElement;
-    const dayInput = document.getElementById('endDateDay') as HTMLInputElement;
-
-    if (calendarInput != null && yearInput != null && monthInput != null && dayInput != null) {
-      const [year, month, day] = this.m_histPosEndDateStr.split('-');
-      // Set the values of year, month, day, and calendar inputs using histPosEndDateStr
-      yearInput.value = year;
-      monthInput.value = month;
-      dayInput.value = day;
-      calendarInput.value = this.m_histPosEndDateStr;
-    }
+    const [year, month, day] = this.m_histPosEndDateStr.split('-');
+    // Set the values of year, month, day, and calendar inputs using histPosEndDateStr
+    this.yearInput.nativeElement.value = year;
+    this.monthInput.nativeElement.value = month;
+    this.dayInput.nativeElement.value = day;
+    this.calendarInput.nativeElement.value = this.m_histPosEndDateStr;
   }
 
   onChangeDateFromCalendarPicker(calendarInput: HTMLInputElement, yearInput: HTMLInputElement, monthInput: HTMLInputElement, dayInput: HTMLInputElement): void {
@@ -861,7 +861,7 @@ export class AppComponent {
           inputElement.value = date.getDate().toString().padStart(2, '0');
         break;
     }
-    calendarInput.value = date.toISOString().split('T')[0];
+    calendarInput.value = date.toISOString().substring(0, 10);
     this.m_histPosEndDateStr = calendarInput.value;
     this.onHistPeriodChangeClicked();
   }
@@ -895,7 +895,7 @@ export class AppComponent {
     else if (dayOfWeek == 0) // Sunday
       newDate = new Date(newDate.setDate(newDate.getDate() + (nextOrPrev == 'next' ? 1 : -2)));
 
-    this.m_histPosEndDateStr = newDate.toISOString().split('T')[0];
+    this.m_histPosEndDateStr = newDate.toISOString().substring(0, 10);
     this.initializeDateInputs();
     this.onHistPeriodChangeClicked();
   }

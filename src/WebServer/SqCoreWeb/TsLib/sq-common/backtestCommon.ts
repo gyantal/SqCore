@@ -505,14 +505,14 @@ export function updateUiWithPrtfRunResultUntilDate(prtfRunResult: Nullable<PrtfR
 
   const chrtDataCount: number = prtfRunResult.chrtData.dates.length - 1;
   // Converting the date to a string format (yyyy-mm-dd) for comparison since we're only interested in the date part and not the time.
-  const todayDateStr: string = new Date().toISOString().split('T')[0];
+  const todayDateStr: string = new Date().toISOString().substring(0, 10);
 
   // Find the prevDate TWR-PV
   // The chartValues contain multiple entries for the same date towards the end.
   // To retrieve the previous date's value, we compare the dates and stop at the first match.
   for (let i = chrtDataCount; i >= 0; i--) {
     const chrtDateStr: string = SqNgCommonUtilsTime.Date2PaddedIsoStr(convertToDateBasedOnDateFormat(prtfRunResult.chrtData.dates[i], prtfRunResult.chrtData.dateTimeFormat));
-    if (chrtDateStr < histDateStr) {
+    if (chrtDateStr < histDateStr) { // intentional string representation comparison. More lightweight than converting both to a Date, and it works, because we keep both dateStr in ISO format. It compares the character unicodes one by one.
       uiPosPrtfRunResult.prevDateTwrPv = prtfRunResult.chrtData.values[i];
       break;
     }
