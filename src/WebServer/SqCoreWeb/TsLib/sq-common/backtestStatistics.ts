@@ -10,8 +10,10 @@ export class StatisticsResults {
   public Sharpe: number = 0;
   public CagrSharpe: number = 0;
   public MaxDD: number = 0;
-  public MaxDDStartDate: Date = new Date();
-  public MaxDDEndDate: Date = new Date();
+  public MaxDDStart: Date = new Date();
+  public MaxDDEnd: Date = new Date();
+  public DataStart: Date = new Date();
+  public DataEnd: Date = new Date();
   // public MarRatio: number = 0;
   // public MaxDdLenInCalDays: number = 0;
   // public MaxDdLenInTradDays: number = 0;
@@ -44,7 +46,7 @@ export class BacktestDetailedStatistics {
 
 export class SqStatisticsBuilder {
   _timeSeriess: CgTimeSeries[] = [];
-  public StatNames: string[] = ['TotalReturn', 'CAGR', 'Sharpe', 'CagrSharpe', 'MaxDD', 'MaxDDStartDate', 'MaxDDEndDate']; // it defines the order of importance too
+  public StatNames: string[] = ['TotalReturn', 'CAGR', 'Sharpe', 'CagrSharpe', 'MaxDD', 'MaxDDStart', 'MaxDDEnd', 'DataStart', 'DataEnd']; // it defines the order of importance too
 
   public Init(timeSeriess: CgTimeSeries[]): void {
     this._timeSeriess = timeSeriess;
@@ -156,8 +158,10 @@ export class SqStatisticsBuilder {
       }
       // maximum drawdown and MaxDD period start and end
       statRes.MaxDD = Math.abs(maxDD);
-      statRes.MaxDDStartDate = maxDDStartDate;
-      statRes.MaxDDEndDate = maxDDEndDate;
+      statRes.MaxDDStart = maxDDStartDate;
+      statRes.MaxDDEnd = maxDDEndDate;
+      statRes.DataStart = this._timeSeriess[i].priceData[0].date;
+      statRes.DataEnd = this._timeSeriess[i].priceData[this._timeSeriess[i].priceData.length - 1].date;
       // Calculate the sharpe ratio for the current time series
       const histAMean = sqAverage(dailyReturns) * 252; // annualized daily mean
       const histSD = sqStdDev(dailyReturns) * Math.sqrt(252); // annualized daily StDev

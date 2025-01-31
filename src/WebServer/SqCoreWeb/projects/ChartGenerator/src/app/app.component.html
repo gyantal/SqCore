@@ -109,9 +109,17 @@
         <ng-container *ngFor="let name of m_sqStatisticsbuilder.StatNames">
           <tr [ngStyle]="{'font-weight': (name == 'CAGR' || name == 'Sharpe' || name == 'MaxDD') ? 'bold' : ''}">
             <td>{{name}}</td>
-            <td *ngFor="let item of m_backtestStatsResults">{{(name == 'Sharpe' || (name == 'CagrSharpe')) ? (item[name] | number:'1.2-2') : ((name == 'MaxDDStartDate' || name == 'MaxDDEndDate') ? (item[name] | date:'YYYY-MM-dd') : (item[name] | percent:'0.2'))}}</td> <!-- we display the sharpe/CagrSharpe ratio without % by using number pipe and dates with Date pipe -->
+            <td *ngFor="let item of m_backtestStatsResults">{{(name == 'Sharpe' || (name == 'CagrSharpe')) ? (item[name] | number:'1.2-2') : ((name == 'MaxDDStart' || name == 'MaxDDEnd' || name == 'DataStart' || name == 'DataEnd') ? (item[name] | date:'YYYY-MM-dd') : (item[name] | percent:'0.2'))}}</td> <!-- we display the sharpe/CagrSharpe ratio without % by using number pipe and dates with Date pipe -->
           </tr>
         </ng-container>
+        <tr>
+          <td>Statistics Start</td>
+          <td [attr.colspan]="m_backtestStatsResults.length">{{m_startDateStr}}</td>
+        </tr>
+        <tr>
+          <td>Statistics End</td>
+          <td [attr.colspan]="m_backtestStatsResults.length">{{m_endDateStr}}</td>
+        </tr>
       </tbody>
     </table>
   </div>&nbsp;

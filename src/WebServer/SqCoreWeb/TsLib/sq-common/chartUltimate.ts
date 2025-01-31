@@ -215,16 +215,16 @@ export class UltimateChart {
               if (firstVal === null)
                 firstVal = point.value;
 
-              const diff = Math.abs(new Date(point.date).getTime() - mouseClosestXCoord.getTime());
+              const diff = Math.abs(point.date.getTime() - mouseClosestXCoord.getTime());
               if (diff < minDiff) {
                 minDiff = diff;
                 closestPoint = point;
               }
             }
             if (closestPoint != null)
-              return d.name + ': ' + (100 * closestPoint.value / firstVal!).toFixed(2) + '%';
+              return `${d.name}: ${(100 * closestPoint.value / firstVal!).toFixed(2)}%`;
             else
-              return d.name + ': No Data';
+              return `${d.name}: No Data`;
           });
 
       tooltipPctChg.append('text').text('Date: ' + SqNgCommonUtilsTime.Date2PaddedIsoStr(closestPoint!.date));
@@ -239,29 +239,40 @@ export class UltimateChart {
     function generateSvgPath(data: UiChartPoint[]): string {
       let svgPath: string = '';
       let firstVal: number | null = null;
+      let prevPoint: UiChartPoint | null = null;
 
+      // Adjust the startDate to midnight local time
+      // When the user inputs the startDate it includes time portion.
+      // e.g, if the user provides '2012-05-09', it is interpreted as Wed May 09 2012 05:30:00 GMT+0530 (local timezone).
+      // resetting the time portion to local midnight.
+      startDate.setHours(0, 0, 0, 0);
       for (let i = 0; i < data.length; i++) {
         const point = data[i];
+
+        // Skip points that fall outside the specified range [startDate, endDate]
+        // When using the condition `point.date < startDate`,
+        // e.g, If point.date = Wed May 09 2012 00:00:00 GMT+0530 and startDate = Wed May 09 2012 05:30:00 GMT+0530 (due to timezone offset),
+        // this condition will skip the current point.date and consider the next one, e.g., point.date = Thu May 10 2012 00:00:00 GMT+0530, as the starting point for plotting.
+        // which is causing the plot to start from Thu May 10 2012 00:00:00 GMT+0530 and showing the 100% value on the tooltip
         if (point.date < startDate || point.date > endDate)
           continue;
 
-        if (firstVal === null) {
+        if (firstVal == null) {
           firstVal = point.value;
           svgPath = 'M' + scaleX(point.date) + ',' + scaleY(100 * point.value / firstVal);
         }
 
-        if (i > 0) {
-          const p1 = data[i - 1];
-          const p2 = data[i];
-          const dx = scaleX(p2.date) - scaleX(p1.date);
-          const dy = scaleY(100 * p2.value / firstVal) - scaleY(100 * p1.value / firstVal);
-          const x1 = scaleX(p1.date) + dx * 0.2;
-          const y1 = scaleY(100 * p1.value / firstVal) + dy * 0.2;
-          const x2 = scaleX(p2.date) - dx * 0.2;
-          const y2 = scaleY(100 * p2.value / firstVal) - dy * 0.2;
+        if (prevPoint != null) {
+          const dx = scaleX(point.date) - scaleX(prevPoint.date);
+          const dy = scaleY(100 * point.value / firstVal) - scaleY(100 * prevPoint.value / firstVal);
+          const x1 = scaleX(prevPoint.date) + dx * 0.2;
+          const y1 = scaleY(100 * prevPoint.value / firstVal) + dy * 0.2;
+          const x2 = scaleX(point.date) - dx * 0.2;
+          const y2 = scaleY(100 * point.value / firstVal) - dy * 0.2;
 
-          svgPath += `C${x1},${y1},${x2},${y2},${scaleX(p2.date)},${scaleY(100 * p2.value / firstVal)}`;
+          svgPath += `C${x1},${y1},${x2},${y2},${scaleX(point.date)},${scaleY(100 * point.value / firstVal)}`;
         }
+        prevPoint = point; // Update prevPoint for the next iteration
       }
       return svgPath;
     }
