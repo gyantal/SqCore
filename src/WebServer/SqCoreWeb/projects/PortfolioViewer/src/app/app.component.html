@@ -23,8 +23,8 @@
     In non Angular environments, we have to rewrite this AngularDateWidget to use the time consuming document.getElementById('myInputId').-->
   <div class="sqIsoDateInput"> Historical Positions EndDate:&nbsp;
     <input #yearInput type="text" class="commonDateInput" placeholder="YYYY" (change)="onChangeDatePart('year', yearInput, calendarInput)"/>
-    <input #monthInput type="text" class="commonDateInput" placeholder="MM" (change)="onChangeDatePart('month', monthInput, calendarInput)"/>
-    <input #dayInput type="text" class="commonDateInput" placeholder="DD" (change)="onChangeDatePart('day', dayInput, calendarInput)"/>
+    <input #monthInput type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="MM" (change)="onChangeDatePart('month', monthInput, calendarInput)"/>
+    <input #dayInput type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="DD" (change)="onChangeDatePart('day', dayInput, calendarInput)"/>
     <input #calendarInput type="date" id="endDateCalendar" class="commonDateInput" [value]="m_histPosEndDateStr" (change)="onChangeDateFromCalendarPicker(calendarInput, yearInput, monthInput, dayInput)"/>
     <div id="nextOrPrevDateButtonContainer">
       <button class="nextOrPrevDateBtn" (click)="onClickPosNextOrPrevDate('next')">&#43;</button>

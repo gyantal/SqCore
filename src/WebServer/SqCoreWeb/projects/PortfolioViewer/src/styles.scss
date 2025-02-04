@@ -70,6 +70,10 @@ input[type="date"]::-webkit-datetime-edit-year-field {
   height: 1rem;
 }
 
+.sqIsoDateInputMMDD {
+  width: 1rem;
+}
+
 #nextOrPrevDateButtonContainer {
   display: flex;
   flex-direction: column;

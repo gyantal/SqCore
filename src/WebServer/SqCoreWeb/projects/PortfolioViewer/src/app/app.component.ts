@@ -171,7 +171,7 @@ export class AppComponent {
   }
 
   ngAfterViewInit(): void {
-    this.initializeDateInputs();
+    this.initializeSqIsoDateInput();
   }
 
   ngOnInit(): void {
@@ -814,7 +814,7 @@ export class AppComponent {
     return maxDate;
   }
 
-  initializeDateInputs(): void {
+  initializeSqIsoDateInput(): void {
     const [year, month, day] = this.m_histPosEndDateStr.split('-');
     // Set the values of year, month, day, and calendar inputs using histPosEndDateStr
     this.yearInput.nativeElement.value = year;
@@ -896,7 +896,7 @@ export class AppComponent {
       newDate = new Date(newDate.setDate(newDate.getDate() + (nextOrPrev == 'next' ? 1 : -2)));
 
     this.m_histPosEndDateStr = newDate.toISOString().substring(0, 10);
-    this.initializeDateInputs();
+    this.initializeSqIsoDateInput();
     this.onHistPeriodChangeClicked();
   }
 }
