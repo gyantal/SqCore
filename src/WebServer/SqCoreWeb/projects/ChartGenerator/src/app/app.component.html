@@ -83,10 +83,20 @@
         </div>
       </div>
     </span>&nbsp;
-    <span>Start: <input class="startAndEndDate" type="date" id="StartDate" name="startDate" min="1975-01-01" [(ngModel)]="m_startDateStr" (change)="onUserChangedStartOrEndDateWidgets()"></span>&nbsp;
-    <span>End: <input class="startAndEndDate" type="date" id="EndDate" name="EndDate" min="1975-01-01" max="2040-01-01" [(ngModel)]="m_endDateStr" (change)="onUserChangedStartOrEndDateWidgets()"></span>&nbsp;&nbsp;
-    <button class="backtestBtn btnCommon" (click)="onStartBacktestsClicked()">Start Server Backtest</button>
-  </span><br><br>
+    <span>Start:&nbsp;
+      <input #startYearInput type="text" class="commonDateInput sqIsoDateInputYYYY" placeholder="YYYY" (change)="onChangeDatePart('year', startYearInput, startCalendarInput, 'start')"/>
+      <input #startMonthInput type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="MM" (change)="onChangeDatePart('month', startMonthInput, startCalendarInput, 'start')"/>
+      <input #startDayInput type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="DD" (change)="onChangeDatePart('day', startDayInput, startCalendarInput, 'start')"/>
+      <input #startCalendarInput type="date" class="commonDateInput sqIsocalendar" [value]="m_startDateStr" (change)="onChangeDateFromCalendarPicker(startCalendarInput, startYearInput, startMonthInput, startDayInput, 'start')"/>
+    </span>&nbsp;
+    <span>End:&nbsp;
+      <input #endYearInput type="text" class="commonDateInput sqIsoDateInputYYYY" placeholder="YYYY" (change)="onChangeDatePart('year', endYearInput, endCalendarInput, 'end')"/>
+      <input #endMonthInput type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="MM" (change)="onChangeDatePart('month', endMonthInput, endCalendarInput, 'end')"/>
+      <input #endDayInput type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="DD" (change)="onChangeDatePart('day', endDayInput, endCalendarInput, 'end')"/>
+      <input #endCalendarInput type="date" class="commonDateInput sqIsocalendar" [value]="m_endDateStr" (change)="onChangeDateFromCalendarPicker(endCalendarInput, endYearInput, endMonthInput, endDayInput, 'end')"/>
+    </span>&nbsp;
+    <button class="backtestBtn btnCommon" (click)="onStartBacktestsClicked()">Start Server Backtest</button><br>
+  </span><br>
   <span>Portfolio Value Chart</span>
   <div id="backtestPvChrt">
     <div id="pfRunResultChrt"></div>
@@ -113,11 +123,11 @@
           </tr>
         </ng-container>
         <tr>
-          <td>Statistics Start</td>
+          <td title='Exactly the date set by the user in the input field'>UserSet Start</td>
           <td [attr.colspan]="m_backtestStatsResults.length">{{m_startDateStr}}</td>
         </tr>
         <tr>
-          <td>Statistics End</td>
+          <td title='Exactly the date set by the user in the input field'>UserSet End</td>
           <td [attr.colspan]="m_backtestStatsResults.length">{{m_endDateStr}}</td>
         </tr>
       </tbody>

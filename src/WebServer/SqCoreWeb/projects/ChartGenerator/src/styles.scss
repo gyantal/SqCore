@@ -16,3 +16,29 @@ html { // this is the Shadow DOM root of the big main App component. The :hosts 
   src: local("Times New Roman");
   unicode-range: U+0030-0039;
 }
+
+.sqIsoDateInputYYYY {
+  width: 1.8rem;
+}
+
+.sqIsoDateInputMMDD {
+  width: 1rem;
+}
+
+.sqIsocalendar[type="date"]::-webkit-datetime-edit-day-field, .sqIsocalendar[type="date"]::-webkit-datetime-edit-month-field, .sqIsocalendar[type="date"]::-webkit-datetime-edit-year-field {
+  display: none; /* Hide the day, month, and year fields */
+}
+
+.sqIsocalendar::-webkit-calendar-picker-indicator {
+  cursor: pointer; /* Ensure the calendar picker icon is clickable */
+}
+
+.commonDateInput {
+  text-align: center;
+  height: 1rem;
+}
+
+.sqIsocalendar {
+  width: 1rem;
+  height: 1.09rem;
+}

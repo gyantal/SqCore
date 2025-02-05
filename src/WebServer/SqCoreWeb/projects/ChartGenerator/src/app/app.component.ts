@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 
 import { SqNgCommonUtils } from './../../../sq-ng-common/src/lib/sq-ng-common.utils';
@@ -47,6 +47,15 @@ export const gChrtGenDiag: ChrtGenDiagnostics = new ChrtGenDiagnostics();
 export class AppComponent implements OnInit {
   m_http: HttpClient;
   @ViewChild(SqTreeViewComponent) public _rootTreeComponent!: SqTreeViewComponent; // allows accessing the data from child to parent
+  @ViewChild('startCalendarInput') startCalendarInput!: ElementRef<HTMLInputElement>;
+  @ViewChild('startYearInput') startYearInput!: ElementRef<HTMLInputElement>;
+  @ViewChild('startMonthInput') startMonthInput!: ElementRef<HTMLInputElement>;
+  @ViewChild('startDayInput') startDayInput!: ElementRef<HTMLInputElement>;
+
+  @ViewChild('endCalendarInput') endCalendarInput!: ElementRef<HTMLInputElement>;
+  @ViewChild('endYearInput') endYearInput!: ElementRef<HTMLInputElement>;
+  @ViewChild('endMonthInput') endMonthInput!: ElementRef<HTMLInputElement>;
+  @ViewChild('endDayInput') endDayInput!: ElementRef<HTMLInputElement>;
 
   // Portfolios & BenchMark Sections
   m_treeViewState: TreeViewState = new TreeViewState();
@@ -255,6 +264,8 @@ export class AppComponent implements OnInit {
     this.m_endDate = this.m_maxEndDate;
     this.m_startDateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(this.m_startDate);
     this.m_endDateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(this.m_endDate);
+    this.initializeSqIsoStartDateInput();
+    this.initializeSqIsoEndDateInput();
     this.m_histRangeSelected = 'ALL';
     this.m_ultimateChrt.Init(lineChrtDiv, lineChrtTooltip, prtfAndBmrkChrtData);
     this.m_sqStatisticsbuilder.Init(prtfAndBmrkChrtData);
@@ -402,6 +413,8 @@ export class AppComponent implements OnInit {
     this.m_startDateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(this.m_startDate);
     this.m_endDateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(this.m_maxEndDate); // Interestingly, when we change this which is bind to the date input html element, then the onChangeStartOrEndDate() is not called.
     this.m_endDate = this.m_maxEndDate;
+    this.initializeSqIsoStartDateInput();
+    this.initializeSqIsoEndDateInput();
     this.onStartOrEndDateChanged();
   }
 
@@ -515,7 +528,7 @@ export class AppComponent implements OnInit {
 
     const isLeveraged: boolean = leverage != 1;
     if (isLeveraged) {
-      cgTimeSeries.name = name + ` x+${leverage}`; // If leveraged, append the leverage value to the portfolio/benchmark name. e.g., if the benchmark is SPY and leverage is 3, then name = SPY x+3.
+      cgTimeSeries.name = `${name} ${leverage}x`; // If leveraged, append the leverage value to the portfolio/benchmark name. e.g., if the benchmark is SPY and leverage is 3, then name = SPY x+3.
       let preVal: number = cgTimeSeries.priceData[0].value; // Initialize preVal with the first value in the array
       for (let i = 1; i < cgTimeSeries.priceData.length; i++) {
         const curVal: number = cgTimeSeries.priceData[i].value;
@@ -526,5 +539,89 @@ export class AppComponent implements OnInit {
       }
     }
     return cgTimeSeries;
+  }
+
+  initializeSqIsoStartDateInput(): void {
+    const [year, month, day] = this.m_startDateStr.split('-');
+    // Set the values of year, month, day, and calendar inputs using histPosEndDateStr
+    this.startYearInput.nativeElement.value = year;
+    this.startMonthInput.nativeElement.value = month;
+    this.startDayInput.nativeElement.value = day;
+    this.startCalendarInput.nativeElement.value = this.m_startDateStr;
+  }
+
+  initializeSqIsoEndDateInput(): void {
+    const [year, month, day] = this.m_endDateStr.split('-');
+    // Set the values of year, month, day, and calendar inputs using histPosEndDateStr
+    this.endYearInput.nativeElement.value = year;
+    this.endMonthInput.nativeElement.value = month;
+    this.endDayInput.nativeElement.value = day;
+    this.endCalendarInput.nativeElement.value = this.m_endDateStr;
+  }
+
+  onChangeDateFromCalendarPicker(calendarInput: HTMLInputElement, yearInput: HTMLInputElement, monthInput: HTMLInputElement, dayInput: HTMLInputElement, startOrEnd: string): void {
+    const [year, month, day] = calendarInput.value.split('-');
+    // Update the year, month, and day inputs based on the date selected by the user from the calendar
+    yearInput.value = year;
+    monthInput.value = month;
+    dayInput.value = day;
+    if (startOrEnd == 'start')
+      this.m_startDateStr = calendarInput.value;
+    else
+      this.m_endDateStr = calendarInput.value;
+    this.onUserChangedStartOrEndDateWidgets();
+  }
+
+  onChangeDatePart(type: 'year' | 'month' | 'day', inputElement: HTMLInputElement, calendarInput: HTMLInputElement, startOrEnd: string): void {
+    let value: string = inputElement.value.trim();
+    const date: Date = new Date(calendarInput.value || this.m_startDateStr); // Use existing value or default date
+
+    switch (type) {
+      case 'year':
+        if (this.isValidYear(value))
+          date.setFullYear(parseInt(value, 10));
+        else
+          inputElement.value = date.getFullYear().toString();
+        break;
+      case 'month':
+        value = parseInt(value, 10).toString().padStart(2, '0'); // Pad single-digit month to 2 digits before validation
+        if (this.isValidMonth(value)) {
+          date.setMonth(parseInt(value, 10) - 1); // Subtracting 1 from the month value since JavaScript months are 0-indexed
+          inputElement.value = value;
+        } else
+          inputElement.value = (date.getMonth() + 1).toString().padStart(2, '0');
+        break;
+      case 'day':
+        value = parseInt(value, 10).toString().padStart(2, '0'); // Pad single-digit day to 2 digits before validation
+        if (this.isValidDay(value, date)) {
+          date.setDate(parseInt(value, 10));
+          inputElement.value = value;
+        } else
+          inputElement.value = date.getDate().toString().padStart(2, '0');
+        break;
+    }
+    calendarInput.value = date.toISOString().substring(0, 10);
+    if (startOrEnd == 'start')
+      this.m_startDateStr = calendarInput.value;
+    else
+      this.m_endDateStr = calendarInput.value;
+    this.onUserChangedStartOrEndDateWidgets();
+  }
+
+  isValidYear(year: string): boolean {
+    const currentYear = new Date().getFullYear();
+    const yearInt = parseInt(year, 10);
+    return year.length == 4 && yearInt >= 1900 && yearInt <= currentYear;
+  }
+
+  isValidMonth(month: string): boolean {
+    const monthInt = parseInt(month, 10);
+    return month.length == 2 && monthInt >= 1 && monthInt <= 12;
+  }
+
+  isValidDay(day: string, date: Date): boolean {
+    const dayInt = parseInt(day, 10);
+    const maxDays = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate(); // Calculates the maximum days in a month by moving to the next month's 0th day (0 as the day, refers to the last day of the current month)
+    return day.length == 2 && dayInt >= 1 && dayInt <= maxDays;
   }
 }
