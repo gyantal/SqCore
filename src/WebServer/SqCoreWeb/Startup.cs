@@ -364,7 +364,7 @@ public class Startup
                             var xt when xt == ".html" || xt == ".htm" => TimeSpan.FromHours(8),    // short cache time for html files (like index.html or when no  that contains the URL links for other JS, CSS files)
                             var xt when xt == ".css" => TimeSpan.FromDays(7),   // median time frames for CSS and JS files. Angular only changes HTML files.
                             var xt when xt == ".js" => TimeSpan.FromDays(7),
-                            var xt when xt == ".jpg" || xt == ".jpeg" || xt == ".ico" => TimeSpan.FromDays(300),      // images files are very long term, long cache time for *.jpg files. assume a year, 31536000 seconds, typically used. They will never change
+                            var xt when xt == ".jpg" || xt == ".jpeg" || xt == ".ico" || xt == ".webp" || xt == ".jxl" || xt == ".avif" => TimeSpan.FromDays(300),      // images files are very long term, long cache time for *.jpg files. assume a year, 31536000 seconds, typically used. They will never change
                             _ => TimeSpan.FromDays(350)
                         };
                     }
@@ -410,21 +410,7 @@ public class Startup
 
         app.UseMiddleware<SqWebsocketMiddleware>();
 
-        // Enable static files to be served. This would allow html, images, etc. in wwwroot directory to be served.
-        // The URLs of files exposed using UseDirectoryBrowser and UseStaticFiles are case sensitive and character constrained, subject to the underlying file system.
-        // For example, Windows is not case sensitive, but MacOS and Linux are case sensitive.
-        // for jpeg files, place UseStaticFiles BEFORE UseRouting
-        // Angular apps: in Production they are static files in wwwroot/webapps, served by a brotli capable StaticFiles middleware.
-        // In Development Angular apps are 'ng serve'-d in a separate process on a separate port. For 'watch' style Hot Reload development.
-        // if (env.IsDevelopment())
-        //     app.UseStaticFilesCaseSensitive();  // Force case sensitivity even on Windows
-        // else
-        //     app.UseStaticFiles(); // on Linux StaticFiles serving is case sensitive, which is good. But not case sensitive on Windows.
-        // CompressedStaticFileMiddleware replaces StaticFilesMiddleware. Can serve "*.html" from "*.html.br"
-        if (env.IsDevelopment())
-            app.UseCompressedStaticFiles(AspMiddlewareUtils.GetCaseSensitiveStaticFileOptions());  // Force case sensitivity on Windows only. Avoid the CPU overhead on Linux.
-        else
-            app.UseCompressedStaticFiles(); // on Linux StaticFiles serving is case sensitive by default, which is good. No need for specific path-checking code overhead.
+        app.UseSqStaticFiles(env); // Enable static files to be served. This would allow html, images, etc. in wwwroot directory to be served.
 
         app.Use(async (context, next) =>
         {

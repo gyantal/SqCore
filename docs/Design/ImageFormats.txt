@@ -1,0 +1,62 @@
+****** How to organize images in the wwwroot folder that we keep a high quality lossless JpegXL (JXL) version, but I also support lower quality lossy AVIF version of the same images? 
+Policy: Use this naming convention if you keep them in the same folder (snake_case, all lowercase, because of Linux):
+- "photoname_lossless.jxl" for the lossless version
+- "photoname_vslow_30pct.avif" for lossy. // Intentionally undershoot for quality in general. Only if low-quality is really annoyingly visible then increase the pct from 30 to 50. 'vslow' is the encoding speed. Compared to 'fast', it quarters the file size, although a bit more quality is lost.
+- "photoname_vslow_30pct_s.avif" for lossy. // add the "_s" (Small) postfix if the pixel resolution is also decreased.
+Depending on how much screen space the image uses, we should downscale it to MAX 2x the expected virtual screen space.
+When the original image is very large, and the icon appears only in a small screen space (e.g. 60x60 screen pixels in the browser), then the target resolution of 128 width is suggested.
+Even that is an overkill. We send too detailed image to visualize in that small screen space.
+When resizing to 128px width, keep the aspect ratio. Otherwise, image will be distorted.
+
+
+
+******************************************************
+****** Webserver lossless, lossy images organization, PNG, AVIF, WEBP, JpegXL. Study:
+
+- What to choose for high quality lossless (keep original):
+Keep all images in lossless or original form so you can later modify or create new lossy versions if needed.
+PNG is the old format.
+>https://shortpixel.com/blog/avif-vs-webp/ WebP is better than AVIF when it comes to lossless compression. But the absolute winner is JpegXL 
+>https://www.reddit.com/r/AV1/comments/aabqdc/lossless_compression_test_png_vs_webp_vs_avif/ Lossless: WebP is better than AVIF confirmed.
+It seems, AVIF was designed for video compression, they will never care about lossless. So, our original lossless photos should be in WebP or JPEG-XL.
+>"For lossless compression, JXL typically offers smaller file sizes than WebP"
+>https://squoosh.app/editor
+Some squoosh tests for lossless: AVIF lossless: 15MB, WebP lossless: 8.69MB, Webp2 lossless: 8.01MB, JPEG XL (lossless): 7.4MB.
+Lossless: JpegXL is the best.
+
+
+- What to choose for low quality lossy (send to browser clients):
+>There is no Browser support for JpegXL, so the competition is between WebP vs. Avif
+>JXL support, 2025-01: Edge/Chrome is based on Chromium too. No support. They removed support in 2022. So, JXL cannot be used for lossy. But can be for lossless.
+https://libre-software.net/image/avif-test/  Test browser support. Edge doesn't support it at the moment. (they are On/off with the support. Patent issue only.
+>https://www.reddit.com/r/jpegxl/comments/15siyvv/im_creating_a_new_website_and_i_want_it_to_be/
+"WebP has more mature support and decodes faster than AVIF; better for old and lightweight clients."
+But...
+https://www.ctrl.blog/entry/webp-avif-comparison.html  AVIF compression is much better than WebP. And AVIF is ALWAYS smaller file size than Jpeg, while WebP can be bigger (2.7%), so you always have to check whether WebP is better than Jpeg.
+https://squoosh.app/editor see that even 10% is OK quality. 30% is perfect. 
+We can convert all our images to AVIF with quality = 30%. (If we test in https://squoosh.app/editor
+we can see that even Quality = 10% is almost fine, so 35% is almost indistinguishable from original. So, do Quality30% and do AVIF.
+
+
+>Paint.NET JpegXL plugin install JPEG XL plugin: https://github.com/0xC0000054/pdn-jpegxl 
+"A Paint.NET filetype plugin that loads and saves JPEG XL images using libjxl."
+"Place JpegXLFileType.dll, JpegXLFileTypeIO_ARM64.dll and JpegXLFileTypeIO_x64.dll in the Paint.NET FileTypes folder which is usually located in one the following locations depending on the Paint.NET version you have installed.   Classic: C:\Program Files\Paint.NET\FileTypes"
+
+>IrfanView "JPEG XL Plugin" https://www.irfanview.com/plugins.htm "JPEG XL Plugin (4.70.2) - ZIP (32 bit) or ZIP (64 bit)"
+>IrfanView AVIF plugin: https://www.irfanview.com/64bit.htm Download IrfanView-64 PlugIns (Version 4.70, ZIP file, 25.70 MB), extract only Avif.dll from the Zip and put into ProgramFiles\IrfanView\Plugins
+
+****** In-house test with Paint.Net: LOSSLESS only compression test for Fox image from https://squoosh.app/editor Size: 2593x2112px
+Fox.jpg (Quality:100, but it is still lossy, so it doesn't count as a backup format): 3.4MB
+Fox.png: 6.1MB
+Fox.jxr: 5MB (some Jpeg new format, but it is not JpegXL, which is JXL)
+Fox.avif: 5.03MB
+Fox.webp: 3.86MB (+25% more than JXL)
+Fox.jxl (Encoder speed1 (1sec): 4.6MB) // Lossless: ON, Lower values are faster, but may reduce image quality.
+Fox.jxl (Encoder speed9 (3sec): 3.1MB***) // Winner. Use the slow, Speed9 when saving.
+Conclusion: in Lossless, JpegXL (jxl) is the winner. WebP is +25% more file size. AVIF is +62% more file size. PNG is +100% (double) file size.
+
+>Test: The same image,but Lossy:
+Fox_30pct.webp: 200KB
+Fox_fast_30pct.avif: 397KB , Encoder speed1 (1sec)
+Fox_vslow_30pct.avif: 105KB, Encoder speed1 (5sec), image quality is worse than the Fox_fast_30pct.avif, but it is OK, because file size is 4x less. Let's use this.
+Conclusion: WebP_30% 200K => Avif_30% 105K, almost half size, lossy.
