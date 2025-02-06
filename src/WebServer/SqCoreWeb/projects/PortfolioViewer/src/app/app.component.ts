@@ -3,6 +3,7 @@ import { PortfolioJs, PrtfRunResultJs, UiPrtfRunResult, prtfsParseHelper, statsP
 import { minDate, SqNgCommonUtilsTime } from '../../../sq-ng-common/src/lib/sq-ng-common.utils_time';
 import { drawBarChartFromSeasonalityData } from '../../../../TsLib/sq-common/chartSimple';
 import { BacktestDetailedStatistics } from '../../../../TsLib/sq-common/backtestStatistics';
+import { isValidDay, isValidMonth, isValidYear } from '../../../../TsLib/sq-common/utils-common';
 import * as d3 from 'd3';
 
 class HandshakeMessage {
@@ -839,14 +840,14 @@ export class AppComponent {
 
     switch (type) {
       case 'year':
-        if (this.isValidYear(value))
+        if (isValidYear(value))
           date.setFullYear(parseInt(value, 10));
         else
           inputElement.value = date.getFullYear().toString();
         break;
       case 'month':
         value = parseInt(value, 10).toString().padStart(2, '0'); // Pad single-digit month to 2 digits before validation
-        if (this.isValidMonth(value)) {
+        if (isValidMonth(value)) {
           date.setMonth(parseInt(value, 10) - 1); // Subtracting 1 from the month value since JavaScript months are 0-indexed
           inputElement.value = value;
         } else
@@ -854,7 +855,7 @@ export class AppComponent {
         break;
       case 'day':
         value = parseInt(value, 10).toString().padStart(2, '0'); // Pad single-digit day to 2 digits before validation
-        if (this.isValidDay(value, date)) {
+        if (isValidDay(value, date)) {
           date.setDate(parseInt(value, 10));
           inputElement.value = value;
         } else
@@ -864,23 +865,6 @@ export class AppComponent {
     calendarInput.value = date.toISOString().substring(0, 10);
     this.m_histPosEndDateStr = calendarInput.value;
     this.onHistPeriodChangeClicked();
-  }
-
-  isValidYear(year: string): boolean {
-    const currentYear = new Date().getFullYear();
-    const yearInt = parseInt(year, 10);
-    return year.length == 4 && yearInt >= 1900 && yearInt <= currentYear;
-  }
-
-  isValidMonth(month: string): boolean {
-    const monthInt = parseInt(month, 10);
-    return month.length == 2 && monthInt >= 1 && monthInt <= 12;
-  }
-
-  isValidDay(day: string, date: Date): boolean {
-    const dayInt = parseInt(day, 10);
-    const maxDays = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate(); // Calculates the maximum days in a month by moving to the next month's 0th day (0 as the day, refers to the last day of the current month)
-    return day.length == 2 && dayInt >= 1 && dayInt <= maxDays;
   }
 
   onClickPosNextOrPrevDate(nextOrPrev: string): void {

@@ -7,7 +7,7 @@ import { UltimateChart } from '../../../../TsLib/sq-common/chartUltimate';
 import { SqStatisticsBuilder, StatisticsResults, DetailedStatistics, BacktestDetailedStatistics } from '../../../../TsLib/sq-common/backtestStatistics';
 import { ChrtGenBacktestResult, UiChrtGenPrtfRunResult, CgTimeSeries, SqLog, ChartResolution, UiChartPoint, FolderJs, PortfolioJs, prtfsParseHelper, fldrsParseHelper, TreeViewState, TreeViewItem, createTreeViewData, PrtfItemType, LineStyle, ChartJs, SeasonalityData, getSeasonalityData, getDetailedStats } from '../../../../TsLib/sq-common/backtestCommon';
 import { SqTreeViewComponent } from '../../../sq-ng-common/src/lib/sq-tree-view/sq-tree-view.component';
-import { parseNumberToDate } from '../../../../TsLib/sq-common/utils-common';
+import { isValidDay, isValidMonth, isValidYear, parseNumberToDate } from '../../../../TsLib/sq-common/utils-common';
 
 type Nullable<T> = T | null;
 
@@ -559,33 +559,33 @@ export class AppComponent implements OnInit {
     this.endCalendarInput.nativeElement.value = this.m_endDateStr;
   }
 
-  onChangeDateFromCalendarPicker(calendarInput: HTMLInputElement, yearInput: HTMLInputElement, monthInput: HTMLInputElement, dayInput: HTMLInputElement, startOrEnd: string): void {
+  onChangeDateFromCalendarPicker(calendarInput: HTMLInputElement, yearInput: HTMLInputElement, monthInput: HTMLInputElement, dayInput: HTMLInputElement, isStart: Boolean): void {
     const [year, month, day] = calendarInput.value.split('-');
     // Update the year, month, and day inputs based on the date selected by the user from the calendar
     yearInput.value = year;
     monthInput.value = month;
     dayInput.value = day;
-    if (startOrEnd == 'start')
+    if (isStart)
       this.m_startDateStr = calendarInput.value;
     else
       this.m_endDateStr = calendarInput.value;
     this.onUserChangedStartOrEndDateWidgets();
   }
 
-  onChangeDatePart(type: 'year' | 'month' | 'day', inputElement: HTMLInputElement, calendarInput: HTMLInputElement, startOrEnd: string): void {
+  onChangeDatePart(type: 'year' | 'month' | 'day', inputElement: HTMLInputElement, calendarInput: HTMLInputElement, isStart: Boolean): void {
     let value: string = inputElement.value.trim();
     const date: Date = new Date(calendarInput.value || this.m_startDateStr); // Use existing value or default date
 
     switch (type) {
       case 'year':
-        if (this.isValidYear(value))
+        if (isValidYear(value))
           date.setFullYear(parseInt(value, 10));
         else
           inputElement.value = date.getFullYear().toString();
         break;
       case 'month':
         value = parseInt(value, 10).toString().padStart(2, '0'); // Pad single-digit month to 2 digits before validation
-        if (this.isValidMonth(value)) {
+        if (isValidMonth(value)) {
           date.setMonth(parseInt(value, 10) - 1); // Subtracting 1 from the month value since JavaScript months are 0-indexed
           inputElement.value = value;
         } else
@@ -593,7 +593,7 @@ export class AppComponent implements OnInit {
         break;
       case 'day':
         value = parseInt(value, 10).toString().padStart(2, '0'); // Pad single-digit day to 2 digits before validation
-        if (this.isValidDay(value, date)) {
+        if (isValidDay(value, date)) {
           date.setDate(parseInt(value, 10));
           inputElement.value = value;
         } else
@@ -601,27 +601,10 @@ export class AppComponent implements OnInit {
         break;
     }
     calendarInput.value = date.toISOString().substring(0, 10);
-    if (startOrEnd == 'start')
+    if (isStart)
       this.m_startDateStr = calendarInput.value;
     else
       this.m_endDateStr = calendarInput.value;
     this.onUserChangedStartOrEndDateWidgets();
-  }
-
-  isValidYear(year: string): boolean {
-    const currentYear = new Date().getFullYear();
-    const yearInt = parseInt(year, 10);
-    return year.length == 4 && yearInt >= 1900 && yearInt <= currentYear;
-  }
-
-  isValidMonth(month: string): boolean {
-    const monthInt = parseInt(month, 10);
-    return month.length == 2 && monthInt >= 1 && monthInt <= 12;
-  }
-
-  isValidDay(day: string, date: Date): boolean {
-    const dayInt = parseInt(day, 10);
-    const maxDays = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate(); // Calculates the maximum days in a month by moving to the next month's 0th day (0 as the day, refers to the last day of the current month)
-    return day.length == 2 && dayInt >= 1 && dayInt <= maxDays;
   }
 }

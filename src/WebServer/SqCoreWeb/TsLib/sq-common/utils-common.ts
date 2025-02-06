@@ -57,3 +57,26 @@ export function urlEncodeChars(str: string): string { // RegEx implementation 'c
   str = str.replace(/[&=]/g, (s: string) => charEncodingMap[s]);
   return str;
 }
+
+// Validate - The provided year string is a valid year.
+// The year must be exactly 4 characters long and the year should be between 1900 and the current year.
+export function isValidYear(year: string): boolean {
+  const currentYear = new Date().getFullYear();
+  const yearInt = parseInt(year, 10);
+  return year.length == 4 && yearInt >= 1900 && yearInt <= currentYear;
+}
+
+// Validate - The provided month string is a valid month.
+// The month must be exactly 2 characters long and the month should be between 1 and 12.
+export function isValidMonth(month: string): boolean {
+  const monthInt = parseInt(month, 10);
+  return month.length == 2 && monthInt >= 1 && monthInt <= 12;
+}
+
+// Validate - The provided day string is a valid day for the given date.
+// The day must be exactly 2 characters long and the day should be between 1 and the maximum number of days in the month.
+export function isValidDay(day: string, date: Date): boolean {
+  const dayInt = parseInt(day, 10);
+  const maxDays = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate(); // Calculates the maximum days in a month by moving to the next month's 0th day (0 as the day, refers to the last day of the current month)
+  return day.length == 2 && dayInt >= 1 && dayInt <= maxDays;
+}
