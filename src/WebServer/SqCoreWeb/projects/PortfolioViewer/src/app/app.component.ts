@@ -145,7 +145,7 @@ export class AppComponent {
   m_enumExchangeId = ExchangeId;
 
   // LegacyDbTrades tabpage
-  m_legacyDbInsCompletionDateUtcStr: string = SqNgCommonUtilsTime.Date2PaddedIsoStr(SqNgCommonUtilsTime.ConvertDateLocToEt(new Date())); // convert the localDate to UTC then convert to DateStr format "YYYY-MM-DD". The HTML date <input> requires a YYYY-MM-DD formatted 'string' as value. E.g. <input type="date" value="2017-06-01" />
+  m_legacyDbInsCompletionDateUtcStr: string = new Date().toISOString().substring(0, 10);
   m_legacyDbInsTradesSyntaxCheckResult: string = '';
   m_legacyDbTradesTestAndInsertResult: string = '';
   m_legacyDbInsTrades: TradeJs[] = [];
@@ -835,34 +835,34 @@ export class AppComponent {
   }
 
   onChangeDatePart(type: 'year' | 'month' | 'day', inputElement: HTMLInputElement, calendarInput: HTMLInputElement): void {
-    let value: string = inputElement.value.trim();
-    const date: Date = new Date(calendarInput.value || this.m_histPosEndDateStr); // Use existing value or default date
+    let calPartNewValue: string = inputElement.value.trim(); // it can be the year or month or day part of the SqCalendar widget.
+    const usedDate: Date = new Date(calendarInput.value);
 
     switch (type) {
       case 'year':
-        if (isValidYear(value))
-          date.setFullYear(parseInt(value, 10));
-        else
-          inputElement.value = date.getFullYear().toString();
+        if (isValidYear(calPartNewValue))
+          usedDate.setFullYear(parseInt(calPartNewValue, 10));
+        else // If the year is invalid (e.g., the user typed a non-numeric character like 'z'). We force back the old date part from the calendarInput into the inputElement)
+          inputElement.value = usedDate.getFullYear().toString();
         break;
       case 'month':
-        value = parseInt(value, 10).toString().padStart(2, '0'); // Pad single-digit month to 2 digits before validation
-        if (isValidMonth(value)) {
-          date.setMonth(parseInt(value, 10) - 1); // Subtracting 1 from the month value since JavaScript months are 0-indexed
-          inputElement.value = value;
-        } else
-          inputElement.value = (date.getMonth() + 1).toString().padStart(2, '0');
+        calPartNewValue = parseInt(calPartNewValue, 10).toString().padStart(2, '0'); // Pad single-digit month to 2 digits before validation
+        if (isValidMonth(calPartNewValue)) {
+          usedDate.setMonth(parseInt(calPartNewValue, 10) - 1); // Subtracting 1 from the month value since JavaScript months are 0-indexed
+          inputElement.value = calPartNewValue;
+        } else // If the month is invalid (e.g., the user typed a non-numeric character like 'z'). We force back the old date part from the calendarInput into the inputElement)
+          inputElement.value = (usedDate.getMonth() + 1).toString().padStart(2, '0');
         break;
       case 'day':
-        value = parseInt(value, 10).toString().padStart(2, '0'); // Pad single-digit day to 2 digits before validation
-        if (isValidDay(value, date)) {
-          date.setDate(parseInt(value, 10));
-          inputElement.value = value;
-        } else
-          inputElement.value = date.getDate().toString().padStart(2, '0');
+        calPartNewValue = parseInt(calPartNewValue, 10).toString().padStart(2, '0'); // Pad single-digit day to 2 digits before validation
+        if (isValidDay(calPartNewValue, usedDate)) {
+          usedDate.setDate(parseInt(calPartNewValue, 10));
+          inputElement.value = calPartNewValue;
+        } else // If the day is invalid (e.g., the user typed a non-numeric character like 'z'). We force back the old date part from the calendarInput into the inputElement)
+          inputElement.value = usedDate.getDate().toString().padStart(2, '0');
         break;
     }
-    calendarInput.value = date.toISOString().substring(0, 10);
+    calendarInput.value = usedDate.toISOString().substring(0, 10);
     this.m_histPosEndDateStr = calendarInput.value;
     this.onHistPeriodChangeClicked();
   }

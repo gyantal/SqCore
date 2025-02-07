@@ -264,8 +264,7 @@ export class AppComponent implements OnInit {
     this.m_endDate = this.m_maxEndDate;
     this.m_startDateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(this.m_startDate);
     this.m_endDateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(this.m_endDate);
-    this.initializeSqIsoStartDateInput();
-    this.initializeSqIsoEndDateInput();
+    this.initializeSqIsoDateInputs();
     this.m_histRangeSelected = 'ALL';
     this.m_ultimateChrt.Init(lineChrtDiv, lineChrtTooltip, prtfAndBmrkChrtData);
     this.m_sqStatisticsbuilder.Init(prtfAndBmrkChrtData);
@@ -413,8 +412,7 @@ export class AppComponent implements OnInit {
     this.m_startDateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(this.m_startDate);
     this.m_endDateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(this.m_maxEndDate); // Interestingly, when we change this which is bind to the date input html element, then the onChangeStartOrEndDate() is not called.
     this.m_endDate = this.m_maxEndDate;
-    this.initializeSqIsoStartDateInput();
-    this.initializeSqIsoEndDateInput();
+    this.initializeSqIsoDateInputs();
     this.onStartOrEndDateChanged();
   }
 
@@ -528,7 +526,7 @@ export class AppComponent implements OnInit {
 
     const isLeveraged: boolean = leverage != 1;
     if (isLeveraged) {
-      cgTimeSeries.name = `${name} ${leverage}x`; // If leveraged, append the leverage value to the portfolio/benchmark name. e.g., if the benchmark is SPY and leverage is 3, then name = SPY x+3.
+      cgTimeSeries.name = `${name} ${leverage}x`; // If leveraged, append the leverage value to the portfolio/benchmark name. e.g., if the benchmark is SPY and leverage is 3, then name = SPY 3x.
       let preVal: number = cgTimeSeries.priceData[0].value; // Initialize preVal with the first value in the array
       for (let i = 1; i < cgTimeSeries.priceData.length; i++) {
         const curVal: number = cgTimeSeries.priceData[i].value;
@@ -541,67 +539,64 @@ export class AppComponent implements OnInit {
     return cgTimeSeries;
   }
 
-  initializeSqIsoStartDateInput(): void {
-    const [year, month, day] = this.m_startDateStr.split('-');
-    // Set the values of year, month, day, and calendar inputs using histPosEndDateStr
-    this.startYearInput.nativeElement.value = year;
-    this.startMonthInput.nativeElement.value = month;
-    this.startDayInput.nativeElement.value = day;
+  initializeSqIsoDateInputs(): void {
+    // Initialize start date
+    const [startYear, startMonth, startDay] = this.m_startDateStr.split('-');
+    this.startYearInput.nativeElement.value = startYear;
+    this.startMonthInput.nativeElement.value = startMonth;
+    this.startDayInput.nativeElement.value = startDay;
     this.startCalendarInput.nativeElement.value = this.m_startDateStr;
-  }
-
-  initializeSqIsoEndDateInput(): void {
-    const [year, month, day] = this.m_endDateStr.split('-');
-    // Set the values of year, month, day, and calendar inputs using histPosEndDateStr
-    this.endYearInput.nativeElement.value = year;
-    this.endMonthInput.nativeElement.value = month;
-    this.endDayInput.nativeElement.value = day;
+    // Initialize end date
+    const [endYear, endMonth, endDay] = this.m_endDateStr.split('-');
+    this.endYearInput.nativeElement.value = endYear;
+    this.endMonthInput.nativeElement.value = endMonth;
+    this.endDayInput.nativeElement.value = endDay;
     this.endCalendarInput.nativeElement.value = this.m_endDateStr;
   }
 
-  onChangeDateFromCalendarPicker(calendarInput: HTMLInputElement, yearInput: HTMLInputElement, monthInput: HTMLInputElement, dayInput: HTMLInputElement, isStart: Boolean): void {
+  onChangeDateFromCalendarPicker(calendarInput: HTMLInputElement, yearInput: HTMLInputElement, monthInput: HTMLInputElement, dayInput: HTMLInputElement, sqIsoDateInputIdStr: string): void {
     const [year, month, day] = calendarInput.value.split('-');
     // Update the year, month, and day inputs based on the date selected by the user from the calendar
     yearInput.value = year;
     monthInput.value = month;
     dayInput.value = day;
-    if (isStart)
+    if (sqIsoDateInputIdStr == 'start')
       this.m_startDateStr = calendarInput.value;
     else
       this.m_endDateStr = calendarInput.value;
     this.onUserChangedStartOrEndDateWidgets();
   }
 
-  onChangeDatePart(type: 'year' | 'month' | 'day', inputElement: HTMLInputElement, calendarInput: HTMLInputElement, isStart: Boolean): void {
-    let value: string = inputElement.value.trim();
-    const date: Date = new Date(calendarInput.value || this.m_startDateStr); // Use existing value or default date
+  onChangeDatePart(type: 'year' | 'month' | 'day', inputElement: HTMLInputElement, calendarInput: HTMLInputElement, sqIsoDateInputIdStr: string): void {
+    let calPartNewValue: string = inputElement.value.trim(); // it can be the year or month or day part of the SqCalendar widget.
+    const usedDate: Date = new Date(calendarInput.value);
 
     switch (type) {
       case 'year':
-        if (isValidYear(value))
-          date.setFullYear(parseInt(value, 10));
-        else
-          inputElement.value = date.getFullYear().toString();
+        if (isValidYear(calPartNewValue))
+          usedDate.setFullYear(parseInt(calPartNewValue, 10));
+        else // If the year is invalid (e.g., the user typed a non-numeric character like 'z'). We force back the old date part from the calendarInput into the inputElement)
+          inputElement.value = usedDate.getFullYear().toString();
         break;
       case 'month':
-        value = parseInt(value, 10).toString().padStart(2, '0'); // Pad single-digit month to 2 digits before validation
-        if (isValidMonth(value)) {
-          date.setMonth(parseInt(value, 10) - 1); // Subtracting 1 from the month value since JavaScript months are 0-indexed
-          inputElement.value = value;
-        } else
-          inputElement.value = (date.getMonth() + 1).toString().padStart(2, '0');
+        calPartNewValue = parseInt(calPartNewValue, 10).toString().padStart(2, '0'); // Pad single-digit month to 2 digits before validation
+        if (isValidMonth(calPartNewValue)) {
+          usedDate.setMonth(parseInt(calPartNewValue, 10) - 1); // Subtracting 1 from the month value since JavaScript months are 0-indexed
+          inputElement.value = calPartNewValue;
+        } else // If the month is invalid (e.g., the user typed a non-numeric character like 'z'). We force back the old date part from the calendarInput into the inputElement)
+          inputElement.value = (usedDate.getMonth() + 1).toString().padStart(2, '0');
         break;
       case 'day':
-        value = parseInt(value, 10).toString().padStart(2, '0'); // Pad single-digit day to 2 digits before validation
-        if (isValidDay(value, date)) {
-          date.setDate(parseInt(value, 10));
-          inputElement.value = value;
-        } else
-          inputElement.value = date.getDate().toString().padStart(2, '0');
+        calPartNewValue = parseInt(calPartNewValue, 10).toString().padStart(2, '0'); // Pad single-digit day to 2 digits before validation
+        if (isValidDay(calPartNewValue, usedDate)) {
+          usedDate.setDate(parseInt(calPartNewValue, 10));
+          inputElement.value = calPartNewValue;
+        } else // If the day is invalid (e.g., the user typed a non-numeric character like 'z'). We force back the old date part from the calendarInput into the inputElement)
+          inputElement.value = usedDate.getDate().toString().padStart(2, '0');
         break;
     }
-    calendarInput.value = date.toISOString().substring(0, 10);
-    if (isStart)
+    calendarInput.value = usedDate.toISOString().substring(0, 10);
+    if (sqIsoDateInputIdStr == 'start')
       this.m_startDateStr = calendarInput.value;
     else
       this.m_endDateStr = calendarInput.value;
