@@ -7,6 +7,7 @@ Depending on how much screen space the image uses, we should downscale it to MAX
 When the original image is very large, and the icon appears only in a small screen space (e.g. 60x60 screen pixels in the browser), then the target resolution of 128 width is suggested.
 Even that is an overkill. We send too detailed image to visualize in that small screen space.
 When resizing to 128px width, keep the aspect ratio. Otherwise, image will be distorted.
+>Alpha compression: don't compress it, because with transparency levels you don't want to blur things. So, switch ON: "Lossless Alpha Compression"
 
 
 

@@ -118,17 +118,17 @@ table.currData {
 }
 
 #VIXimage {
-  background: url("../assets/images/vix.webp");
+  background: url("../assets/images/vix_vslow_30pct_s.avif");
   background-size: cover;
 }
 
 #OILimage {
-  background: url("../assets/images/crude_oil.webp");
+  background: url("../assets/images/crude_oil_vslow_30pct_s.avif");
   background-size: cover;
 }
 
 #GASimage {
-  background: url("../assets/images/natural_gas.webp");
+  background: url("../assets/images/natural_gas_vslow_30pct_s.avif");
   background-size: cover;
 }
 
