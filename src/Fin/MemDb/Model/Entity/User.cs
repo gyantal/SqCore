@@ -87,7 +87,7 @@ public class User
     public List<BrokerNav> GetBrokerNavsOrdered(List<BrokerNav> allNavs)
     {
         // Add AggNav first, so it is the first in the list.
-        var userNavs = allNavs.Where(r => r.User == this).ToList();
+        List<BrokerNav> userNavs = allNavs.Where(r => r.User == this).ToList();
         for (int i = 1; i < userNavs.Count; i++) // if index 0 is the AggregatedNav, then we don't have to do anythin
         {
             if (userNavs[i].IsAggregatedNav) // if aggNav is not the first one
@@ -108,12 +108,20 @@ public class User
         List<BrokerNav> allNavsWithHistory = MemDb.gMemDb.AssetsCache.Assets.Where(r => r.AssetId.AssetTypeID == AssetType.BrokerNAV && histData.Data.ContainsKey(r.AssetId)).Select(r => (BrokerNav)r).ToList();
 
         List<BrokerNav> visibleNavs = new();
-        visibleNavs.AddRange(GetBrokerNavsOrdered(allNavsWithHistory));    // First add the current user NAVs. Virtual Aggregated should come first.
+
+        User firstNavUser = this; // the first NAV in the list should be the logged user's own NAVs.
+        List<BrokerNav> firstNavs = firstNavUser.GetBrokerNavsOrdered(allNavsWithHistory);
+        if (firstNavs.Count == 0) // if the logged user doesn't have any NAVS, the default fallback is the DC user as first user
+        {
+            firstNavUser = MemDb.gMemDb.Users.Where(r => r.Username == "drcharmat").FirstOrDefault()!;
+            firstNavs = firstNavUser.GetBrokerNavsOrdered(allNavsWithHistory);
+        }
+        visibleNavs.AddRange(firstNavs);    // First add the current user NAVs. Virtual Aggregated should come first.
 
         User[] addUsers = IsAdmin ? MemDb.gMemDb.Users : VisibleUsers;             // then the NAVs of other users
         foreach (var user in addUsers)
         {
-            if (user != this) // was already added in case of IsAdmin
+            if (user != firstNavUser) // was already added in step 1
                 visibleNavs.AddRange(user.GetBrokerNavsOrdered(allNavsWithHistory));
         }
 

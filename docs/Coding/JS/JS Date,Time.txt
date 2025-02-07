@@ -1,0 +1,31 @@
+In JS, the Date object is always in UTC. (msec since UTC epoch). This is how it is represented internally. Just an integer.
+There is no TimeZone data in the Date object, and it is impossible to put any timeZone data into it.
+!!! You cannot 'Set' the timezone, But you can produce a string with that UTC time expressed in that timeZone. The date stays the same.
+
+toString() will always return a date and time string based on the runtime’s Local time zone
+toUTCString() will always return a date and time string based on UTC
+toLocaleString() with the timeZone specified shows that implicit UtcDate at the Locale of 'THAT' timezone (not the timezone of the Local computer)
+
+"en-US": US English uses month-day-year order and 12-hour time with AM/PM: e.g. "12/19/2012, 7:00:00 PM"
+"en-GB": British English uses day-month-year order and 24-hour time without AM/PM: e.g. "20/12/2012 03:00:00"
+
+public static TestDateToLocaleString() { // Test this by Cut&Paste into ngOnInit() or in https://playcode.io/javascript
+    const nowImplicitUtc = new Date(); // Date object internal representation: always in UTC, with no timezone offset. The number of milliseconds that have elapsed since 1970-01-01 00:00:00 UTC
+    
+    // Trick: if "timeZoneName: 'short'" is not given, it doesn't add the timezone postfix string to the end.
+    const date1Str = nowImplicitUtc.toLocaleString(); // The default is the runtime’s default time zone. Uses "en-GB", => "16/04/2024, 22:40:49"
+    const date2Str = nowImplicitUtc.toLocaleString('en-US', { timeZone: 'Europe/London', timeZoneName: 'short' }); // => "4/16/2024, 10:40:49 PM GMT+1"
+    const date3Str = nowImplicitUtc.toLocaleString('en-US', { timeZone: 'UTC', timeZoneName: 'short' }); // => "4/16/2024, 9:40:49 PM UTC"
+    const date4Str = nowImplicitUtc.toLocaleString('en-US', { timeZone: 'America/New_York', timeZoneName: 'short' }); // => "4/16/2024, 5:40:49 PM EDT"(Windows) or "4/16/2024, 5:40:49 PM EST"(Linux)
+    const date5Str = nowImplicitUtc.toLocaleString('en-US', { timeZone: 'Asia/Kolkata', timeZoneName: 'short' }); // => "4/17/2024, 3:10:49 AM GMT+5:30"
+    const date6Str = nowImplicitUtc.toUTCString();// => "Fri, 16 Apr 2024 21:40:49 GMT"
+    const date7Str = nowImplicitUtc.toISOString(); // 2024-04-16T09:40:49.092Z ('Z' abbreviation for Zulu time = UTC). Internation Standard Format: YYYY-MM-DD
+
+    console.log('date1Str: ' + date1Str);
+    console.log('date2Str: ' + date2Str);
+    console.log('date3Str: ' + date3Str);
+    console.log('date4Str: ' + date4Str);
+    console.log('date5Str: ' + date5Str);
+    console.log('date6Str: ' + date6Str);
+    console.log('date7Str: ' + date7Str);
+}

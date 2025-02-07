@@ -39,30 +39,6 @@ export class SqNgCommonUtilsTime implements OnInit {
     return dateEt;
   }
 
-  public static TestDateToLocaleString() { // e.g. call SqNgCommonUtilsTime.TestDateToLocaleString(); in ngOnInit() to test it
-    const nowImplicitUtc = new Date(); // Date object internal representation: always in UTC, with no timezone offset. The number of milliseconds that have elapsed since 1970-01-01 00:00:00 UTC
-
-    // "en-US": US English uses month-day-year order and 12-hour time with AM/PM: e.g. "12/19/2012, 7:00:00 PM"
-    // "en-GB": British English uses day-month-year order and 24-hour time without AM/PM: e.g. "20/12/2012 03:00:00"
-
-    // Date object is always in UTC. (msec since UTC epoch). There is no TimeZone data in the Date object, and it is impossible to put any timeZone data into it.
-    // !!! You cannot 'Set' the timezone, But you can produce a string with that UTC time expressed in that timeZone. The date stays the same.
-    // toString() will always return a date and time string based on the runtime’s Local time zone
-    // toUTCString() will always return a date and time string based on UTC
-    // toLocaleString() with the timeZone specified converts that implicit UtcDate to the Locale of 'THAT' timezone (not the timezone of the Local computer)
-    // Trick: if "timeZoneName: 'short'" is not given, it doesn't add the timezone postfix string to the end.
-    const date1Str = nowImplicitUtc.toLocaleString(); // The default is the runtime’s default time zone. Uses "en-GB", => "16/04/2024, 22:40:49"
-    const date2Str = nowImplicitUtc.toLocaleString('en-US', { timeZone: 'Europe/London', timeZoneName: 'short' }); // => "4/16/2024, 10:40:49 PM GMT+1"
-    const date3Str = nowImplicitUtc.toLocaleString('en-US', { timeZone: 'UTC', timeZoneName: 'short' }); // => "4/16/2024, 9:40:49 PM UTC"
-    const date4Str = nowImplicitUtc.toLocaleString('en-US', { timeZone: 'America/New_York', timeZoneName: 'short' }); // => "4/16/2024, 5:40:49 PM EDT"
-    const date5Str = nowImplicitUtc.toLocaleString('en-US', { timeZone: 'Asia/Kolkata', timeZoneName: 'short' }); // => "4/17/2024, 3:10:49 AM GMT+5:30"
-    console.log('date1Str: ' + date1Str);
-    console.log('date2Str: ' + date2Str);
-    console.log('date3Str: ' + date3Str);
-    console.log('date4Str: ' + date4Str);
-    console.log('date5Str: ' + date5Str);
-  }
-
   // What is the behavior of JavaScript's Date object regarding time zones?
   // Answer: JavaScript's Date object tracks time internally in UTC but typically displays (even in Debug Watch!) and accepts input based on the local time of the computer it's running on. While you can set it to a different timezone, methods like toLocaleString() will still show the time in the local timezone.
   // See: https://stackoverflow.com/questions/15141762/how-to-initialize-a-javascript-date-to-a-particular-time-zone , https://stackoverflow.com/questions/439630/create-a-date-with-a-set-timezone-without-using-a-string-representation/439871#439871

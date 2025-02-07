@@ -46,6 +46,10 @@ we can see that even Quality = 10% is almost fine, so 35% is almost indistinguis
 >IrfanView "JPEG XL Plugin" https://www.irfanview.com/plugins.htm "JPEG XL Plugin (4.70.2) - ZIP (32 bit) or ZIP (64 bit)"
 >IrfanView AVIF plugin: https://www.irfanview.com/64bit.htm Download IrfanView-64 PlugIns (Version 4.70, ZIP file, 25.70 MB), extract only Avif.dll from the Zip and put into ProgramFiles\IrfanView\Plugins
 
+>Windows File Explorer JpegXL thumbnail viewer. https://github.com/saschanaz/jxl-winthumb
+Download the dll. Move it to c:\windows\system32 (because it will be locked open after regsvr32, so it cannot be deleted from the Download folder)
+"Open a terminal window as administrator: regsvr32 jxl_winthumb_x86_64.dll"
+
 ****** In-house test with Paint.Net: LOSSLESS only compression test for Fox image from https://squoosh.app/editor Size: 2593x2112px
 Fox.jpg (Quality:100, but it is still lossy, so it doesn't count as a backup format): 3.4MB
 Fox.png: 6.1MB
