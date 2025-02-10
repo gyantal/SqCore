@@ -91,34 +91,34 @@ span.center {
 }
 
 #vixBtn {
-  background: url("../assets/images/vix.webp");
+  background: url("../assets/images/vix_vslow_30pct_s.avif");
   background-size: cover;
 }
 
 #impEtpBtn {
-  background: url("../assets/images/importantEtps.webp");
+  background: url("../assets/images/importantEtps_vslow_30pct_s.avif");
   background-size: cover;
 }
 
 #gameChngBtn {
-  background: url("../assets/images/game_changer.webp");
+  background: url("../assets/images/game_changer_vslow_30pct_s.avif");
   background-size: cover;
 }
 
 #globalAssetsBtn {
-  background: url("../assets/images/global_assets.webp");
+  background: url("../assets/images/global_assets_vslow_30pct_s.avif");
   background-size: cover;
 }
 
 #selectAllBtn {
-  background: url("../assets/images/selectall.webp");
+  background: url("../assets/images/selectall_vslow_30pct_s.avif");
   background-size: cover;
   height: 4rem;
   width: 9rem;
 }
 
 #updateAllBtn {
-  background: url("../assets/images/updateall.webp");
+  background: url("../assets/images/updateall_vslow_30pct_s.avif");
   background-size: cover;
   height: 4rem;
   width: 9rem;
