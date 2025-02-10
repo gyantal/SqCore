@@ -93,17 +93,17 @@ table.currData2 {
 }
 
 #gameChanger {
-  background: url("../assets/images/game_changer.webp");
+  background: url("../assets/images/game_changer_vslow_30pct_s.avif");
   background-size: cover;
 }
 
 #globalAssets {
-  background: url("../assets/images/global_assets.webp");
+  background: url("../assets/images/global_assets_vslow_30pct_s.avif");
   background-size: cover;
 }
 
 #alphaPicks {
-  background: url("../assets/images/alpha_pic.webp");
+  background: url("../assets/images/alpha_pic_vslow_30pct_s.avif");
   background-size: contain;
 }
 
