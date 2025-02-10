@@ -290,7 +290,7 @@ table.resData {
 .tooltipImg {
   width: 1rem;
   height: 1rem;
-  background: url("../assets/images/tooltip_s.webp");
+  background: url("../assets/images/tooltip_vslow_30pct_s.avif");
   background-size: contain;
 }
 
@@ -373,7 +373,7 @@ tr.header {
 .simulatorHelp {
   width: 2.5rem;
   height: 2.5rem;
-  background: url("../assets/images/help_button_s.webp");
+  background: url("../assets/images/help_button_vslow_30pct_s.avif");
   background-size: contain;
   border: none;
   color: white;
