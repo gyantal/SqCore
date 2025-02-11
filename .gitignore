@@ -67,6 +67,9 @@ Cargo.lock
 !**/Fin/Data/equity/usa/daily/pcln.zip
 !**/Fin/Data/equity/usa/daily/isrgd.zip
 
+# 2025-01-17: ticker change from SQ => XYZ
+!**/Fin/Data/equity/usa/daily/sq.zip
+
 # SIN stocks:
 !**/Fin/Data/equity/usa/daily/ald.zip
 !**/Fin/Data/equity/usa/daily/cbrna.zip
