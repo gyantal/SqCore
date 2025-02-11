@@ -18,6 +18,8 @@ using SqCommon;
 
 namespace Fin.MemDb;
 
+public enum FinDbRunningEnvironment { Linux, Windows, WindowsUnitTest }
+
 public partial class FinDb : IDisposable
 {
     public static readonly FinDb gFinDb = new();   // Singleton pattern. The C# base class Lazy<T> is unnecessary overhead each time Instance => LazyComposer.Value; is accessed.
@@ -34,10 +36,10 @@ public partial class FinDb : IDisposable
 
     public void Init()
     {
-        Utils.RunInNewThread(ignored => Init_WT()); // Better to do long consuming data preprocess in working thread than in the main thread, so other services can start to initialize in parallel
+        Utils.RunInNewThread(ignored => Init_WT(OperatingSystem.IsWindows() ? FinDbRunningEnvironment.Windows : FinDbRunningEnvironment.Linux)); // Better to do long consuming data preprocess in working thread than in the main thread, so other services can start to initialize in parallel
     }
 
-    void Init_WT() // WT : WorkThread
+    public void Init_WT(FinDbRunningEnvironment p_finDbRunningEnvironment) // WT : WorkThread
     {
         Thread.CurrentThread.Name = "FinDb.Init_WT Thread";
         Console.WriteLine("*FinDb is not yet ready! ReloadDbData is in progress...");
@@ -51,8 +53,15 @@ public partial class FinDb : IDisposable
             // Globals.CacheDataFolder (in VsCode running): "../../Fin/Data/"
             // CurrentDir (on Linux): /home/sq-vnc-client/SQ/WebServer/SqCoreWeb/published/publish/ (dir of the App)
             // Globals.CacheDataFolder (on Linux): "../FinData/"
-            if (OperatingSystem.IsWindows())
-                Config.SetConfigurationFile("config.fin.dev.json"); // on Linux use the default "config.fin.json", on Windows developing environment use the dev version.
+
+            string configJsonFileName = p_finDbRunningEnvironment switch
+            {
+                FinDbRunningEnvironment.Linux => "config.fin.json",   // on Linux use the default "config.fin.json", on Windows developing environment use the dev version.
+                FinDbRunningEnvironment.Windows => "config.fin.dev.json",
+                FinDbRunningEnvironment.WindowsUnitTest => "../../../config.fin.tests.json", // Tests run from e.g. ...src\Fin\Engine.tests\bin\Debug\net8.0\
+                _ => throw new ArgumentException("Invalid FinDbRunningEnvironment")
+            };
+            Config.SetConfigurationFile(configJsonFileName);
 
             // For more initialization search code as "LeanEngineAlgorithmHandlers.FromConfiguration(Composer.Instance, researchMode);"
             // e.g. for historical data probably: var dataFeedHandlerTypeName = Config.Get("data-feed-handler", "FileSystemDataFeed");
@@ -98,7 +107,15 @@ public partial class FinDb : IDisposable
                 new DataPermissionManager()));
 
             m_isInitialized = true;
-            Backtester.Init();
+
+            string algorithmDllRelPathFolder = p_finDbRunningEnvironment switch
+            {
+                FinDbRunningEnvironment.Linux => string.Empty,
+                FinDbRunningEnvironment.Windows => "bin/Debug/net8.0/",
+                FinDbRunningEnvironment.WindowsUnitTest => string.Empty, // Tests run from e.g. ...src\Fin\Engine.tests\bin\Debug\net8.0\
+                _ => throw new ArgumentException("Invalid FinDbRunningEnvironment")
+            };
+            Backtester.Init(algorithmDllRelPathFolder);
 
             ScheduleDailyCrawlerTask();
         }

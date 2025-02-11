@@ -736,31 +736,36 @@ namespace QuantConnect.Lean.Engine.Results
             // SqCore Change END
             if (time > _nextSample || forceProcess)
             {
-                //Set next sample time: 4000 samples per backtest
-                _nextSample = time.Add(ResamplePeriod);
-
                 //Sample the portfolio value over time for chart.
                 // SqCore Change ORIGINAL:
                 // SampleEquity(time, Math.Round(Algorithm.Portfolio.TotalPortfolioValue, 4));
                 // SqCore Change NEW:
+                // 2025-02-11: ProcessSynchronousEvents() can be called 3x times with the same 'time', at the end, because forceProcess becomes true at the end
+                // And we want to avoid that the last day is sampled 3x. That was a bug in the ChartGenerator portfolio PV data.
+                if (time > _nextSample)
+                {
+                    if (SqBacktestConfig.SamplingSqDailyRawPv)
+                        SqSample("rawPV", time, (float)Math.Round(Algorithm.Portfolio.TotalPortfolioValue, 4));
+                    if (SqBacktestConfig.SamplingSqDailyTwrPv)
+                    {
+                        decimal currentPortfolioValue = Algorithm.Portfolio.TotalPortfolioValue;
+                        decimal allRollingDeposits = Algorithm.Portfolio.AllRollingDeposits["USD"].ValueInAccountCurrency;
+                        decimal dailyNetDeposit = allRollingDeposits - FormerAllRollingDeposits;
+
+                        // "this.DailyPortfolioValue" contains the previous day PV
+                        float dailyReturn = (float)(DailyPortfolioValue == 0 ? 0 : Math.Round((currentPortfolioValue - dailyNetDeposit - DailyPortfolioValue) / DailyPortfolioValue, 10));
+                        SqSample("twrPV", time, dailyReturn);
+
+                        // Update daily portfolio value; works because we only call sample once a day
+                        DailyPortfolioValue = currentPortfolioValue; // prepare "this.DailyPortfolioValue" to contain the previous day PV on the next day
+                        FormerAllRollingDeposits = allRollingDeposits;
+                    }
+                }
                 if (SqBacktestConfig.SamplingQcOriginal)
                     SampleEquity(time, Math.Round(Algorithm.Portfolio.TotalPortfolioValue, 4));
-                if (SqBacktestConfig.SamplingSqDailyRawPv)
-                    SqSample("rawPV", time, (float)Math.Round(Algorithm.Portfolio.TotalPortfolioValue, 4));
-                if (SqBacktestConfig.SamplingSqDailyTwrPv)
-                {
-                    decimal currentPortfolioValue = Algorithm.Portfolio.TotalPortfolioValue;
-                    decimal allRollingDeposits = Algorithm.Portfolio.AllRollingDeposits["USD"].ValueInAccountCurrency;
-                    decimal dailyNetDeposit = allRollingDeposits - FormerAllRollingDeposits;
 
-                    // "this.DailyPortfolioValue" contains the previous day PV
-                    float dailyReturn = (float) (DailyPortfolioValue == 0 ? 0 : Math.Round((currentPortfolioValue - dailyNetDeposit - DailyPortfolioValue) / DailyPortfolioValue, 10));
-                    SqSample("twrPV", time, dailyReturn);
-
-                    // Update daily portfolio value; works because we only call sample once a day
-                    DailyPortfolioValue = currentPortfolioValue; // prepare "this.DailyPortfolioValue" to contain the previous day PV on the next day
-                    FormerAllRollingDeposits = allRollingDeposits;
-                }
+                //Set next sample time: 4000 samples per backtest
+                _nextSample = time.Add(ResamplePeriod);
                 // SqCore Change END
 
                 //Also add the user samples / plots to the result handler tracking:
