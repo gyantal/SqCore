@@ -61,7 +61,7 @@
   </div>
   <div class="sqDiagnostics" (mouseenter)="mouseEnter('sqDiagnostics')">
     <!-- Wifi image *.WebP (but ICO is not) blinks in DEV, when data from server (email) arrives. Ignore it. In deployed PROD there is no blinking, the DOM tree is not rebuilt. -->
-    <img id="wifiImage" width="30" alt="Wifi" title="{{sqDiagnosticsMsg}}" [src]="isSrvConnectionAlive ? '../assets/images/wifi.webp' : '../assets/images/wifiNotConnected.webp'" />
+    <img id="wifiImage" width="30" alt="Wifi" title="{{sqDiagnosticsMsg}}" [src]="isSrvConnectionAlive ? '../assets/images/wifi_vslow_30pct_s.avif' : '../assets/images/wifi_notconnected_vslow_30pct_s.avif'" />
   </div>
 </div>
 
