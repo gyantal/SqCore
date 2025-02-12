@@ -16,7 +16,7 @@
       <td><b>Positions-$P&L</b> on Date: <span [ngStyle]="{color: (m_uiHistPrtfRunResultUntilDate.onDatePosPv - m_uiHistPrtfRunResultUntilDate.prevDatePosPv) < 0 ? 'red' : 'green'}"><b>${{(m_uiHistPrtfRunResultUntilDate.onDatePosPv - m_uiHistPrtfRunResultUntilDate.prevDatePosPv) | number:'1.0-0'}} ({{(m_uiHistPrtfRunResultUntilDate.onDatePosPv - m_uiHistPrtfRunResultUntilDate.prevDatePosPv) / m_uiHistPrtfRunResultUntilDate.prevDatePosPv | percent:'1.2-2' }})</b></span></td>
     </tr>
   </table><br>
-    <div *ngIf="m_uiPrtfRunResult.sqLogs.length > 1" class="errLog">! ERROR
+    <div *ngIf="m_uiPrtfRunResult.sqLogs.length > 0" class="errLog">!ERROR
         <div class="sqLogTooltipText">
             <p *ngFor="let log of m_uiPrtfRunResult.sqLogs">{{log.message}}</p>
         </div>
