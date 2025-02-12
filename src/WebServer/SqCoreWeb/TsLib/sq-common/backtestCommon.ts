@@ -61,6 +61,7 @@ export class ChrtGenPfRunResult {
 
 export class PrtfRunResultJs extends ChrtGenPfRunResult { // we can specify the input types more, but whatever.
   public prtfPoss: any; // all the position members from UiPrtfPositions, we skip creating detailed sub classes
+  public logs: SqLog[] = [];
 }
 
 // Ui classes
@@ -584,6 +585,8 @@ export function updateUiWithPrtfRunResult(prtfRunResult: Nullable<PrtfRunResultJ
     chartItem.value = prtfRunResult.chrtData.values[i];
     uiPrtfRunResult.chrtValues.push(chartItem);
   }
+
+  uiPrtfRunResult.sqLogs = prtfRunResult.logs;
 
   d3.selectAll('#pfRunResultChrt > *').remove();
   const lineChrtDiv = document.getElementById('pfRunResultChrt') as HTMLElement;

@@ -124,7 +124,7 @@ public class ChrtGenWs
         // Step 2: Filling the chrtGenPrtfRunResultJs to a list.
         for (int i = 0; i < lsPrtf.Count; i++)
         {
-            string? errMsg = lsPrtf[i].GetPortfolioRunResult(true, SqResultStat.NoStat, p_forcedStartDate, p_forcedEndDate, out PortfolioRunResultStatistics stat, out List<DateValue> pv, out List<PortfolioPosition> prtfPos, out ChartResolution chartResolution);
+            string? errMsg = lsPrtf[i].GetPortfolioRunResult(true, SqResultStat.NoStat, p_forcedStartDate, p_forcedEndDate, out PortfolioRunResultStatistics stat, out List<DateValue> pv, out List<PortfolioPosition> prtfPos, out ChartResolution chartResolution, out sqLogs);
             if (errMsg != null)
                 sqLogs.Add(new SqLog { SqLogLevel = SqLogLevel.Error, Message = errMsg });
             ChartData chartVal = new();

@@ -6,6 +6,11 @@
       </div>
       <span class="refreshPortfolios"><img class="refreshPortfolios" src='../assets/images/refresh64_vslow_30pct.avif' (click)="onPortfoliosRefreshClicked()"></span>
     </span>
+    <div *ngIf="uiPrtfRunResult.sqLogs.length > 1" class="errLog">! ERROR
+      <div class="sqLogTooltipText">
+          <p *ngFor="let log of uiPrtfRunResult.sqLogs">{{log.message}}</p>
+      </div>
+    </div>
     <app-sq-tree-view [items]="uiNestedPrtfTreeViewItems" [treeViewState]="treeViewState" [rootTreeViewComponent]="_rootTreeComponent!" (click)="showPortfolioStats()" (dblclick)="onOpenPortfolioViewerClicked()"></app-sq-tree-view>
     <button class="btnCommon" (click)="showCreateOrEditPortfolioPopup('create')" [ngClass]="(treeViewState.lastSelectedItem?.prtfItemType == 'Folder') ? 'btnEnabled' : 'btnDisabled'">Create Portfolio</button>&nbsp;
     <button class="btnCommon" (click)="showCreateOrEditFolderPopup('create')" [ngClass]="treeViewState.lastSelectedItem?.prtfItemType == 'Folder' ? 'btnEnabled': 'btnDisabled'">Create Folder</button>&nbsp;<br>

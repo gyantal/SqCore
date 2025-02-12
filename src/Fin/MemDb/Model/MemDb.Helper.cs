@@ -64,6 +64,7 @@ public class PrtfRunResult // this is sent to clients PrtfMgr and PrtfVwr
     public PortfolioRunResultStatistics Pstat { get; set; } = new();
     public ChartData ChrtData { get; set; } = new();
     public List<PortfolioPosition> PrtfPoss { get; set; } = new();
+    public List<SqLog> Logs { get; set; } = new();
 }
 
 public class ChartData
@@ -488,7 +489,7 @@ public partial class MemDb
         if (errMsg == null)
         {
             bool returnOnlyTwrPv = true;
-            errMsg = prtf!.GetPortfolioRunResult(returnOnlyTwrPv, SqResultStat.SqSimpleStat, p_forcedStartDate, p_forcedEndDate, out PortfolioRunResultStatistics stat, out List<DateValue> pv, out List<PortfolioPosition> prtfPos, out ChartResolution chartResolution);
+            errMsg = prtf!.GetPortfolioRunResult(returnOnlyTwrPv, SqResultStat.SqSimpleStat, p_forcedStartDate, p_forcedEndDate, out PortfolioRunResultStatistics stat, out List<DateValue> pv, out List<PortfolioPosition> prtfPos, out ChartResolution chartResolution, out List<SqLog> sqLogs);
             if (errMsg == null)
             {
                 // Step2: Filling the ChartPoint Dates and Values to a list. A very condensed format. Dates are separated into its ChartDate List.
@@ -571,12 +572,13 @@ public partial class MemDb
                     prtfPoss.Add(new PortfolioPosition { SqTicker = item.SqTicker, Quantity = item.Quantity, AvgPrice = item.AvgPrice, BacktestLastPrice = item.BacktestLastPrice, EstPrice = item.EstPrice });
                 }
 
-                // Step5: Filling the Stats, ChartPoint vals and prtfPoss in pfRunResults
+                // Step5: Filling the Stats, ChartPoint vals, prtfPoss and logs in pfRunResults
                 prtfRunResult = new()
                 {
                     Pstat = pStat,
                     ChrtData = chartVal,
-                    PrtfPoss = prtfPoss
+                    PrtfPoss = prtfPoss,
+                    Logs = sqLogs
                 };
             }
         }

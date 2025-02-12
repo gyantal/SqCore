@@ -10,6 +10,7 @@ using QuantConnect;
 using QuantConnect.Data;
 using QuantConnect.Data.Market;
 using QuantConnect.Lean.Engine.Results;
+using QuantConnect.Packets;
 using QuantConnect.Parameters;
 using QuantConnect.Securities;
 using QuantConnect.Securities.Equity;
@@ -100,7 +101,7 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
     // Or number of seconds from Unix epoch: '1641013200' is 10 chars. Resolution can be 1 second.
     // Although it is 2 chars more data, but we chose this, because QC uses it and also it will allow us to go intraday in the future.
     // Also it allows to show the user how up-to-date (real-time) the today value is.
-    public string? GetPortfolioRunResult(bool p_returnOnlyTwrPv, SqResultStat p_sqResultStat, DateTime? p_forcedStartDate, DateTime? p_forcedEndDate, out PortfolioRunResultStatistics p_stat, out List<DateValue> p_pv, out List<PortfolioPosition> p_prtfPoss, out ChartResolution p_chartResolution)
+    public string? GetPortfolioRunResult(bool p_returnOnlyTwrPv, SqResultStat p_sqResultStat, DateTime? p_forcedStartDate, DateTime? p_forcedEndDate, out PortfolioRunResultStatistics p_stat, out List<DateValue> p_pv, out List<PortfolioPosition> p_prtfPoss, out ChartResolution p_chartResolution, out List<SqLog> p_sqLogs)
     {
         // "Trades" type portfolios can have Trades in them for the past (for that "SqTradeAccumulation" Algorithm has to be run now),
         // but a different Algorithm ("CXO", "HL") might exist in the Portfolio.Algorithm, that will be run for the future, e.g. VBroker to determine what to trade at the broker. Or in the very far past (before the era of the trades)
@@ -108,9 +109,9 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
 
         string algorithmName = (this.Type == PortfolioType.Trades || this.Type == PortfolioType.LegacyDbTrades) ? "SqTradeAccumulation" : this.Algorithm;
         if (String.IsNullOrEmpty(algorithmName)) // if there is an Algorithm, we can run it. LegacyDbTrades uses 'SqTradeAccumulation' algorithm
-            return GetPortfolioRunResultDefault(out p_stat, out p_pv, out p_prtfPoss, out p_chartResolution);
+            return GetPortfolioRunResultDefault(out p_stat, out p_pv, out p_prtfPoss, out p_chartResolution, out p_sqLogs);
         else
-            return GetBacktestResult(algorithmName, p_returnOnlyTwrPv, p_sqResultStat, p_forcedStartDate, p_forcedEndDate, out p_pv, out p_stat, out p_prtfPoss, out p_chartResolution);
+            return GetBacktestResult(algorithmName, p_returnOnlyTwrPv, p_sqResultStat, p_forcedStartDate, p_forcedEndDate, out p_pv, out p_stat, out p_prtfPoss, out p_chartResolution, out p_sqLogs);
 
         // #pragma warning disable IDE0066 // disable the switch suggestion warning only locally
         // switch (Type)
@@ -125,7 +126,7 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
         // #pragma warning restore IDE0066
     }
 
-    public static string? GetPortfolioRunResultDefault(out PortfolioRunResultStatistics p_stat, out List<DateValue> p_pv, out List<PortfolioPosition> p_prtfPoss, out ChartResolution p_chartResolution)
+    public static string? GetPortfolioRunResultDefault(out PortfolioRunResultStatistics p_stat, out List<DateValue> p_pv, out List<PortfolioPosition> p_prtfPoss, out ChartResolution p_chartResolution, out List<SqLog> p_sqLogs)
     {
         List<DateValue> pvs = new()
         {
@@ -155,10 +156,12 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
         }; // output
         p_prtfPoss = prtfPoss;
         p_chartResolution = ChartResolution.Daily;
+        List<SqLog> sqLogs = new();
+        p_sqLogs = sqLogs;
         return null; // No Error
     }
 
-    public string? GetBacktestResult(string p_algorithmName, bool p_returnOnlyTwrPv, SqResultStat p_sqResultStat, DateTime? p_forcedStartDate, DateTime? p_forcedEndDate, out List<DateValue> p_pv, out PortfolioRunResultStatistics p_stat, out List<PortfolioPosition> p_prtfPoss, out ChartResolution p_chartResolution)
+    public string? GetBacktestResult(string p_algorithmName, bool p_returnOnlyTwrPv, SqResultStat p_sqResultStat, DateTime? p_forcedStartDate, DateTime? p_forcedEndDate, out List<DateValue> p_pv, out PortfolioRunResultStatistics p_stat, out List<PortfolioPosition> p_prtfPoss, out ChartResolution p_chartResolution, out List<SqLog> p_sqLogs)
     {
         SqBacktestConfig backtestConfig = new SqBacktestConfig() { SqResultStat = p_sqResultStat, SamplingQcOriginal = false, SamplingSqDailyRawPv = false, SamplingSqDailyTwrPv = false };
         if (p_returnOnlyTwrPv) // target is TwrPv
@@ -182,6 +185,7 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
         p_stat = new PortfolioRunResultStatistics();
         p_prtfPoss = new List<PortfolioPosition>();
         p_chartResolution = ChartResolution.Daily;
+        p_sqLogs = new List<SqLog>();
 
         string backtestAlgorithmParam = GetBacktestAlgorithmParam(p_forcedStartDate, p_forcedEndDate, AlgorithmParam); // AlgorithmParam itself 'can' have StartDate, EndDate. But ChartGenerator can further restricts the period with forcedStartDate/EndDate
         List<Base.Trade>? portTradeHist = this.GetTradeHistory(); // Don't filter TradeHist based on StartDate, because to properly backtest we need the initial trades that happend Before StartDate. StartDate refers to the ChartGeneration usually. But we have to simulate previous buying trades, even before StartDate.
@@ -191,6 +195,19 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
 
         backtestResults.LogStore.ForEach(r => Console.WriteLine(r.Message)); // Trade Logs. "Time: 10/07/2013 13:31:00 OrderID: 1 EventID: 2 Symbol: SPY Status: Filled Quantity: 688 FillQuantity: 688 FillPrice: 144.7817 USD OrderFee: 3.44 USD"
         Console.WriteLine($"BacktestResults.PV. startPV:{backtestResults.StartingPortfolioValue:N0}, endPV:{backtestResults.DailyPortfolioValue:N0} (If noDeposit: {(backtestResults.DailyPortfolioValue / backtestResults.StartingPortfolioValue - 1) * 100:N2}%)");
+
+        // Step 0: Fill the logs.
+        foreach(Packet? msg in backtestResults.Messages)
+        {
+            if (msg == null)
+                continue;
+            bool isExpectedMessage = msg is SecurityTypesPacket || msg is DebugPacket || msg is LogPacket || msg is SystemDebugPacket;
+            // The base class of packets does not contain a 'Message' property.
+            // Only the derived classes (DebugPacket, LogPacket, AlgorithmStatusPacket, and HandledErrorPacket) include the 'Message' member.
+            // Since we are already filtering DebugPacket and LogPacket, we cast 'msg' to HandledErrorPacket to access its 'Message' property.
+            if (!isExpectedMessage && msg is HandledErrorPacket errorPacket)
+                p_sqLogs.Add(new SqLog { SqLogLevel = SqLogLevel.Error, Message = errorPacket.Message });
+        }
 
         // Step 1: create the p_pv of the result.
         if (backtestConfig.SamplingSqDailyRawPv || backtestConfig.SamplingSqDailyTwrPv) // ChartResolution.Daily

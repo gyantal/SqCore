@@ -88,3 +88,25 @@ input[type="date"]::-webkit-datetime-edit-year-field {
   font-size: 0.625rem;
   cursor: pointer;
 }
+
+.errLog {
+  color: #FF0000;
+}
+
+.sqLogTooltipText {
+  display: none;
+  background: rgb(210, 252, 176);
+  border: 0.1rem solid rgb(19, 7, 177);
+  color: rgb(6, 8, 153);
+  text-align: left;
+  border-radius: 1rem;
+  position: absolute;
+  padding: 0.3rem;
+  font-size: 0.8rem;
+  left: 3%;
+  margin-right: 0.5rem;
+}
+
+.errLog:hover .sqLogTooltipText {
+  display: block;
+}
