@@ -270,7 +270,7 @@ tr:nth-child(even) {
   background-color: #9dcef8;
 }
 
-.errLog {
+.sqLogContainer {
   color: #FF0000;
 }
 
@@ -288,6 +288,6 @@ tr:nth-child(even) {
   margin-right: 0.5rem;
 }
 
-.errLog:hover .sqLogTooltipText {
+.sqLogContainer:hover .sqLogTooltipText {
   display: block;
 }

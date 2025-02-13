@@ -89,7 +89,7 @@ input[type="date"]::-webkit-datetime-edit-year-field {
   cursor: pointer;
 }
 
-.errLog {
+.sqLogContainer {
   color: #FF0000;
 }
 
@@ -107,6 +107,6 @@ input[type="date"]::-webkit-datetime-edit-year-field {
   margin-right: 0.5rem;
 }
 
-.errLog:hover .sqLogTooltipText {
+.sqLogContainer:hover .sqLogTooltipText {
   display: block;
 }

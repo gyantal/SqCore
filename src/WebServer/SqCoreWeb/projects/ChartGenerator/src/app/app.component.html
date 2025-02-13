@@ -101,10 +101,12 @@
   <div id="backtestPvChrt">
     <div id="pfRunResultChrt"></div>
     <div id='tooltipChart'></div>
-  </div>
+  </div><br>
   <div *ngFor="let item of m_uiChrtGenPrtfRunResults">
-    <div *ngFor="let lg of item.sqLogs">
-      <div [ngClass]="lg.sqLogLevel == ('Error' || 'Warn') ? 'errWarnLog' : 'infoLog'" *ngIf="lg.message != null">{{lg.message}}</div>
+    <div *ngIf="item.sqLogs.length > 0" class="sqLogContainer">! Backtest Warning/Error
+        <div class="sqLogTooltipText">
+            <p *ngFor="let log of item.sqLogs">{{log.message}}</p>
+        </div>
     </div>
   </div><br>
   <div class="statsTbl">

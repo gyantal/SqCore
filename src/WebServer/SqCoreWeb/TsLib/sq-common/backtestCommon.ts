@@ -57,11 +57,11 @@ export class ChrtGenPfRunResult {
   public pstat: any; // all the Stat members from UiPrtfRunResult, we skip creating detailed sub classes
   public chrtData!: ChartJs;
   public name!: string;
+  public logs: SqLog[] = [];
 }
 
 export class PrtfRunResultJs extends ChrtGenPfRunResult { // we can specify the input types more, but whatever.
   public prtfPoss: any; // all the position members from UiPrtfPositions, we skip creating detailed sub classes
-  public logs: SqLog[] = [];
 }
 
 // Ui classes

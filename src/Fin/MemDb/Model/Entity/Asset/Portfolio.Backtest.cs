@@ -205,8 +205,13 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
             // The base class of packets does not contain a 'Message' property.
             // Only the derived classes (DebugPacket, LogPacket, AlgorithmStatusPacket, and HandledErrorPacket) include the 'Message' member.
             // Since we are already filtering DebugPacket and LogPacket, we cast 'msg' to HandledErrorPacket to access its 'Message' property.
-            if (!isExpectedMessage && msg is HandledErrorPacket errorPacket)
-                p_sqLogs.Add(new SqLog { SqLogLevel = SqLogLevel.Error, Message = errorPacket.Message });
+            if (!isExpectedMessage)
+            {
+                if (msg is HandledErrorPacket errorPacket)
+                    p_sqLogs.Add(new SqLog { SqLogLevel = SqLogLevel.Error, Message = errorPacket.Message });
+                else
+                    p_sqLogs.Add(new SqLog { SqLogLevel = SqLogLevel.Warn, Message = $"QcBacktest unrecognized Msg: '{msg.GetType()}'. Add necessary handling to the code!" });
+            }
         }
 
         // Step 1: create the p_pv of the result.
