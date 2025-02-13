@@ -127,6 +127,16 @@
             "problemMatcher": "$tsc"
         },
         {
+            "label": "DbManager build Debug",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "build",
+                "${workspaceFolder}/src/Tools/DbManager/DbManager.csproj"
+            ],
+            "problemMatcher": "$tsc"
+        },
+        {
             "label": "BenchmarkDB publish",
             "command": "dotnet",
             "type": "process",
