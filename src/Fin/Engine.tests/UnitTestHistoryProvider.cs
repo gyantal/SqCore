@@ -7,11 +7,21 @@ using QuantConnect.Data;
 using QuantConnect.Data.Market;
 using QuantConnect.Securities;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace SqCommon.tests   // create test project name with '*.test' of the main project, so test namespace will be in the sub-namespace of the main: "dotnet new xunit -n SqCoreWeb.tests". using SqCoreWeb is not required then.
 {
     public class UnitTestHistPrice
     {
+        // From VsCode, xUnit will NOT output Console.WriteLine to the standard output when running tests. 
+        // Console.WriteLine() would output the msg, if run from command line with a -v (verbose) flag as "dotnet test -v normal", but that also outputs too much info.
+        // ITestOutputHelper WriteLine() will appear in the "TEST RESULTS" tab when you click on the specific test. As Output of that test.
+        private readonly ITestOutputHelper m_output;
+        public UnitTestHistPrice(ITestOutputHelper p_output)
+        {
+            m_output = p_output;
+        }
+
         [Fact]
         public void HistoryProviderBaseTest()
         {
@@ -46,8 +56,8 @@ namespace SqCommon.tests   // create test project name with '*.test' of the main
             TradeBar lastBar = result[^1].Bars.Values.Last();
             TradeBar lastButOneBar = result[^2].Bars.Values.Last();
 
-            Console.WriteLine($"First Bar Date: {firstBar.EndTime}, Price: {firstBar.Price}");
-            Console.WriteLine($"Last Bar Date: {lastBar.EndTime}, Price: {lastBar.Price}");
+            m_output.WriteLine($"First Bar Date: {firstBar.EndTime}, Price: {firstBar.Price}");
+            m_output.WriteLine($"Last Bar Date: {lastBar.EndTime}, Price: {lastBar.Price}");
 
             // Validate the first available data
             Assert.Equal(new DateTime(2008, 01, 02), firstBar.EndTime.Date); // Expected: 2008-01-02
@@ -83,7 +93,7 @@ namespace SqCommon.tests   // create test project name with '*.test' of the main
 
             var result = FinDb.gFinDb.HistoryProvider.GetHistory(historyRequests, sliceTimeZone).ToList();
 
-            Console.WriteLine($"Weekend Test Data Count: {result.Count}");
+            m_output.WriteLine($"Weekend Test Data Count: {result.Count}");
             Assert.Empty(result); // No data should be returned for weekends
         }
     }

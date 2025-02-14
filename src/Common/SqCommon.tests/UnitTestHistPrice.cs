@@ -1,15 +1,25 @@
 using System;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace SqCommon.tests   // create test project name with '*.test' of the main project, so test namespace will be in the sub-namespace of the main: "dotnet new xunit -n SqCoreWeb.tests". using SqCoreWeb is not required then.
 {
     public class UnitTestHistPrice
     {
+        // From VsCode, xUnit will NOT output Console.WriteLine to the standard output when running tests. 
+        // Console.WriteLine() would output the msg, if run from command line with a -v (verbose) flag as "dotnet test -v normal", but that also outputs too much info.
+        // ITestOutputHelper WriteLine() will appear in the "TEST RESULTS" tab when you click on the specific test. As Output of that test.
+        private readonly ITestOutputHelper m_output;
+        public UnitTestHistPrice(ITestOutputHelper p_output)
+        {
+            m_output = p_output;
+        }
+
         [Fact]
         public void TestHello()
         {
-            Console.WriteLine("Hello Test");
+            m_output.WriteLine("Hello Test");
         }
 
         [Fact]
