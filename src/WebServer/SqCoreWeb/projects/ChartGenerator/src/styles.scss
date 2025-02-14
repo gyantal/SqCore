@@ -43,9 +43,13 @@ html { // this is the Shadow DOM root of the big main App component. The :hosts 
   width: 1rem;
 }
 
-.sqLogContainer {
+.sqErrOrWarLog {
   color: #FF0000;
   }
+
+.sqInfoLog {
+  color: rgb(6, 8, 153);
+}
 
 .sqLogTooltipText {
   display: none;
@@ -60,6 +64,6 @@ html { // this is the Shadow DOM root of the big main App component. The :hosts 
   left: 3%;
 }
 
-.sqLogContainer:hover .sqLogTooltipText {
+.sqErrOrWarLog:hover .sqLogTooltipText, .sqInfoLog:hover .sqLogTooltipText {
   display: block;
 }

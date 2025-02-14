@@ -14,13 +14,13 @@ type Nullable<T> = T | null;
 const cSecToMSec = 1000;
 
 export enum SqLogLevel {
-  Off = 'Off',
-  Trace = 'Trace',
-  Debug = 'Debug',
-  Info = 'Info',
-  Warn = 'Warn',
-  Error = 'Error',
-  Fatal = 'Fatal'
+  Off = 0,
+  Trace = 1,
+  Debug = 2,
+  Info = 3,
+  Warn = 4,
+  Error = 5,
+  Fatal = 6
 }
 
 export enum LineStyle {

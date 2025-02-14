@@ -5,7 +5,7 @@ import { SqNgCommonUtils } from './../../../sq-ng-common/src/lib/sq-ng-common.ut
 import { SqNgCommonUtilsTime, minDate, maxDate } from './../../../sq-ng-common/src/lib/sq-ng-common.utils_time';
 import { UltimateChart } from '../../../../TsLib/sq-common/chartUltimate';
 import { SqStatisticsBuilder, StatisticsResults, DetailedStatistics, BacktestDetailedStatistics } from '../../../../TsLib/sq-common/backtestStatistics';
-import { ChrtGenBacktestResult, UiChrtGenPrtfRunResult, CgTimeSeries, SqLog, ChartResolution, UiChartPoint, FolderJs, PortfolioJs, prtfsParseHelper, fldrsParseHelper, TreeViewState, TreeViewItem, createTreeViewData, PrtfItemType, LineStyle, ChartJs, SeasonalityData, getSeasonalityData, getDetailedStats } from '../../../../TsLib/sq-common/backtestCommon';
+import { ChrtGenBacktestResult, UiChrtGenPrtfRunResult, CgTimeSeries, SqLog, ChartResolution, UiChartPoint, FolderJs, PortfolioJs, prtfsParseHelper, fldrsParseHelper, TreeViewState, TreeViewItem, createTreeViewData, PrtfItemType, LineStyle, ChartJs, SeasonalityData, getSeasonalityData, getDetailedStats, SqLogLevel } from '../../../../TsLib/sq-common/backtestCommon';
 import { SqTreeViewComponent } from '../../../sq-ng-common/src/lib/sq-tree-view/sq-tree-view.component';
 import { isValidDay, isValidMonth, isValidYear, parseNumberToDate } from '../../../../TsLib/sq-common/utils-common';
 
@@ -601,5 +601,20 @@ export class AppComponent implements OnInit {
     else
       this.m_endDateStr = calendarInput.value;
     this.onUserChangedStartOrEndDateWidgets();
+  }
+
+  // Why use the `hasErrorOrWarning` getter?
+  // We want to display the message "! Backtest Warning/Error/Info logs." only once and show a tooltip for all relevant logs.
+  // If we check this condition directly in the template inside *ngFor, it would be evaluated multiple times, leading to redundant UI updates.
+  // Why use a getter instead of a normal function?
+  // A getter is re-evaluated only when the component’s state changes, where as normal fucntion executes on every change detection cycle even if the data hasn't changed.
+  get hasSqLogErrOrWarn(): boolean {
+    for (const item of this.m_uiChrtGenPrtfRunResults) {
+      for (const log of item.sqLogs) {
+        if (log.sqLogLevel == SqLogLevel.Error || log.sqLogLevel == SqLogLevel.Warn)
+          return true;
+      }
+    }
+    return false;
   }
 }
