@@ -103,7 +103,7 @@
     <div id='tooltipChart'></div>
   </div><br>
   <div *ngFor="let item of m_uiChrtGenPrtfRunResults">
-    <div *ngIf="item.sqLogs.length > 0" [ngClass]="hasSqLogErrOrWarn ? 'sqErrOrWarLog' : 'sqInfoLog'">! Backtest Warning/Error/Info logs.
+    <div *ngIf="item.sqLogs.length > 0" [ngClass]="m_hasSqLogErrOrWarn ? 'sqErrOrWarnLog' : 'sqInfoLog'">! Backtest Warning/Error/Info logs.
         <div class="sqLogTooltipText">
             <p *ngFor="let log of item.sqLogs">{{log.message}}</p>
         </div>

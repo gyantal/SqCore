@@ -93,6 +93,7 @@ export class AppComponent implements OnInit {
 
   m_seasonalityData: SeasonalityData[] = []; // Seasonality
   m_userWarning: string | null = null;
+  m_hasSqLogErrOrWarn: boolean = false;
 
   // Constants
   public gPortfolioIdOffset: number = 10000;
@@ -247,10 +248,12 @@ export class AppComponent implements OnInit {
 
     this.getAnnualReturnYears(this.m_detailedStatistics.backtestDetailedStatistics, this.m_detailedStatistics.annualReturnYears); // Populate the annualReturnYears after the backtestDetailedStatistics for all portfolios and benchmarks have been received.
 
-    for (const item of chrtGenBacktestRes.logs) {
+    for (const log of chrtGenBacktestRes.logs) {
+      if (!this.m_hasSqLogErrOrWarn && log.sqLogLevel == SqLogLevel.Error || log.sqLogLevel == SqLogLevel.Warn) // check if there are any logLevels with error or warn state
+        this.m_hasSqLogErrOrWarn = true;
       const logItem = new SqLog();
-      logItem.sqLogLevel = item.sqLogLevel;
-      logItem.message = item.message;
+      logItem.sqLogLevel = log.sqLogLevel;
+      logItem.message = log.message;
       uiPrtfResItem.sqLogs.push(logItem);
     }
 
@@ -601,20 +604,5 @@ export class AppComponent implements OnInit {
     else
       this.m_endDateStr = calendarInput.value;
     this.onUserChangedStartOrEndDateWidgets();
-  }
-
-  // Why use the `hasErrorOrWarning` getter?
-  // We want to display the message "! Backtest Warning/Error/Info logs." only once and show a tooltip for all relevant logs.
-  // If we check this condition directly in the template inside *ngFor, it would be evaluated multiple times, leading to redundant UI updates.
-  // Why use a getter instead of a normal function?
-  // A getter is re-evaluated only when the component’s state changes, where as normal fucntion executes on every change detection cycle even if the data hasn't changed.
-  get hasSqLogErrOrWarn(): boolean {
-    for (const item of this.m_uiChrtGenPrtfRunResults) {
-      for (const log of item.sqLogs) {
-        if (log.sqLogLevel == SqLogLevel.Error || log.sqLogLevel == SqLogLevel.Warn)
-          return true;
-      }
-    }
-    return false;
   }
 }
