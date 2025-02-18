@@ -1,20 +1,14 @@
 using System;
-using System.Diagnostics;
-using System.Net.NetworkInformation;
 using Microsoft.Extensions.Configuration;
-using Npgsql;
-using StackExchange.Redis;
+using Microsoft.Data.SqlClient;
 using SqCommon;
-using DbCommon;
-using System.IO;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace DbManager;
 
 class Controller
 {
-    static public Controller g_controller = new();
+    public static Controller g_controller = new();
+    private static SqlConnection? m_connection = null;
 
     internal static void Start()
     {
@@ -27,6 +21,27 @@ class Controller
     public static void TestLegacyDb()
     {
         string? legacySqlConnString = Program.gConfiguration.GetConnectionString("LegacyMsSqlDefault");
-        using var conn = new NpgsqlConnection(legacySqlConnString);
+        m_connection = new SqlConnection(legacySqlConnString);
+        m_connection.Open();
+
+        // Create a command to execute a simple SELECT query
+        string queryStr = "SELECT COUNT(*) FROM [dbo].[Stock]";
+        SqlCommand command = new(queryStr, m_connection);
+
+        try
+        {
+            using SqlDataReader reader = command.ExecuteReader();
+            if (reader.Read())
+            {
+                int rowCount = reader.GetInt32(0); // Get the count value
+                Console.WriteLine($"Total rows in Stock table: {rowCount}");
+            }
+            else
+                Utils.Logger.Error("TestLegacyDb Error. No data found in Stock table.");
+        }
+        catch (Exception e)
+        {
+            Utils.Logger.Error($"TestLegacyDb Error. An error occurred while executing the query: {e.Message}");
+        }
     }
 }
