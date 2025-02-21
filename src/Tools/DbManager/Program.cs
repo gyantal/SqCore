@@ -32,11 +32,18 @@ class Program
         gConfiguration = builder.Build();
 
         // Step 2: Process command line args
+        for (int i = 0; i < p_args.Length; i++)
+            gWorkModes.Add(gStrToWorkMode[p_args[i]]);
+
         // Step 3: Process the 'automatic' workmodes
+        if (gWorkModes.Contains(WorkMode.LegacyDbBackup))
+            Controller.g_controller.LegacyDbBackup("C:/SqCoreWeb_LegacyDb");
 
         // Step 4: Show the User Console menu if necessary (if UserConsoleMenu)
         if (gWorkModes.IsNullOrEmpty() || gWorkModes.Contains(WorkMode.UserConsoleMenu))
             ShowUserConsoleMenu(appName, sensitiveConfigFullPath);
+
+        NLog.LogManager.Shutdown();
     }
 
     static public void ShowUserConsoleMenu(string p_appName, string p_sensitiveConfigFullPath)
@@ -58,7 +65,6 @@ class Program
 
         gLogger.Info("****** Main() END");
         Controller.Exit();
-        NLog.LogManager.Shutdown();
     }
 
     static bool gIsFirstCall = true;
@@ -71,13 +77,14 @@ class Program
         ColorConsole.WriteLine(ConsoleColor.Magenta, "----  (type and press Enter)  ----");
         Console.WriteLine("1. Say Hello. Don't do anything. Check responsivenes.");
         Console.WriteLine("2. Test LegacyDb");
+        Console.WriteLine("3. Backup LegacyDb (important tables)");
         Console.WriteLine("9. Exit gracefully (Avoid Ctrl-^C).");
         string userInput;
         try
         {
             userInput = Console.ReadLine() ?? string.Empty;
         }
-        catch (System.IO.IOException e) // on Linux, of somebody closes the Terminal Window, Console.Readline() will throw an Exception with Message "Input/output error"
+        catch (IOException e) // on Linux, of somebody closes the Terminal Window, Console.Readline() will throw an Exception with Message "Input/output error"
         {
             gLogger.Info($"Console.ReadLine() exception. Somebody closes the Terminal Window: {e.Message}");
             return "ConsoleIsForcedToShutDown";
@@ -90,11 +97,24 @@ class Program
                 gLogger.Info("Hello. I am not crashed yet! :)");
                 break;
             case "2":
-                Controller.TestLegacyDb();
+                Controller.g_controller.TestLegacyDb();
+                break;
+            case "3":
+                Controller.g_controller.LegacyDbBackup("C:/SqCoreWeb_LegacyDb");
                 break;
             case "9":
                 return "UserChosenExit";
         }
         return string.Empty;
     }
+
+    public static readonly Dictionary<string, WorkMode> gStrToWorkMode = new()
+    {
+        { "legacybackup", WorkMode.LegacyDbBackup },
+        { "legacyDbRestore", WorkMode.LegacyDbRestore },
+        { "redisDbBackup", WorkMode.RedisDbBackup },
+        { "redisDbRestore", WorkMode.RedisDbRestore },
+        { "postgreDbBackup", WorkMode.PostgreDbBackup },
+        { "postgreDbRestore", WorkMode.PostgreDbRestore },
+    };
 }
