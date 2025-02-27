@@ -350,6 +350,7 @@ export class AppComponent implements OnInit {
   }
 
   onStartBacktestsClicked() {
+    this.m_hasSqLogErrOrWarn = false; // reset the hasSqLoErrOrWarn
     if (this._socket != null && this._socket.readyState == this._socket.OPEN) {
       const uniquePrtfIds: number[] = [];
       for (let i = 0; i < this.m_backtestedPortfolios.length; i++) {
@@ -363,7 +364,6 @@ export class AppComponent implements OnInit {
           uniqueBmrks.push(this.m_backtestedBenchmarks[i].ticker);
       }
       this.onStartBacktests();
-      this.m_hasSqLogErrOrWarn = false; // reset the hasSqLoErrOrWarn
       this._socket.send('RunBacktest:' + '?pids=' + uniquePrtfIds.toString() + '&bmrks=' + uniqueBmrks.toString()); // parameter example can be pids=1,13,6&bmrks=SPY,QQQ&start=20210101&end=20220305
     }
   }
