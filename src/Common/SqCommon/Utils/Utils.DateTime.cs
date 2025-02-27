@@ -207,6 +207,18 @@ public static partial class Utils
         return Utils.Date2hYYYYMMDDTHHMMSS(p_dateTime);
     }
 
+    // <summary> Returns the date part of p_date in "YYMMDDTHHMM" => "250227T1443" format (invariant culture).
+    // </summary><remarks>
+    // </remarks>
+    public static string Date2YYMMDDTHHMM(DateTime p_date)
+    {
+        return p_date.ToString("yyMMdd'T'HHmm");
+    }
+    public static string ToYYMMDDTHHMM(this DateTime p_dateTime)
+    {
+        return Utils.Date2YYMMDDTHHMM(p_dateTime);
+    }
+
     // <summary> Returns p_dateTimeUtc in "2008-10-05T13:00:01Z" format
     // or in "2008-10-05" if time-of-day is zero. (Both can be parsed
     // back with invariant culture). </summary>

@@ -5,6 +5,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Data.SqlClient;
 using SqCommon;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 
 namespace DbManager;
 
@@ -73,12 +75,13 @@ class Controller
 
         try
         {
-            List<(string TableName, string FileName)> legacyDbTablesAndFileNames = [ ("PortfolioItem", "portfolioItemBackup.csv"), ("FileSystemItem", "fileSystemItemBackup.csv"), ("Stock", "stockBackup.csv") ];
+            string utcDateTimeStr = DateTime.UtcNow.ToYYMMDDTHHMM();
+            List<(string TableName, string FileName)> legacyDbTablesAndFileNames = [ ("PortfolioItem", $"portfolioItemBackup{utcDateTimeStr}.csv"), ("FileSystemItem", $"fileSystemItemBackup{utcDateTimeStr}.csv"), ("Stock", $"stockBackup{utcDateTimeStr}.csv") ];
             // step2: export legacyDb selected tables to csv file
             foreach ((string TableName, string FileName) item in legacyDbTablesAndFileNames)
                 ExportLegacyDbTableToCsv(g_connection, backupPath, item.TableName, item.FileName);
             // step3: compress all csv files using 7z tool
-            CompressLegacyDbBackupFiles(backupPath);
+            CompressLegacyDbBackupFiles(backupPath, legacyDbTablesAndFileNames.Select(r => r.FileName).ToList(), utcDateTimeStr);
             Console.WriteLine($"Backup process completed. zip file created");
         }
         catch (Exception e)
@@ -88,13 +91,13 @@ class Controller
         g_connection.Close();
     }
 
-    static void ExportLegacyDbTableToCsv(SqlConnection connection, string backupPath, string tableName, string fileName)
+    static void ExportLegacyDbTableToCsv(SqlConnection p_connection, string p_backupPath, string p_tableName, string p_fileName)
     {
-        string queryStr = $"SELECT TOP 100 * FROM {tableName}"; // Limit to 100 rows for testing
-        using SqlCommand command = new(queryStr, connection);
+        string queryStr = $"SELECT TOP 100 * FROM {p_tableName}"; // Limit to 100 rows for testing
+        using SqlCommand command = new(queryStr, p_connection);
         using SqlDataReader reader = command.ExecuteReader();
 
-        string exportFilePath = Path.Combine(backupPath, fileName);
+        string exportFilePath = Path.Combine(p_backupPath, p_fileName);
         using StreamWriter writer = new StreamWriter(exportFilePath);
         // Write column headers
         for (int i = 0; i < reader.FieldCount; i++)
@@ -116,26 +119,33 @@ class Controller
             }
             writer.WriteLine(); // End line
         }
-        Console.WriteLine($"CSV file created successfully for {tableName} at: {exportFilePath}");
+        Console.WriteLine($"CSV file created successfully for {p_tableName} at: {exportFilePath}");
     }
 
-    static void CompressLegacyDbBackupFiles(string backupPath)
+    static void CompressLegacyDbBackupFiles(string p_backupPath, List<string> p_fileNames, string p_utcDateTimeStr)
     {
-        string compressedLegacyDbFileName = $"legacyDbBackup_{DateTime.Now:yyyy-MM-dd}.7z";
-        string compressedBackupFilePath = Path.Combine(backupPath, compressedLegacyDbFileName);
+        // step1: Define File Paths and Check for 7-Zip
+        string compressedLegacyDbFileName = $"legacyDbBackup_{p_utcDateTimeStr}.7z";
+        string compressedBackupFilePath = Path.Combine(p_backupPath, compressedLegacyDbFileName);
         string compressionToolPath = @"C:\Program Files\7-Zip\7z.exe"; // Path to 7z.exe
-        string csvFileSelectionPattern = "*.csv"; // select all csv files in the folder
-
         if (!File.Exists(compressionToolPath))
         {
             Console.WriteLine("7z.exe not found. Please install 7-Zip and update the path.");
             return;
         }
-
-        ProcessStartInfo psi = new() // Configuring the 7-Zip process using ProcessStartInfo (PSI)
+        // step2: Prepare File List for Compression
+        StringBuilder sbFilesToCompress = new StringBuilder();
+        foreach (string fileName in p_fileNames)
+        {
+            if (sbFilesToCompress.Length > 0)
+                sbFilesToCompress.Append(" ");
+            sbFilesToCompress.Append($"\"{Path.Combine(p_backupPath, fileName)}\"");
+        }
+        // step3: Configure ProcessStartInfo(PSI) to execute 7-Zip
+        ProcessStartInfo psi = new()
         {
             FileName = compressionToolPath,
-            Arguments = $"a \"{compressedBackupFilePath}\" \"{Path.Combine(backupPath, csvFileSelectionPattern)}\"",
+            Arguments = $"a \"{compressedBackupFilePath}\" {sbFilesToCompress}",
             RedirectStandardOutput = true,
             CreateNoWindow = true
         };
@@ -148,8 +158,12 @@ class Controller
         }
         process.WaitForExit();
         Console.WriteLine($"zip file created successfully: {compressedBackupFilePath}");
-
-        foreach (var file in Directory.GetFiles(backupPath, "*.csv"))
-            File.Delete(file); // Delete csv files after zipping
+        // step4: Delete the csv files after zipping
+        foreach (string fileName in p_fileNames)
+        {
+            string filePath = Path.Combine(p_backupPath, fileName);
+            if (File.Exists(filePath))
+                File.Delete(filePath);
+        }
     }
 }
