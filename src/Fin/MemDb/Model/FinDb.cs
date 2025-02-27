@@ -26,6 +26,15 @@ public partial class FinDb : IDisposable
 
     // Try to have our own globals, which is easily accessible, rather than the Composer.Instance Globals. Much slower to access them. These objects are singleton globals, and created the first time Composer.Instance.GetExportedValueByTypeName<?>(?); is called.
     public LocalDiskMapFileProvider MapFileProvider { get; set; } = null!; // ignore warning CS8618 Non-nullable property X must contain a non-null value when exiting constructor.
+
+    // HistoryProvider.GetHistory():
+    // - We have to use the EndTime, instead of (Start)Time, although usually for per minute bar charting, people use the StartTime.
+    // But in TradeBar.Parse(stream) we do AddHours(-8) to shift the StartTime (we also shift dividend and splits with AddHours(16) to shift those again to the 16:00 time). So, Backtests work fine.
+    // For HistoryProvider and for daily data, this means that our StartTime.Date moves 1 day early. So, we cannot use StartTime in daily data.
+    // - Note the difference of using HistoryProvider.GetHistory() vs. Backtest that allocates 100% of its capital daily to that single stock.
+    // HistoryProvider.GetHistory() creates the 'proper' Adjusted price, so it simulates that a dividend is received at 16:00 on day at Close, and that is immediately reinvested. So, the next day CloseToClose change is applied to that cash reinvestment.
+    // Backtest receives the dividend cash after 16:00 (in a preprocess next day) correctly, but it reinvests that cash only next day at 16:00. So, that invested cash is not exposed to the next day CloseToClose %change.
+    // If there is a 20% dividend and a 20% next day CloseToClose change, then the difference between HistoryProvider.GetHistory() and Backtest-100% capital will be 4%
     public SubscriptionDataReaderHistoryProvider HistoryProvider { get; set; } = null!;
     public LocalDiskFactorFileProvider FactorFileProvider { get; set; } = null!;
     // public LeanEngineSystemHandlers EngineSystemHandlers { get; set; } = null!; // ignore warning CS8618 Non-nullable property X must contain a non-null value when exiting constructor.

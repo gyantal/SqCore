@@ -35,7 +35,13 @@ namespace QuantConnect.Data.Auxiliary
             for (var i = 0; i < _reversedFactorFileDates.Count; i++)
             {
                 var factorDate = _reversedFactorFileDates[i];
-                if (factorDate.Date < searchDate.Date)
+                // SqCore Change ORIGINAL:
+                // if (factorDate.Date < searchDate.Date)
+                // SqCore Change NEW:
+                // in TradeBar.Parse(stream) we do AddHours(-8) to shift the StartTime (we also shift dividend and splits with AddHours(16) to shift those again to the 16:00 time).
+                // Because of these shifts, we don't want to adjust the price for the searchDate.Date that equals the factorDate.Date (that comes from the factor file)
+                if (factorDate.Date <= searchDate.Date)
+                // SqCore Change END
                 {
                     break;
                 }

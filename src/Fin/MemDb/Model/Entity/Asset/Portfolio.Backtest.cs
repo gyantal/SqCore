@@ -422,16 +422,16 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
 
         NodaTime.DateTimeZone sliceTimeZone = TimeZones.NewYork; // "algorithm.TimeZone"
 
-        List<Slice>? result = FinDb.gFinDb.HistoryProvider.GetHistory(historyRequests, sliceTimeZone).ToList();
+        List<Slice>? result = FinDb.gFinDb.HistoryProvider.GetHistory(historyRequests, sliceTimeZone).ToList(); // see comment in FinDb.HistoryProvider
         Utils.Logger.Info("length of result bar values:" + result[0].Bars.Values.ToArray().Length);
-        Console.WriteLine($" Test Historical price data. Number of TradeBars: {result.Count}. SPY RAW ClosePrice on {result[0].Bars.Values.ToArray()[0].Time}: {result[0].Bars.Values.ToArray()[0].Close}");
+        Console.WriteLine($" Test Historical price data. Number of TradeBars: {result.Count}. SPY RAW ClosePrice on {result[0].Bars.Values.ToArray()[0].EndTime}: {result[0].Bars.Values.ToArray()[0].Close}");
         // find the ChartResolution
         TradeBar[]? resBarVals1 = result[1].Bars.Values.ToArray();
         TradeBar[]? resBarVals2 = result[2].Bars.Values.ToArray();
         // With Minute resolution simulation, the PV chart is generated at every 5 minutes.
         if (result.Count >= 3) // because the first is a dummy point, we need at least 3 data points to decide.
         {
-            int diffBetween2points = (int)(resBarVals2[0].Time - resBarVals1[0].Time).TotalSeconds;
+            int diffBetween2points = (int)(resBarVals2[0].EndTime - resBarVals1[0].EndTime).TotalSeconds;
             if (diffBetween2points <= 60)
                 p_chartResolution = ChartResolution.Minute;
             else if (diffBetween2points <= 300)
@@ -442,7 +442,7 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
         for (int i = 0; i < result.Count; i++)
         {
             TradeBar[]? resBarVals = result[i].Bars.Values.ToArray();
-            uint dateInt = (uint)new DateTimeOffset(resBarVals[0].Time, TimeSpan.Zero).ToUnixTimeSeconds();
+            uint dateInt = (uint)new DateTimeOffset(resBarVals[0].EndTime, TimeSpan.Zero).ToUnixTimeSeconds();
             float price = (float)resBarVals[0].Price;
 
             historicalPrices.Dates.Add(dateInt); // Add the date to the Date list

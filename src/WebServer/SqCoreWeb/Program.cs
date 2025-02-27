@@ -525,19 +525,20 @@ public partial class Program
                 // It is assumed that any TradeBar final values are only released at TradeBar.EndTime (OK for minute, hourly data, but not perfect for daily data which is known at 16:00)
                 // Any TradeBar's EndTime is Time+1day (assuming that ClosePrice is released not at 16:00, but later, at midnight)
                 // So the 20080104's row in CVS is: Time: 20080104:00:00, EndTime:20080105:00:00
-                DateTime endTimeUtc = new(2008, 01, 05, 5, 0, 0); // this will be => 2008-01-05:00:00 endTimeLocal
+                DateTime endTimeUtc = new(2025, 01, 25, 23, 59, 0); // this will be => 2025-01-25:18:59 endTimeLocal
 
                 // Use TickType.TradeBar. That is in the daily CSV file. TickType.Quote file would contains Ask(Open/High/Low/Close) + Bid(Open/High/Low/Close), like a Quote from a Broker at trading realtime.
                 var historyRequests = new[]
                 {
                     new HistoryRequest(startTimeUtc, endTimeUtc, typeof(TradeBar), symbol, Resolution.Daily, SecurityExchangeHours.AlwaysOpen(TimeZones.NewYork),
-                        TimeZones.NewYork, null, false, false, DataNormalizationMode.Raw, QuantConnect.TickType.Trade)
+                        // TimeZones.NewYork, null, false, false, DataNormalizationMode.Raw, QuantConnect.TickType.Trade)
+                        TimeZones.NewYork, null, false, false, DataNormalizationMode.Adjusted, QuantConnect.TickType.Trade)
                 };
 
                 NodaTime.DateTimeZone sliceTimeZone = TimeZones.NewYork; // "algorithm.TimeZone"
 
-                var result = FinDb.gFinDb.HistoryProvider.GetHistory(historyRequests, sliceTimeZone).ToList();
-                Console.WriteLine($" Test Historical price data. Number of TradeBars: {result.Count}. SPY RAW ClosePrice on {result[0].Bars.Values.ToArray()[0].Time}: {result[0].Bars.Values.ToArray()[0].Close}");
+                var result = FinDb.gFinDb.HistoryProvider.GetHistory(historyRequests, sliceTimeZone).ToList(); // see comment in FinDb.HistoryProvider
+                Console.WriteLine($" Test Historical price data. Number of TradeBars: {result.Count}. SPY RAW/Adjusted ClosePrice on {result[^1].Bars.Values.ToArray()[0].Time}-{result[^1].Bars.Values.ToArray()[0].EndTime}: {result[^1].Bars.Values.ToArray()[0].Close}");
                 break;
             case "3":
                 Console.WriteLine("Backtest: SqSPYMonFriAtMoc");
