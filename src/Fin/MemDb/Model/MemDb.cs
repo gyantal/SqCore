@@ -13,6 +13,8 @@ using SqCommon;
 // MemDb.Init() Flowchart: https://docs.google.com/document/d/1fwW7u4IvMIFNwx_l1YI8vop0bJ1Cl0bAPETGC-FIvxs
 namespace Fin.MemDb;
 
+public enum MemDbRunningEnvironment { SqCoreWebApp, WindowsUnitTest } // SqCoreWebApp mode can be Linux or Windows running of our main Webserver.
+
 public partial class MemDb : IDisposable
 {
     public static readonly MemDb gMemDb = new();   // Singleton pattern. The C# base class Lazy<T> is unnecessary overhead each time Instance => LazyComposer.Value; is accessed.
@@ -58,15 +60,22 @@ public partial class MemDb : IDisposable
     {
     }
 
-    public void Init(int p_redisDbIndex)
+    public void Init(int p_redisDbIndex, MemDbRunningEnvironment p_memDbRunningEnvironment)
     {
         string redisConnString = (OperatingSystem.IsWindows() ? Utils.Configuration["ConnectionStrings:RedisDefault"] : Utils.Configuration["ConnectionStrings:RedisLinuxLocalhost"]) ?? throw new SqException("Redis ConnectionStrings is missing from Config");
         m_Db = new Db(redisConnString, p_redisDbIndex, null);   // mid-level DB wrapper above low-level DB
 
         m_legacyDb = new LegacyDb();
-        Utils.RunInNewThread(ignored => m_legacyDb.Init_WT()); // Init Legacy SQL DB in a separate thread. The main MemDb.Init_WT() doesn't require its existence. We only need it for backtesting legacy portfolios much later.
-
-        Utils.RunInNewThread(ignored => Init_WT()); // Better to do long consuming data preprocess in working thread than in the main thread, so other services can start to initialize in parallel
+        if (p_memDbRunningEnvironment == MemDbRunningEnvironment.WindowsUnitTest) // In UnitTest mode, we have to init DBs in sync, not in a separate thread.
+        {
+            m_legacyDb.Init_WT();
+            // Init_WT(); // Future unit tests will probably need to init MemDb itself.
+        }
+        else
+        {
+            Utils.RunInNewThread(ignored => m_legacyDb.Init_WT()); // Init Legacy SQL DB in a separate thread. The main MemDb.Init_WT() doesn't require its existence. We only need it for backtesting legacy portfolios much later.
+            Utils.RunInNewThread(ignored => Init_WT()); // Better to do long consuming data preprocess in working thread than in the main thread, so other services can start to initialize in parallel
+        }
     }
 
     // MemDb.Init() Flowchart: https://docs.google.com/document/d/1fwW7u4IvMIFNwx_l1YI8vop0bJ1Cl0bAPETGC-FIvxs
