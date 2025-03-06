@@ -247,7 +247,7 @@ export class AppComponent implements OnInit {
     }
 
     this.getAnnualReturnYears(this.m_detailedStatistics.backtestDetailedStatistics, this.m_detailedStatistics.annualReturnYears); // Populate the annualReturnYears after the backtestDetailedStatistics for all portfolios and benchmarks have been received.
-
+    this.m_hasSqLogErrOrWarn = false; // reset the hasSqLoErrOrWarn
     for (const log of chrtGenBacktestRes.logs) {
       if (!this.m_hasSqLogErrOrWarn && log.sqLogLevel == SqLogLevel.Error || log.sqLogLevel == SqLogLevel.Warn) // check if there are any logLevels with error or warn state
         this.m_hasSqLogErrOrWarn = true;
@@ -350,7 +350,6 @@ export class AppComponent implements OnInit {
   }
 
   onStartBacktestsClicked() {
-    this.m_hasSqLogErrOrWarn = false; // reset the hasSqLoErrOrWarn
     if (this._socket != null && this._socket.readyState == this._socket.OPEN) {
       const uniquePrtfIds: number[] = [];
       for (let i = 0; i < this.m_backtestedPortfolios.length; i++) {
@@ -585,7 +584,21 @@ export class AppComponent implements OnInit {
       case 'month':
         calPartNewValue = parseInt(calPartNewValue, 10).toString().padStart(2, '0'); // Pad single-digit month to 2 digits before validation
         if (isValidMonth(calPartNewValue)) {
-          usedDate.setMonth(parseInt(calPartNewValue, 10) - 1); // Subtracting 1 from the month value since JavaScript months are 0-indexed
+          // Issue: When a user changes the month of an existing date without modifying the day (e.g., 2010-06-30 → 2010-02-30),
+          // the code currently shifts the month to March (2010-03-02) instead of correcting the invalid day.
+          // To fix this, determine the maximum valid day for the new month before updating the month, and adjust `usedDate` accordingly.
+          const newMonth = parseInt(calPartNewValue, 10) - 1; // Subtracting 1 from the month value since JavaScript months are 0-indexed
+          const usedYear = usedDate.getFullYear();
+          const usedDay = usedDate.getDate();
+          const lastDayOfNewMonth = new Date(usedYear, newMonth + 1, 0).getDate(); // Get the last day of the new month
+          if (usedDay > lastDayOfNewMonth) { // Adjust the day if the usedDay is greater than the lastDay of the newMonth
+            usedDate.setDate(lastDayOfNewMonth);
+            if (sqIsoDateInputIdStr == 'start') // update the DayInput value
+              this.startDayInput.nativeElement.value = lastDayOfNewMonth.toString().padStart(2, '0');
+            else
+              this.endDayInput.nativeElement.value = lastDayOfNewMonth.toString().padStart(2, '0');
+          }
+          usedDate.setMonth(newMonth);
           inputElement.value = calPartNewValue;
         } else // If the month is invalid (e.g., the user typed a non-numeric character like 'z'). We force back the old date part from the calendarInput into the inputElement)
           inputElement.value = (usedDate.getMonth() + 1).toString().padStart(2, '0');
