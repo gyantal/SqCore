@@ -54,7 +54,7 @@ export function parseNumberToDate(dateInt: number): Date {
 
 export function urlEncodeChars(str: string): string { // RegEx implementation 'can be faster', because it is only 1 call. Rather than multiple string-based replace() calls with many RAM reallocations.
   const charEncodingMap: { '&': string; '=': string; } = { '&': '%26', '=': '%3D' }; // Replacing special characters with their URL-encoded equivalents to avoid conflicts during server-side processing. stackoverflow ref: https://stackoverflow.com/questions/16576983/replace-multiple-characters-in-one-replace-call
-  str = str.replace(/[&=]/g, (s: string) => charEncodingMap[s]);
+  str = str.replace(/[&=]/g, (s) => charEncodingMap[s as keyof typeof charEncodingMap]);
   return str;
 }
 
