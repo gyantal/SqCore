@@ -12,6 +12,10 @@ import { FetchDataComponent } from './fetch-data/fetch-data.component';
 import { ChatGptComponent } from './gpt-chat/gpt-chat.component';
 import { GptScanComponent } from './gpt-scan/gpt-scan.component';
 
+export function getBaseUrl() {
+  return document.getElementsByTagName('base')[0].href;
+}
+
 @NgModule({
   declarations: [
     AppComponent,
@@ -34,7 +38,9 @@ import { GptScanComponent } from './gpt-scan/gpt-scan.component';
       { path: 'gpt-scan', component: GptScanComponent }
     ])
   ],
-  providers: [],
+  // Issue: Tool stopped functioning with error "NullInjectorError: No provider for BASE_URL!". see https://stackoverflow.com/questions/58016365/nullinjection-error-in-appmodule-staticinjectorerrorappmodulebase-url
+  // FetchData and ChatGpt components are using BaseUrl without the provider. In Angular, when a dependency (like BASE_URL) is injected into a component or service, it must be registered as a provider. Othersiwe it doesnt know how to resolve the dependency and resulting in a NullInjectorError.
+  providers: [{ provide: 'BASE_URL', useFactory: getBaseUrl }],
   bootstrap: [AppComponent]
 })
 export class AppModule { }
