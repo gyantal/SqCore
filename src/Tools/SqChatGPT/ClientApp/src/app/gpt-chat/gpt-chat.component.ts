@@ -1,4 +1,4 @@
-import { Component, Inject } from '@angular/core';
+import { Component } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 
 import { UserInput, ServerResponse } from '../lib/gpt-common';
@@ -9,16 +9,14 @@ import { UserInput, ServerResponse } from '../lib/gpt-common';
 })
 export class ChatGptComponent {
   _httpClient: HttpClient;
-  _baseUrl: string;
   _controllerBaseUrl: string;
 
   _selectedLlmModel: string = 'auto';
   _chatHistory: string[] = [];
 
-  constructor(http: HttpClient, @Inject('BASE_URL') baseUrl: string) {
+  constructor(http: HttpClient) {
     this._httpClient = http;
-    this._baseUrl = baseUrl;
-    this._controllerBaseUrl = baseUrl + 'gptchat/';
+    this._controllerBaseUrl = window.location.origin + '/gptchat/';
   }
 
   sendUserInputToBackEnd(p_userInput: string): void {

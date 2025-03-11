@@ -660,14 +660,16 @@ public class GptScanController : ControllerBase
         }
 
         ReadOnlySpan<char> htmlSpan = p_html.AsSpan(earningsDateStartPos); // Extract the substring starting from the position of "Earnings Date"
-        int spanEarningsDateStartPos = htmlSpan.IndexOf("<span class=\"value svelte-tx3nkj\">"); // Find the start position of the value span after "Earnings Date"
+        // As of 2025-03-11 , it was observed that the Earnings Date was not displayed on the UI.
+        // The HTML structure for finding the Earnings Date, previously using "<span class=\"value svelte-tx3nkj\">", has changed to "<span class=\"value yf-1jj98ts\">".
+        int spanEarningsDateStartPos = htmlSpan.IndexOf("<span class=\"value yf-1jj98ts\">"); // Find the start position of the value span after "Earnings Date"
         if (spanEarningsDateStartPos == -1)
         {
-            Console.WriteLine("Cannot find value <span class=\"value svelte-tx3nkj\"> after Earnings Date. Stop processing.");
+            Console.WriteLine("Cannot find value <span class=\"value yf-1jj98ts\"> after Earnings Date. Stop processing.");
             return earningsDate;
         }
 
-        spanEarningsDateStartPos += "<span class=\"value svelte-tx3nkj\">".Length; // Calculate the start position of the actual earnings date text
+        spanEarningsDateStartPos += "<span class=\"value yf-1jj98ts\">".Length; // Calculate the start position of the actual earnings date text
         ReadOnlySpan<char> htmlBodySpan = htmlSpan.Slice(spanEarningsDateStartPos);
         int spanEarningsDateEndPos = htmlBodySpan.IndexOf("</span> </li>"); // Find the end position of the earnings date text
         if (spanEarningsDateEndPos == -1)
