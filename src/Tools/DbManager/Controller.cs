@@ -52,7 +52,7 @@ class Controller
         g_connection.Close();
     }
 
-    public void LegacyDbBackup(string backupPath) // e.g, backupPath:"C:/SqCoreWeb_LegacyDb"
+    public void BackupLegacyDb(string p_backupPath) // e.g, backupPath:"C:/SqCoreWeb_LegacyDb"
     {
         string legacyDbConnString = Program.gConfiguration.GetConnectionString("LegacyMsSqlDefault") ?? throw new SqException("ConnectionString is missing from Config");
         Utils.Logger.Info($"LegacyDbBackup(). ConnStr:{legacyDbConnString}");
@@ -66,10 +66,10 @@ class Controller
         }
 
         // step1: check if the backupPath exists
-        if (!Directory.Exists(backupPath))
+        if (!Directory.Exists(p_backupPath))
         {
-            Console.WriteLine($"Directory '{backupPath}' does not exist. Creating it now...");
-            Directory.CreateDirectory(backupPath);
+            Console.WriteLine($"Directory '{p_backupPath}' does not exist. Creating it now...");
+            Directory.CreateDirectory(p_backupPath);
             Console.WriteLine("Directory created successfully.");
         }
 
@@ -79,9 +79,9 @@ class Controller
             List<(string TableName, string FileName)> legacyDbTablesAndFileNames = [ ("PortfolioItem", $"portfolioItemBackup{utcDateTimeStr}.csv"), ("FileSystemItem", $"fileSystemItemBackup{utcDateTimeStr}.csv"), ("Stock", $"stockBackup{utcDateTimeStr}.csv") ];
             // step2: export legacyDb selected tables to csv file
             foreach ((string TableName, string FileName) item in legacyDbTablesAndFileNames)
-                ExportLegacyDbTableToCsv(g_connection, backupPath, item.TableName, item.FileName);
+                ExportLegacyDbTableToCsv(g_connection, p_backupPath, item.TableName, item.FileName);
             // step3: compress all csv files using 7z tool
-            CompressLegacyDbBackupFiles(backupPath, legacyDbTablesAndFileNames.Select(r => r.FileName).ToList(), utcDateTimeStr);
+            CompressLegacyDbBackupFiles(p_backupPath, legacyDbTablesAndFileNames.Select(r => r.FileName).ToList(), utcDateTimeStr);
             Console.WriteLine($"Backup process completed. zip file created");
         }
         catch (Exception e)
@@ -164,6 +164,71 @@ class Controller
             string filePath = Path.Combine(p_backupPath, fileName);
             if (File.Exists(filePath))
                 File.Delete(filePath);
+        }
+    }
+
+    public void ExportLegacyDbAsBacpac(string p_backupPath)
+    {
+        // Step1: Check SqlPackage Version
+        string cmdExePath = "cmd.exe";
+        string sqlPackageVersionArgs = "/c SqlPackage /Version";
+        (string sqlPackageVersion, string sqlPackageErr) = ProcessCommandHelper(cmdExePath, sqlPackageVersionArgs);
+        if (!string.IsNullOrWhiteSpace(sqlPackageErr))
+        {
+            Console.WriteLine($"SqlPackage Version Error: {sqlPackageErr}");
+            return;
+        }
+        Console.WriteLine($"SqlPackage Version: {sqlPackageVersion}");
+        // Step2: Locate SqlPackage.exe Path
+        string sqlPackageLocateArgs = "/c where SqlPackage";
+        (string sqlPackagePath, string sqlPackagePathErr) = ProcessCommandHelper(cmdExePath, sqlPackageLocateArgs);
+        if (!string.IsNullOrWhiteSpace(sqlPackagePathErr))
+        {
+            Console.WriteLine($"SqlPackage Path Error: {sqlPackagePathErr}");
+            return;
+        }
+        // If multiple paths are returned, select the first one that is non-empty and points to an existing file
+        string? sqlPackageExePath = sqlPackagePath.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault(path => !string.IsNullOrWhiteSpace(path) && File.Exists(path));
+        if (sqlPackageExePath == null)
+        {
+            Console.WriteLine("SqlPackage.exe not found or invalid path returned.");
+            return;
+        }
+        Console.WriteLine($"SqlPackage Path: {sqlPackageExePath}");
+        // Step3: Export Legacy Database to BACPAC
+        string legacyDbConnString = Program.gConfiguration.GetConnectionString("LegacyMsSqlDefault") ?? throw new SqException("ConnectionString is missing from Config"); // apporxiamte Time : 2 mins 30 secs
+        // string legacyDbConnString = "Data Source=DAYA-DESKTOP\\MSSQLSERVER1;Initial Catalog=HqSqlDb20250225_old;User ID=sa;Password=11235;TrustServerCertificate=True"; // To be deleted, just showing as a refernce.
+        string bacpacLegacyDbFileName = $"legacyDbBackup_{DateTime.UtcNow.ToYYMMDDTHHMM()}.bacpac";
+        string bacpacBackupFilePath = Path.Combine(p_backupPath, bacpacLegacyDbFileName);
+        string bacpacExportArgs = $"/Action:Export /SourceConnectionString:\"{legacyDbConnString}\" /TargetFile:\"{bacpacBackupFilePath}\"";
+        (string bacpacOutputMsg, string bacpacErrorMsg) = ProcessCommandHelper(sqlPackageExePath, bacpacExportArgs);
+        if (!string.IsNullOrWhiteSpace(bacpacErrorMsg))
+            Console.WriteLine("Error: " + bacpacErrorMsg);
+        else
+            Console.WriteLine("BACPAC exported successfully: " + bacpacOutputMsg);
+    }
+
+    private static (string Output, string Error) ProcessCommandHelper(string p_exePath, string p_arguments)
+    {
+        try
+        {
+            Process process = new Process();
+            process.StartInfo.FileName = p_exePath;
+            process.StartInfo.Arguments = p_arguments;
+            process.StartInfo.RedirectStandardOutput = true;
+            process.StartInfo.RedirectStandardError = true;
+            process.StartInfo.CreateNoWindow = true;
+
+            process.Start();
+            string output = process.StandardOutput.ReadToEnd().Trim();
+            string error = process.StandardError.ReadToEnd().Trim();
+            process.WaitForExit();
+            return (output, error);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error while executing command: " + ex.Message);
+            return (string.Empty, $"Exception: {ex.Message}");
         }
     }
 }

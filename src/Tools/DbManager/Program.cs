@@ -37,7 +37,7 @@ class Program
 
         // Step 3: Process the 'automatic' workmodes
         if (gWorkModes.Contains(WorkMode.LegacyDbBackup))
-            Controller.g_controller.LegacyDbBackup("C:/SqCoreWeb_LegacyDb");
+            Controller.g_controller.BackupLegacyDb("C:/SqCoreWeb_LegacyDb");
 
         // Step 4: Show the User Console menu if necessary (if UserConsoleMenu)
         if (gWorkModes.IsNullOrEmpty() || gWorkModes.Contains(WorkMode.UserConsoleMenu))
@@ -78,6 +78,9 @@ class Program
         Console.WriteLine("1. Say Hello. Don't do anything. Check responsivenes.");
         Console.WriteLine("2. Test LegacyDb");
         Console.WriteLine("3. Backup LegacyDb (important tables)");
+        Console.WriteLine("4. Restore LegacyDb (important tables)");
+        Console.WriteLine("5. Backup LegacyDb (all, into *.bacpac)");
+        Console.WriteLine("6. Restore LegacyDb (all, from *.bacpac)"); // warning SQL server should be configured as: EXEC sp_configure 'contained database authentication', 1; RECONFIGURE;
         Console.WriteLine("9. Exit gracefully (Avoid Ctrl-^C).");
         string userInput;
         try
@@ -100,7 +103,14 @@ class Program
                 Controller.g_controller.TestLegacyDb();
                 break;
             case "3":
-                Controller.g_controller.LegacyDbBackup("C:/SqCoreWeb_LegacyDb");
+                Controller.g_controller.BackupLegacyDb("C:/SqCoreWeb_LegacyDb");
+                break;
+            case "4":
+                Console.WriteLine("RestoreLegacyDbTables: Yet to Implement)");
+                // Controller.g_controller.RestoreLegacyDbTables("C:/SqCoreWeb_LegacyDb");
+                break;
+            case "5":
+                Controller.g_controller.ExportLegacyDbAsBacpac("C:/SqCoreWeb_LegacyDb");
                 break;
             case "9":
                 return "UserChosenExit";
