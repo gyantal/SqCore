@@ -461,7 +461,7 @@ export class BrAccViewerComponent implements OnInit {
     uiSnapTable.deltaAdjTotalMarketOrientation = 0;
     uiSnapTable.visibleDeltaAdjTotalMarketOrientation = 0;
     uiSnapTable.betaDeltaAdjTotalMarketOrientation = 0;
-    const smallMktValThreshold = uiSnapTable.priorCloseNetLiquidation * 0.01; // 1% of NAV. For a 400K NAV, it is 4K. For a 8M NAV it is 80K.
+    const smallMktValThreshold = uiSnapTable.priorCloseNetLiquidation * 0.007; // 0.7% of NAV. For a 400K NAV, it is 2.8K. For a 20M NAV it is 140K.
 
     for (const possItem of brAccSnap.poss) {
       // 1. Filling uiPosItem fields

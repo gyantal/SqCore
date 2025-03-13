@@ -27,6 +27,24 @@ public class RtPriceDownloaderYf
 
     private async Task Download(Asset[] p_assets, bool p_updatePriorClose)
     {
+        // 2025-03-13: Previously, YF returned answer even if the number of tickers was 1250. But now, it returns an error if #Tickers >= 101. Max 100 is accepted.
+        int chunkSize = 100;
+        if (p_assets.Length <= chunkSize)
+        {
+            await DownloadSmallChunk(p_assets, p_updatePriorClose);
+            return;
+        }
+
+        // Split into chunks and process sequentially with 'await' to not throttle YF API
+        for (int i = 0; i < p_assets.Length; i += chunkSize)
+        {
+            Asset[] chunk = p_assets.Skip(i).Take(chunkSize).ToArray();
+            await DownloadSmallChunk(chunk, p_updatePriorClose);
+        }
+    }
+
+    private async Task DownloadSmallChunk(Asset[] p_assets, bool p_updatePriorClose)
+    {
         Utils.Logger.Debug("RtPriceDownloaderYf.Download() START");
         m_nDownload++;
         try

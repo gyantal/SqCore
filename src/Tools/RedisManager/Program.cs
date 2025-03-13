@@ -149,8 +149,8 @@ class Program
 
                 // >For Redis backup run C:\agy\GitHub\SqCore\admin\Db\BackupRedisDbToWin.py and check that new dump is created in g:\work\_archive\SqCoreWeb_RedisDb\
                 // Controller.InsertNavAssetFromCsvFile("11:1", @"g:\agy\money\Investment\IB\Reports\PortfolioAnalyst\2025-01-14\Gyorgy_Antal_U407941_January_02_2009_January_13_2025.csv");
-                // Controller.InsertNavAssetFromCsvFile("11:2", @"g:\work\Projects\IB-PortfolioAnalyst\2025-01-14\Didier_Charmat_and_Jean-Marc_Charmat_Inception_January_13_2025.csv");
-                // Controller.InsertNavAssetFromCsvFile("11:3", @"g:\work\Projects\IB-PortfolioAnalyst\2025-01-14\DE_BLANZAC_LTD_Inception_January_13_2025.csv");
+                // Controller.InsertNavAssetFromCsvFile("11:2", @"g:\work\Projects\IB-PortfolioAnalyst\2025-03-07\Didier_Charmat_and_Jean-Marc_Charmat_Inception_March_06_2025.csv");
+                // Controller.InsertNavAssetFromCsvFile("11:3", @"g:\work\Projects\IB-PortfolioAnalyst\2025-03-07\DE_BLANZAC_LTD_Inception_March_06_2025.csv");
                 break;
             case "2":
                 Controller.ExportNavAssetToTxt("11:1", @"assetQuoteRaw-unbrotlied-11-1.txt");
