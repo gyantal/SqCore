@@ -570,46 +570,43 @@ export class AppComponent implements OnInit {
     this.onUserChangedStartOrEndDateWidgets();
   }
 
-  onChangeDatePart(type: 'year' | 'month' | 'day', inputElement: HTMLInputElement, calendarInput: HTMLInputElement, sqIsoDateInputIdStr: string): void {
-    let calPartNewValue: string = inputElement.value.trim(); // it can be the year or month or day part of the SqCalendar widget.
+  onChangeDatePart(type: 'year' | 'month' | 'day', yearInput: HTMLInputElement, monthInput: HTMLInputElement, dayInput: HTMLInputElement, calendarInput: HTMLInputElement, sqIsoDateInputIdStr: string) {
     const usedDate: Date = new Date(calendarInput.value);
 
     switch (type) {
       case 'year':
-        if (isValidYear(calPartNewValue))
-          usedDate.setFullYear(parseInt(calPartNewValue, 10));
+        const YearInputVal = yearInput.value.trim();
+        if (isValidYear(YearInputVal))
+          usedDate.setFullYear(parseInt(YearInputVal, 10));
         else // If the year is invalid (e.g., the user typed a non-numeric character like 'z'). We force back the old date part from the calendarInput into the inputElement)
-          inputElement.value = usedDate.getFullYear().toString();
+          yearInput.value = usedDate.getFullYear().toString();
         break;
       case 'month':
-        calPartNewValue = parseInt(calPartNewValue, 10).toString().padStart(2, '0'); // Pad single-digit month to 2 digits before validation
-        if (isValidMonth(calPartNewValue)) {
+        const monthInputVal = parseInt(monthInput.value.trim(), 10).toString().padStart(2, '0'); // Pad single-digit month to 2 digits before validation
+        if (isValidMonth(monthInputVal)) {
           // Issue: When a user changes the month of an existing date without modifying the day (e.g., 2010-06-30 → 2010-02-30),
           // the code currently shifts the month to March (2010-03-02) instead of correcting the invalid day.
           // To fix this, determine the maximum valid day for the new month before updating the month, and adjust `usedDate` accordingly.
-          const newMonth = parseInt(calPartNewValue, 10) - 1; // Subtracting 1 from the month value since JavaScript months are 0-indexed
+          const newMonth = parseInt(monthInputVal, 10) - 1; // Subtracting 1 from the month value since JavaScript months are 0-indexed
           const usedYear = usedDate.getFullYear();
           const usedDay = usedDate.getDate();
           const lastDayOfNewMonth = new Date(usedYear, newMonth + 1, 0).getDate(); // Get the last day of the new month
           if (usedDay > lastDayOfNewMonth) { // Adjust the day if the usedDay is greater than the lastDay of the newMonth
             usedDate.setDate(lastDayOfNewMonth);
-            if (sqIsoDateInputIdStr == 'start') // update the DayInput value
-              this.startDayInput.nativeElement.value = lastDayOfNewMonth.toString().padStart(2, '0');
-            else
-              this.endDayInput.nativeElement.value = lastDayOfNewMonth.toString().padStart(2, '0');
+            dayInput.value = lastDayOfNewMonth.toString().padStart(2, '0');
           }
           usedDate.setMonth(newMonth);
-          inputElement.value = calPartNewValue;
+          monthInput.value = monthInputVal;
         } else // If the month is invalid (e.g., the user typed a non-numeric character like 'z'). We force back the old date part from the calendarInput into the inputElement)
-          inputElement.value = (usedDate.getMonth() + 1).toString().padStart(2, '0');
+          monthInput.value = (usedDate.getMonth() + 1).toString().padStart(2, '0');
         break;
       case 'day':
-        calPartNewValue = parseInt(calPartNewValue, 10).toString().padStart(2, '0'); // Pad single-digit day to 2 digits before validation
-        if (isValidDay(calPartNewValue, usedDate)) {
-          usedDate.setDate(parseInt(calPartNewValue, 10));
-          inputElement.value = calPartNewValue;
+        const dayInputVal = parseInt(dayInput.value.trim(), 10).toString().padStart(2, '0'); // Pad single-digit day to 2 digits before validation
+        if (isValidDay(dayInputVal, usedDate)) {
+          usedDate.setDate(parseInt(dayInputVal, 10));
+          dayInput.value = dayInputVal;
         } else // If the day is invalid (e.g., the user typed a non-numeric character like 'z'). We force back the old date part from the calendarInput into the inputElement)
-          inputElement.value = usedDate.getDate().toString().padStart(2, '0');
+          dayInput.value = usedDate.getDate().toString().padStart(2, '0');
         break;
     }
     calendarInput.value = usedDate.toISOString().substring(0, 10);
