@@ -694,6 +694,123 @@
         }
       }
     },
+    "LlmAssistant": {
+      "projectType": "application",
+      "schematics": {
+        "@schematics/angular:component": {
+          "style": "scss"
+        }
+      },
+      "root": "projects/LlmAssistant",
+      "sourceRoot": "projects/LlmAssistant/src",
+      "prefix": "app",
+      "architect": {
+        "build": {
+          "builder": "@angular-devkit/build-angular:browser",
+          "options": {
+            "outputPath": "dist/LlmAssistant",
+            "index": "projects/LlmAssistant/src/index.html",
+            "main": "projects/LlmAssistant/src/main.ts",
+            "polyfills": "projects/LlmAssistant/src/polyfills.ts",
+            "tsConfig": "projects/LlmAssistant/tsconfig.app.json",
+            "assets": [
+              "projects/LlmAssistant/src/assets", // Creating common assets, see: https://stackoverflow.com/questions/61343113/angular-shared-assets-within-multiple-applications
+              {
+                "glob": "**/*",
+                "input": "assets",
+                "output": "/assets"
+              }
+            ],
+            "styles": [
+              "projects/LlmAssistant/src/styles.scss"
+            ],
+            "scripts": [],
+            "vendorChunk": true,
+            "extractLicenses": true,
+            "buildOptimizer": false,
+            "sourceMap": true,
+            "optimization": false,
+            "namedChunks": true
+          },
+          "configurations": {
+            "production": {
+              "fileReplacements": [
+                {
+                  "replace": "projects/LlmAssistant/src/environments/environment.ts",
+                  "with": "projects/LlmAssistant/src/environments/environment.prod.ts"
+                }
+              ],
+              "optimization": true,
+              "outputHashing": "bundles",   // cache-busting hashing number in filenames is not required for media (images)
+              "sourceMap": false,
+              "namedChunks": false,
+              "extractLicenses": true,  // To keep main.js 40KB smaller, we extract license into a separate 12KB 3rdpartylicenses.txt.
+              "vendorChunk": false,
+              "buildOptimizer": true,
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "2mb",
+                  "maximumError": "5mb"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "6kb",
+                  "maximumError": "10kb"
+                }
+              ]
+            }
+          },
+          "defaultConfiguration": ""
+        },
+        "serve": {
+          "builder": "@angular-devkit/build-angular:dev-server",
+          "options": {
+            "browserTarget": "LlmAssistant:build"
+          },
+          "configurations": {
+            "production": {
+              "browserTarget": "LlmAssistant:build:production"
+            }
+          }
+        },
+        "extract-i18n": {
+          "builder": "@angular-devkit/build-angular:extract-i18n",
+          "options": {
+            "browserTarget": "LlmAssistant:build"
+          }
+        },
+        "test": {
+          "builder": "@angular-devkit/build-angular:karma",
+          "options": {
+            "main": "projects/LlmAssistant/src/test.ts",
+            "polyfills": "projects/LlmAssistant/src/polyfills.ts",
+            "tsConfig": "projects/LlmAssistant/tsconfig.spec.json",
+            "karmaConfig": "projects/LlmAssistant/karma.conf.js",
+            "assets": [
+              "projects/LlmAssistant/src/favicon.ico",
+              "projects/LlmAssistant/src/assets"
+            ],
+            "styles": [
+              "projects/LlmAssistant/src/styles.scss"
+            ],
+            "scripts": []
+          }
+        },
+        "e2e": {
+          "builder": "@angular-devkit/build-angular:protractor",
+          "options": {
+            "protractorConfig": "projects/LlmAssistant/e2e/protractor.conf.js",
+            "devServerTarget": "LlmAssistant:serve"
+          },
+          "configurations": {
+            "production": {
+              "devServerTarget": "LlmAssistant:serve:production"
+            }
+          }
+        }
+      }
+    },
     "sq-ng-common": {
       "projectType": "library",
       "root": "projects/sq-ng-common",

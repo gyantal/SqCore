@@ -1,0 +1,20 @@
+/* You can add global styles (not specific to any Angular component) to this file, and also import other style files */
+
+html {
+  font-family: GeorgiaTimesNewRomanForLiningNumbers, "Times New Roman", Times, serif; // see TestFontsVerticalCentering.html
+  font-size: 120%;
+  line-height: 1.1;
+  color: rgb(32, 34, 148);
+  background: linear-gradient(to right, #3080c7 5%, #5b9dd7 10%, #d5f5f6 30%, #d5f5f6 70%, #ace16b 90%, #91d73a 95%);
+}
+
+@font-face {
+  font-family: GeorgiaTimesNewRomanForLiningNumbers;
+  src: local("Georgia");
+}
+
+@font-face {
+  font-family: GeorgiaTimesNewRomanForLiningNumbers;
+  src: local("Times New Roman");
+  unicode-range: U+0030-0039;
+}
