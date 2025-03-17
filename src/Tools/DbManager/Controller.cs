@@ -1,12 +1,16 @@
 using System;
 using System.IO;
-using System.Diagnostics;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Data.SqlClient;
-using SqCommon;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
+using System.Linq;
+using System.Data;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Diagnostics;
+using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Configuration;
+using CsvHelper;
+using CsvHelper.Configuration;
+using SqCommon;
 
 namespace DbManager;
 
@@ -229,6 +233,121 @@ class Controller
         {
             Console.WriteLine("Error while executing command: " + ex.Message);
             return (string.Empty, $"Exception: {ex.Message}");
+        }
+    }
+
+    public void RestoreLegacyDbTables(string p_backupPath)
+    {
+        // Step 1: Identify the latest backup file (.7z) in the specified directory
+        FileInfo? latestZipFile = new DirectoryInfo(p_backupPath).GetFiles("*.7z").OrderByDescending(f => f.LastWriteTime).FirstOrDefault();
+        if (latestZipFile == null)
+        {
+            Console.WriteLine("No ZIP files found in the directory.");
+            return;
+        }
+        else
+            Console.WriteLine($"Latest ZIP file: {latestZipFile.FullName}");
+        // Step 2: Extract the contents of the ZIP file to the backup path using 7-Zip
+        string zipExePath = @"C:\Program Files\7-Zip\7z.exe";
+        string zipProcessArgs = $"x \"{latestZipFile!.FullName}\" -o\"{p_backupPath}\" -y";
+        (string zipOutputMsg, string zipErrorMsg) = ProcessCommandHelper(zipExePath, zipProcessArgs);
+        if (!string.IsNullOrWhiteSpace(zipErrorMsg))
+        {
+            Console.WriteLine($"SqlPackage Path Error: {zipErrorMsg}");
+            return;
+        }
+        Console.WriteLine($"Extraction completed {zipOutputMsg}");
+        // We have to pay attention to the dependency relations between data tables.
+        // PortfolioItem.PortfolioID refers to rows in the FileSystemItem table.
+        // PortfolioItem.AssetSubTableID refers to rows in the Stock (or Options) table. (although this in not strictly enforced in the SQL table)
+        // Therefore, when we delete old data, delete in the following order: 1. PortfolioItem, 2. FileSystemItem and Stock.
+        // When we create the new data tables, do it in the following order: 1. FileSystemItem and Stock. 2. PortfolioItem
+
+        // Step 3: Connect to the legacy database and delete existing data (in reverse dependency order)
+        string legacyDbConnString = "Data Source=DAYA-DESKTOP\\MSSQLSERVER1;Initial Catalog=HqSqlDb20250225_Copy;User ID=sa;Password=11235;TrustServerCertificate=True"; // Try it with your localDbConn string
+        g_connection = new SqlConnection(legacyDbConnString);
+        g_connection.Open();
+        List<string> legacyDbTables = [ "FileSystemItem", "Stock", "PortfolioItem" ];
+        for (int i = legacyDbTables.Count - 1; i >= 0; i--) // Deleting in reverse order to ensure PortfolioItem is deleted before FileSystem and Stock entries
+        {
+            SqlCommand cmd = new SqlCommand($"DELETE FROM {legacyDbTables[i]}", g_connection);
+            cmd.CommandTimeout = 300;
+            cmd.ExecuteNonQuery();
+            Console.WriteLine($"Deletion complete for table: {legacyDbTables[i]}");
+        }
+        // Step 4: Insert data from extracted CSV files into the respective tables
+        string[] csvFiles = Directory.GetFiles(p_backupPath, "*.csv");
+        foreach (string file in csvFiles)
+        {
+            string fileName = Path.GetFileName(file);
+            string? matchedTable = legacyDbTables.FirstOrDefault(table => fileName.Contains(table, StringComparison.OrdinalIgnoreCase)); // Find matching table name from the list
+            if (matchedTable != null)
+                InsertCsvFileToLegacyDbTable(g_connection, file, matchedTable);
+        }
+        Console.WriteLine("Legacy DB restoration complete.");
+        g_connection.Close();
+    }
+
+    private void InsertCsvFileToLegacyDbTable(SqlConnection p_connection, string p_filePath, string p_tableName)
+    {
+        Console.WriteLine($"Inserting data from: {Path.GetFileName(p_filePath)}");
+        SqlTransaction transaction = p_connection.BeginTransaction();
+        try
+        {
+            StreamReader streamReader = new StreamReader(p_filePath);
+            CsvReader csvReader = new CsvReader(streamReader, new CsvConfiguration(CultureInfo.InvariantCulture)
+            {
+                Delimiter = ",",
+                HasHeaderRecord = true,
+            });
+
+            CsvDataReader csvDataReader = new CsvDataReader(csvReader);
+            // While inserting CSV data into the Stock table, an error occurred for the FundID column because the empty value ('') from the CSV, read as a string, could not be converted to an int.
+            // CSV columns are read as strings by default, and empty cells are treated as empty strings ("") rather than null.
+            // When this data is loaded into a DataTable, string columns accept these values, but non-string columns like int, decimal, or DateTime cannot interpret empty strings as null, leading to type conversion failures during SqlBulkCopy.
+            // To resolve this, empty strings in the DataTable are replaced with DBNull.Value before the bulk insert, ensuring that empty values are treated as proper nulls and preventing runtime errors during data insertion.
+            DataTable dataTable = new DataTable();
+            dataTable.Load(csvDataReader);
+            // Ensure columns are writable
+            foreach (DataColumn col in dataTable.Columns)
+                col.ReadOnly = false;
+
+            // Replace empty or whitespace-only string cells in string columns with DBNull
+            foreach (DataColumn col in dataTable.Columns)
+            {
+                if (col.DataType == typeof(string))
+                {
+                    foreach (DataRow row in dataTable.Rows)
+                    {
+                        if (row[col] is string val && string.IsNullOrWhiteSpace(val))
+                            row[col] = DBNull.Value;
+                    }
+                }
+            }
+            // Error: IDENTITY_INSERT conflict
+            // As the CSV files contain values for the identity column, IDENTITY_INSERT must be turned ON and OFF dynamically during insertion.
+            using (SqlCommand cmd = new SqlCommand($"SET IDENTITY_INSERT {p_tableName} ON", p_connection, transaction))
+            {
+                cmd.ExecuteNonQuery();
+            }
+
+            // Create a SqlBulkCopy object to efficiently insert the data into SQL Server
+            SqlBulkCopy bulkCopy = new SqlBulkCopy(p_connection, SqlBulkCopyOptions.KeepIdentity, transaction);
+            bulkCopy.BulkCopyTimeout = 300;
+            bulkCopy.DestinationTableName = p_tableName;
+            bulkCopy.WriteToServer(dataTable);
+
+            using (SqlCommand cmd = new SqlCommand($"SET IDENTITY_INSERT {p_tableName} OFF", p_connection, transaction)) // turning OFF
+            {
+                cmd.ExecuteNonQuery();
+            }
+
+            transaction.Commit(); // Commit the transaction after successful insertion
+        }
+        catch (Exception ex)
+        {
+            transaction.Rollback(); // Roll back the transaction if any error occurs during processing or insertion
+            Console.WriteLine($"Error during insert: {ex.Message}");
         }
     }
 }

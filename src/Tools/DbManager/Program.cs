@@ -106,8 +106,7 @@ class Program
                 Controller.g_controller.BackupLegacyDb("C:/SqCoreWeb_LegacyDb");
                 break;
             case "4":
-                Console.WriteLine("RestoreLegacyDbTables: Yet to Implement)");
-                // Controller.g_controller.RestoreLegacyDbTables("C:/SqCoreWeb_LegacyDb");
+                Controller.g_controller.RestoreLegacyDbTables("C:/SqCoreWeb_LegacyDb");
                 break;
             case "5":
                 Controller.g_controller.ExportLegacyDbAsBacpac("C:/SqCoreWeb_LegacyDb");
