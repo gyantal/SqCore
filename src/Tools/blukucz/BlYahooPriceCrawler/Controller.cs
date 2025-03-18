@@ -418,13 +418,14 @@ namespace BlYahooPriceCrawler
             WritePerformanceResultsToCsv(outputCsvFile, performances, p_nDayinFuture);
         }
 
-        public static void SAQuantRatingScoreAggregator()
+        public static void SAQuantRatingScoreCsvMerge()
         {
             string inputDirectory = @"d:\Temp\SAQR\";
-            string outputFile = @"d:\Temp\AggregatedSAQRScores.csv";
+            string qrScoresFile = @"d:\Temp\MergedSAQRScores.csv";
+            string priceFile = @"d:\Temp\MergedSAQRPrices.csv";
 
             // Dictionary to store tickers and their date-QuantScore pairs
-            Dictionary<string, List<(string Date, double QuantScore)>> tickerData = [];
+            Dictionary<string, List<(string Date, double QuantScore, double Price)>> tickerData = [];
 
             // Read all files from the directory
             foreach (string filePath in Directory.GetFiles(inputDirectory, "*.csv"))
@@ -437,14 +438,22 @@ namespace BlYahooPriceCrawler
 
                 tickerData[ticker] = [];
                 // Read the file line by line
+                string lastDate = string.Empty;
                 foreach (string? line in File.ReadLines(filePath).Skip(1)) // Skip header
                 {
                     string[] columns = line.Split(',');
 
-                    if (columns.Length >= 4 && double.TryParse(columns[3], out double quantScore))
+                    if (columns.Length >= 4)
                     {
                         string date = DateTime.ParseExact(columns[0], "MM/dd/yyyy", CultureInfo.InvariantCulture).ToString("yyyy-MM-dd");
-                        tickerData[ticker].Add((date, quantScore));
+                        double price = columns.Length >= 2 && double.TryParse(columns[1], out double p) ? p : 0;
+
+                        if (string.IsNullOrWhiteSpace(columns[3]) && columns[2].Trim() == "NOT COVERED")
+                            columns[3] = "99";
+
+                        double quantScore = double.TryParse(columns[3], out double qs) ? qs : 0;
+                        tickerData[ticker].Add((date, quantScore, price));
+                        lastDate = date;
                     }
                 }
             }
@@ -456,21 +465,27 @@ namespace BlYahooPriceCrawler
                 .OrderBy(date => date)];
 
             // Write the output CSV
-            using (StreamWriter writer = new(outputFile))
+            using (StreamWriter writer1 = new(qrScoresFile))
+            using (StreamWriter writer2 = new(priceFile))
             {
-                // Write header
-                writer.WriteLine("Date," + string.Join(",", tickerData.Keys.OrderBy(ticker => ticker)));
+                writer1.WriteLine("Date," + string.Join(",", tickerData.Keys.OrderBy(ticker => ticker)));
+                writer2.WriteLine("Date," + string.Join(",", tickerData.Keys.OrderBy(ticker => ticker)));
 
-                // Write rows
                 foreach (string date in allDates)
                 {
-                    List<string> row = [date];
+                    List<string> row1 = [date];
+                    List<string> row2 = [date];
+
                     foreach (string? ticker in tickerData.Keys.OrderBy(ticker => ticker))
                     {
-                        double score = tickerData[ticker].FirstOrDefault(pair => pair.Date == date).QuantScore;
-                        row.Add(score > 0 ? score.ToString("F2") : ""); // Write score or leave empty
+                        var entry = tickerData[ticker].FirstOrDefault(pair => pair.Date == date);
+
+                        row1.Add(entry.QuantScore > 0 ? entry.QuantScore.ToString("F2") : "");
+                        row2.Add(entry.Price > 0 ? entry.Price.ToString("F2") : "");
                     }
-                    writer.WriteLine(string.Join(",", row));
+
+                    writer1.WriteLine(string.Join(",", row1));
+                    writer2.WriteLine(string.Join(",", row2));
                 }
             }
         }

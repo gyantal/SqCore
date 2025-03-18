@@ -357,12 +357,14 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
         // Get the original AlgorithmParam value
         string backtestAlgorithmParam = p_algorithmParam;
 
+        // AlgorithmParam itself 'can' have StartDate, EndDate. But ChartGenerator can further restricts the period with p_forcedStartDate/p_forcedEndDate
         // Update endDate in AlgorithmParam if p_forcedEndDate is not null
         if (p_forcedEndDate != null)
         {
+            string forcedEndDateTimeUtcStr = Utils.Date2hYYYYMMDDTHHMMSS(p_forcedEndDate.Value);
             int endDateIndex = backtestAlgorithmParam.IndexOf("endDate=");
             if (endDateIndex == -1)
-                backtestAlgorithmParam = "endDate=" + Utils.TohYYYYMMDD(p_forcedEndDate.Value) + "&" + backtestAlgorithmParam; // "endDate=" not found, add to the front
+                backtestAlgorithmParam = "endDate=" + forcedEndDateTimeUtcStr + "&" + backtestAlgorithmParam; // "endDate=" not found, add to the front
             else
             {
                 // "endDate=" found, replace the value
@@ -371,16 +373,17 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
                     endIndex = backtestAlgorithmParam.Length;
 
                 // Replace the value associated with "endDate=" with the new value p_forcedEndDate
-                backtestAlgorithmParam = backtestAlgorithmParam[..(endDateIndex + "endDate=".Length)] + Utils.TohYYYYMMDD(p_forcedEndDate.Value) + backtestAlgorithmParam[endIndex..];
+                backtestAlgorithmParam = backtestAlgorithmParam[..(endDateIndex + "endDate=".Length)] + forcedEndDateTimeUtcStr + backtestAlgorithmParam[endIndex..];
             }
         }
 
         // Update startDate in AlgorithmParam if p_forcedStartDate is not null
         if (p_forcedStartDate != null)
         {
+            string forcedStartDateTimeUtcStr = Utils.Date2hYYYYMMDDTHHMMSS(p_forcedStartDate.Value);
             int startDateIndex = backtestAlgorithmParam.IndexOf("startDate=");
             if (startDateIndex == -1)
-                backtestAlgorithmParam = "startDate=" + Utils.TohYYYYMMDD(p_forcedStartDate.Value) + "&" + backtestAlgorithmParam; // "startDate=" not found, add to the front
+                backtestAlgorithmParam = "startDate=" + forcedStartDateTimeUtcStr + "&" + backtestAlgorithmParam; // "startDate=" not found, add to the front
             else
             {
                 // "startDate=" found, replace the value
@@ -389,7 +392,7 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
                     endIndex = backtestAlgorithmParam.Length;
 
                 // Replace the value associated with "startDate=" with the new value p_forcedStartDate
-                backtestAlgorithmParam = backtestAlgorithmParam[..(startDateIndex + "startDate=".Length)] + Utils.TohYYYYMMDD(p_forcedStartDate.Value) + backtestAlgorithmParam[endIndex..];
+                backtestAlgorithmParam = backtestAlgorithmParam[..(startDateIndex + "startDate=".Length)] + forcedStartDateTimeUtcStr + backtestAlgorithmParam[endIndex..];
             }
         }
 

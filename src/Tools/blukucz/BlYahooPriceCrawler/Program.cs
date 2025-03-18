@@ -23,7 +23,7 @@ namespace BlYahooPriceCrawler
             Console.WriteLine("1. Say Hello. Don't do anything. Check responsivenes.");
             Console.WriteLine("2. Download YF price data into CSVs.");
             Console.WriteLine("3. SA Top Analysts: create performance file.");
-            Console.WriteLine("4. SA Quant Scores: create aggregated csv file.");
+            Console.WriteLine("4. SA Quant Scores: create merged csv file.");
             Console.WriteLine("5. Steve Cress's recommendations QRs");
             Console.WriteLine("6. Exit gracefully (Avoid Ctrl-^C).");
             string userInput;
@@ -52,8 +52,8 @@ namespace BlYahooPriceCrawler
                     Console.WriteLine("SA TopAnalysts Recommendation results are written into CSV.");
                     break;
                 case "4":
-                    Controller.SAQuantRatingScoreAggregator();
-                    Console.WriteLine("SA Quant Score aggregated results are written into CSV.");
+                    Controller.SAQuantRatingScoreCsvMerge();
+                    Console.WriteLine("SA Quant Scores and Prices are merged into CSVs.");
                     break;
                 case "5":
                     Controller.SteveCressRecommendationQRs();

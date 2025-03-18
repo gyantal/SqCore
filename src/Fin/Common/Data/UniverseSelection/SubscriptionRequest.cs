@@ -49,6 +49,14 @@ namespace QuantConnect.Data.UniverseSelection
             DateTime endTimeUtc)
             : base(startTimeUtc, endTimeUtc, security.Exchange.Hours, configuration.TickType)
         {
+            // SqCore Change NEW:
+            // Note that in TradeBar.Parse(stream) we do AddHours(-8) to shift the StartTime (we also shift dividend and splits with AddHours(16) to shift those again to the 16:00 time). So, Backtests work fine.
+            // Don't put the -8 hours shift into the Base class, because HistoryRequest doesn't need that. HistoryRequest has a proper UTC input, that is not modified later.
+            // When Algorithm.Init called SetEndDate(2022-02-13) as Local, endTimeUtc comes here as 2022-02-14 4:59, because SetEndDate applied a Midnight -1 tick, converted to UTC. Wo convert this 5:00 to previous day 21:00
+            EndTimeUtc = endTimeUtc.AddHours(-8);
+            StartTimeUtc = startTimeUtc.AddHours(-8);
+            // SqCore Change END
+
             IsUniverseSubscription = isUniverseSubscription;
             Universe = universe;
             Security = security;

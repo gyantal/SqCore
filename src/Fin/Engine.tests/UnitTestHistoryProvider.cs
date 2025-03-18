@@ -23,7 +23,7 @@ public class UnitTestHistPrice
     }
 
     [Fact]
-    public void HistoryProviderBaseTest()
+    public void HistoryProviderSaturdayEndTest()
     {
         FinDb.gFinDb.Init_WT(FinDbRunningEnvironment.WindowsUnitTest);
 
@@ -69,7 +69,55 @@ public class UnitTestHistPrice
 
         // Check that the last 2 dates are not equal
         Assert.NotEqual(lastBar.EndTime.Date, lastButOneBar.EndTime.Date);
+    }
 
+   [Fact]
+    public void HistoryProviderWeekdayEndTest()
+    {
+        FinDb.gFinDb.Init_WT(FinDbRunningEnvironment.WindowsUnitTest);
+
+        string tickerAsTradedToday2 = "SPY"; // if symbol.zip doesn't exist in Data folder, it will not download it (cost money, you have to download in their shop). It raises an exception.
+        Symbol symbol = new(SecurityIdentifier.GenerateEquity(tickerAsTradedToday2, Market.USA, true, FinDb.gFinDb.MapFileProvider), tickerAsTradedToday2);
+
+        DateTime startTimeUtc = new(2008, 01, 01, 8, 0, 0); // 8:00 UTC, that is 3:00 in ET
+                                                            // If you want to get 20080104 day data too, it has to be specified like this:
+                                                            // class TimeBasedFilter assures that (data.EndTime <= EndTimeLocal)
+                                                            // It is assumed that any TradeBar final values are only released at TradeBar.EndTime (OK for minute, hourly data, but not perfect for daily data which is known at 16:00)
+                                                            // Any TradeBar's EndTime is Time+1day (assuming that ClosePrice is released not at 16:00, but later, at midnight)
+                                                            // So the 20080104's row in CVS is: Time: 20080104:00:00, EndTime:20080105:00:00
+                                                            // DateTime endTimeUtc = new(2008, 01, 05, 5, 0, 0); // this will be => 2008-01-05:00:00 endTimeLocal
+        DateTime endTimeUtc = new(2025, 01, 22, 21, 00, 0); // test Wednesday. This is UTC, that is 16:00 in ET. This should give that day 16:00 price.
+
+        // Use TickType.TradeBar. That is in the daily CSV file. TickType.Quote file would contains Ask(Open/High/Low/Close) + Bid(Open/High/Low/Close), like a Quote from a Broker at trading realtime.
+        HistoryRequest[] historyRequests = new[]
+        {
+                new HistoryRequest(startTimeUtc, endTimeUtc, typeof(TradeBar), symbol, Resolution.Daily, SecurityExchangeHours.AlwaysOpen(TimeZones.NewYork),
+                    TimeZones.NewYork, null, false, false, DataNormalizationMode.Raw, QuantConnect.TickType.Trade)
+                    // TimeZones.NewYork, null, false, false, DataNormalizationMode.Adjusted, QuantConnect.TickType.Trade)
+            };
+
+        NodaTime.DateTimeZone sliceTimeZone = TimeZones.NewYork; // "algorithm.TimeZone"
+
+        System.Collections.Generic.List<Slice> result = FinDb.gFinDb.HistoryProvider.GetHistory(historyRequests, sliceTimeZone).ToList();
+        Assert.NotEmpty(result);
+
+        TradeBar firstBar = result[0].Bars.Values.First();
+        TradeBar lastBar = result[^1].Bars.Values.Last();
+        TradeBar lastButOneBar = result[^2].Bars.Values.Last();
+
+        m_output.WriteLine($"First Bar Date: {firstBar.EndTime}, Price: {firstBar.Price}");
+        m_output.WriteLine($"Last Bar Date: {lastBar.EndTime}, Price: {lastBar.Price}");
+
+        // Validate the first available data
+        Assert.Equal(new DateTime(2008, 01, 02), firstBar.EndTime.Date); // Expected: 2008-01-02
+        Assert.InRange(firstBar.Price, 144.91m, 144.95m); // 144.9300
+
+        // Validate the last available data
+        Assert.Equal(new DateTime(2025, 01, 22), lastBar.EndTime.Date); // Expected: 2025-01-22 Wednesday
+        // Assert.InRange(lastBar.Price, 606.43m, 606.45m); // 606.4400
+
+        // Check that the last 2 dates are not equal
+        Assert.NotEqual(lastBar.EndTime.Date, lastButOneBar.EndTime.Date);
     }
 
     [Fact]

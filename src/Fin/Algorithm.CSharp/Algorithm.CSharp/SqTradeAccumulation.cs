@@ -127,8 +127,8 @@ namespace QuantConnect.Algorithm.CSharp
                 throw new ArgumentOutOfRangeException(errMsg);
             }
 
-            SetStartDate(_startDate.AddDays(-1));
-            SetEndDate(_endDate);
+            SetStartDate(_startDate);
+            SetEndDate(_endDate); // QC SetEndDate(), SetStartDate() expects time to be Local time in the exchange time zone, not UTC.
             SetWarmUp(_warmUp);
             SetCash(_initialCash);
             Portfolio.MarginCallModel = MarginCallModel.Null;

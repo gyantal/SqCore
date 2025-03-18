@@ -18,7 +18,7 @@ public class UnitTestBacktester
     {
         FinDb.gFinDb.Init_WT(FinDbRunningEnvironment.WindowsUnitTest);
         SqBacktestConfig backtestConfig = new SqBacktestConfig() { SqResultStat = SqResultStat.SqSimpleStat };
-        BacktestingResultHandler? backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqPctAllocation", "startDate=2002-07-29&endDate=now&startDateAutoCalcMode=WhenFirstTickerAlive&assets=SPY,TLT&weights=60,40&rebFreq=Daily,30d", null, @"{""ema-fast"":10,""ema-slow"":20}", backtestConfig);
+        BacktestingResultHandler? backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqPctAllocation", "startDate=2002-07-31&endDate=now&startDateAutoCalcMode=WhenFirstTickerAlive&assets=SPY,TLT&weights=60,40&rebFreq=Daily,30d", null, @"{""ema-fast"":10,""ema-slow"":20}", backtestConfig);
 
         // Check that RawPV at the end doesn't equal to the RawPV at start. (e.g, Raw PV: 10,00,000 End PV: 63,10,898)
         if (backtestResults != null)
@@ -53,8 +53,13 @@ public class UnitTestBacktester
         string endDateStrForDay13 = "2025-01-13";
         string endDateStrForDay14 = "2025-01-14";
 
-        int quantityOnDay13 = RunBacktestAndGetQuantity(endDateStrForDay13, "UNG", backtestConfig);
-        int quantityOnDay14 = RunBacktestAndGetQuantity(endDateStrForDay14, "UNG", backtestConfig);
+        (DateTime startDate13,  DateTime endDate13, int quantityOnDay13) = RunBacktestAndGetQuantity(endDateStrForDay13, "UNG", backtestConfig);
+        (DateTime startDate14,  DateTime endDate14, int quantityOnDay14) = RunBacktestAndGetQuantity(endDateStrForDay14, "UNG", backtestConfig);
+        Assert.Equal(new DateTime(2018, 02, 21), startDate13.Date); // Expected: 2018-02-21
+        Assert.Equal(new DateTime(2025, 01, 13), endDate13.Date); // Expected: 2025-01-13
+        Assert.Equal(new DateTime(2018, 02, 21), startDate14.Date); // Expected: 2018-02-21
+        Assert.Equal(new DateTime(2025, 01, 14), endDate14.Date); // Expected: 2025-01-14
+
         Assert.Equal(-1600, quantityOnDay14); // this will show as correct -1600
         Assert.Equal(-1700, quantityOnDay13); // we have a bug here, because it gives us -1600, that is wrong. It should be -1700.
         // 2025-01-16: UNG -1,600, and there was the following trades before that:
@@ -72,18 +77,21 @@ public class UnitTestBacktester
         MemDb.MemDb.Exit();
     }
 
-    private static int RunBacktestAndGetQuantity(string p_endDate, string p_symbol, SqBacktestConfig p_backtestConfig)
+    private static (DateTime, DateTime, int) RunBacktestAndGetQuantity(string p_endDate, string p_symbol, SqBacktestConfig p_backtestConfig)
     {
         string backtestAlgorithmParam = $"endDate={p_endDate}&";
         BacktestingResultHandler? backtestResult = Backtester.BacktestInSeparateThreadWithTimeout("SqTradeAccumulation", backtestAlgorithmParam, new LegacyPortfolio { LegacyDbPortfName = "!IB-V Sobek-HL(Contango-Bond) harvester Agy Live" }.GetTradeHistory(), @"{""ema-fast"":10,""ema-slow"":20}", p_backtestConfig);
 
         if (backtestResult == null)
-            return 0;
+            return (DateTime.MinValue, DateTime.MaxValue, 0);
 
         int quantity = backtestResult.Algorithm.UniverseManager.ActiveSecurities.Values
             .Where(security => security?.Holdings.Symbol.ToString() == p_symbol)
             .Select(security => (int)security.Holdings.Quantity)
             .FirstOrDefault();
-        return quantity;
+
+        DateTime startDate = backtestResult.SqSampledLists["rawPV"][0].Date;
+        DateTime endDate = backtestResult.SqSampledLists["rawPV"][^1].Date;
+        return (startDate, endDate, quantity);
     }
 }
