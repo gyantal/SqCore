@@ -29,6 +29,7 @@
     <PackageReference Include="NLog.Web.AspNetCore" Version="5.0.0" />
     <PackageReference Include="Npgsql" Version="8.0.3" />
     <PackageReference Include="StackExchange.Redis" Version="2.6.80" />
+    <PackageReference Include="Azure.AI.OpenAI" Version="1.0.0-beta.8" />
   </ItemGroup>
   <ItemGroup>
     <!-- The Content item list contains files that are published in addition to the build outputs. 

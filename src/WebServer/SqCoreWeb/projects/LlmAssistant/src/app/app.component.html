@@ -1,1 +1,9 @@
-<h4>LlmAssistant</h4>
+<div id="llmContainer">
+    <p>LlmAssistant</p>
+    <div class="llmBtnCommon">
+      <button [ngClass]="{'activeTab':m_activeTab == 'LlmChat'}" (click)="onClickActiveTab('LlmChat')">LlmChat</button>
+      <button [ngClass]="{'activeTab':m_activeTab == 'LlmScan'}" (click)="onClickActiveTab('LlmScan')">LlmScan</button>
+    </div>
+</div>
+<app-llm-chat [hidden]="(m_activeTab != 'LlmChat')"></app-llm-chat>
+<app-llm-scan [hidden]="(m_activeTab != 'LlmScan')"></app-llm-scan>
