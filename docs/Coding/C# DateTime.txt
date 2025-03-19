@@ -1,0 +1,42 @@
+>**** DateTime: UTC vs. Local (USA ET) usage in QuantConect Backtests
+- Work UtcTime with Time component everywhere internally.
+We should favor UTC usage with a Time component everywhere. Because that is very accurate. No disambiguity. We try to use it on UI, and in code too. Otherwise, things can go very messy.
+
+- As Time should be 'almost' always part of the data, variable naming terminology should be "DateTime m_startDateTimeUtc;" to emphaze that our Date variables really contain a Time component.
+Or just use it as Time, without the Date. ""DateTime m_startTimeUtc;"
+Also a good practice if there in no Time component to postfix it as "DateOnly", to name it as "transactionDateOnly". That would leave no ambiquity for the code reader.
+
+- Try to Force the Time component everywhere. Date variable should not be used without Time component.
+Otherwise, it is not properly specified. And it can lead to interpretation errors. I interpret a date '2025-03-19' as the beginning Time of the day, you intrpret it as the end Time of the day.
+So, when we talk about a Date or DateTime as start/end dates,
+specify the Time component exactly as: 
+morning: 		"2025-03-19 08:00 UTC" (that is about "2025-03-19 03:00 ET", depending on SummerTime)
+end of day as: 	"2025-03-19 23:59 UTC" (that is about "2025-03-19 19:00 ET", depending on SummerTime)
+
+- QuantConnect HistoryProvider.GetHistory() API also uses UTC StartTimeUtc, EndTimeUtc. That confirms that we should also use UTC everywhere.
+
+- !However, the only exception: the QuantConnect backtest Engine.Run() in Init(), it uses Local time for SetStartDate(_startDate); SetEndDate(_endDate);
+Probably this is for historical reasons, when they first started to write the QC API. It could be also for simplicity for the Python user,
+or for the amateour user who doesn't want to be bothered with 'different' timezones. 90% of QC users are from USA, so they just 'simply' wanted to set startDate, endDate. Obviously, in their default timezone.
+
+- Engine.Run()'s QCAlgorithm.cs also uses SetTimeZone(), where the default timezone (New York), but traders in India can change that.
+So, an Algorithm.Init() for an Indian Stock exchange should look like that:
+	algorithm.SetTimeZone(India); // set the 'default' timezone of the algorithm. Data sources can have their own TimeZones that can be different. E.g. Chicago option exchange data comes from different timezone.
+	SetStartDate(startDateInLocalIndiaTime_DateOnly);
+	SetEndDate(endDateInLocalIndiaTime_DateOnly);
+The QC framework handles that all of those are converted to UTC during the backtest.
+
+- The Engine.Run() runs internally using UTC times in the main loop for time 'slice'.
+
+- The Sampling process creates the PV-chart. It is the responsibility of the sampling process whether it uses that UTC backtest time, or converts it to the 'default' TimeZone.
+
+- QC API reference: 
+https://www.quantconnect.com/docs/v2/writing-algorithms/initialization
+"To set the date range of backtests, call the set_start_date and set_end_date methods. The dates you provide are based in the algorithm time zone. By default, the end date is yesterday, one millisecond before midnight. "
+https://www.quantconnect.com/docs/v2/writing-algorithms/key-concepts/time-modeling/time-zones
+"LEAN supports international trading across multiple time zones and markets, so it needs a reference time zone for the algorithm to set the time. The default time zone is Eastern Time (ET), which is UTC-4 in summer and UTC-5 in winter. "
+https://www.quantconnect.com/docs/v2/writing-algorithms/api-reference In the Python API, start_date, end_date settings only define the year, month, day, so only the Date component can be set. The C# API allows a DateTime to go in as parameter, but the Time part is not used.
+Python API:
+	set_start_date(year, month, day)
+	set_end_date(year, month, day)
+	set_time_zone(time_zone)

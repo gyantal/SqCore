@@ -194,6 +194,14 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
             return "Error in Backtest";
 
         backtestResults.LogStore.ForEach(r => Console.WriteLine(r.Message)); // Trade Logs. "Time: 10/07/2013 13:31:00 OrderID: 1 EventID: 2 Symbol: SPY Status: Filled Quantity: 688 FillQuantity: 688 FillPrice: 144.7817 USD OrderFee: 3.44 USD"
+        DateTime btResultStartDate = DateTime.MinValue;
+        DateTime btResultEndDate = DateTime.MinValue;
+        if (backtestConfig.SamplingSqDailyTwrPv)
+        {
+            btResultStartDate = backtestResults.SqSampledLists["twrPV"][0].Date;
+            btResultEndDate = backtestResults.SqSampledLists["twrPV"][^1].Date;
+        }
+        Console.WriteLine($"BacktestResults. btResultStartDate:{btResultStartDate}, btResultEndDate:{btResultEndDate}");
         Console.WriteLine($"BacktestResults.PV. startPV:{backtestResults.StartingPortfolioValue:N0}, endPV:{backtestResults.DailyPortfolioValue:N0} (If noDeposit: {(backtestResults.DailyPortfolioValue / backtestResults.StartingPortfolioValue - 1) * 100:N2}%)");
 
         // Step 0: Fill the logs.

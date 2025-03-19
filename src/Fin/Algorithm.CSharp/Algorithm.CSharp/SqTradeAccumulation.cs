@@ -19,18 +19,17 @@ namespace QuantConnect.Algorithm.CSharp
     public class SqTradeAccumulation : QCAlgorithm
     {
         StartDateAutoCalcMode _startDateAutoCalcMode = StartDateAutoCalcMode.Unknown;
-        DateTime _forcedStartDate; // user can force a startdate
-        DateTime _startDate = DateTime.MinValue; // real startDate. We expect PV chart to start from here. There can be some warmUp days before that, for which data is needed.
-        DateTime _earliestCashDay = DateTime.MinValue;
+        DateTime _forcedStartDateTimeUtc; // user can force a startdate. Work UtcTime with Time component everywhere internally. Utc vs. Loc usage: see doc "C# DateTime.txt"
+        DateTime _startDateTimeUtc = DateTime.MinValue; // "2025-01-13T08:00Z", real startDate. We expect PV chart to start from here. There can be some warmUp days before that, for which data is needed.
+        DateTime _forcedEndDateTimeUtc;
+        DateTime _endDateTimeUtc = DateTime.MaxValue; // "2025-01-13T23:59Z"
         TimeSpan _warmUp = TimeSpan.Zero;
-        DateTime _forcedEndDate;
-        DateTime _endDate = DateTime.MaxValue;
         OrderTicket _lastOrderTicket = null;
-        private Dictionary<DateTime, List<Trade>> _tradesByDate; //  Contains only Buy and Sell trades. Same as this.PortTradeHist but that is a List, this is a Dict.
-        private Dictionary<DateTime, List<Trade>> _cashTransactionsByDate; // Contains only Deposit and Withdrawal
+        private Dictionary<DateTime, List<Trade>> _tradesByDateOnly; //  Contains only Buy and Sell trades. Same as this.PortTradeHist but that is a List, this is a Dict.
+        private Dictionary<DateTime, List<Trade>> _cashTransactionsByDateOnly; // Contains only Deposit and Withdrawal
         private HashSet<string> _tickers; // Set of unique symbols traded
-        private List<DateTime> _tradeDates; // Sorted list of trade dates
-        private List<DateTime> _cashDates; // Sorted list of cash transaction dates
+        private List<DateTime> _tradeDateUtcs; // Sorted list of trade dates
+        private List<DateTime> _cashDateUtcs; // Sorted list of cash transaction dates
         // private List<Trade> _executedTrades;
         private decimal _initialCash;
         private decimal _yestPV;
@@ -38,11 +37,11 @@ namespace QuantConnect.Algorithm.CSharp
 
         public override void Initialize()
         {
-            NameValueCollection algorithmParamQuery = HttpUtility.ParseQueryString(AlgorithmParam);
-            QCAlgorithmUtils.ProcessAlgorithmParam(algorithmParamQuery, out _forcedStartDate, out _forcedEndDate, out _startDateAutoCalcMode);
+            NameValueCollection algorithmParamQuery = HttpUtility.ParseQueryString(AlgorithmParam); // forcedEndDate comes as UTC usually as "2025-01-13T23:59Z"
+            QCAlgorithmUtils.ProcessAlgorithmParam(algorithmParamQuery, out _forcedStartDateTimeUtc, out _forcedEndDateTimeUtc, out _startDateAutoCalcMode);
 
-            _tradesByDate = new Dictionary<DateTime, List<Trade>>();
-            _cashTransactionsByDate = new Dictionary<DateTime, List<Trade>>();
+            _tradesByDateOnly = new Dictionary<DateTime, List<Trade>>();
+            _cashTransactionsByDateOnly = new Dictionary<DateTime, List<Trade>>();
             // _executedTrades = new List<Trade>();
             _portfolioValues = new List<(DateTime date, decimal pvBefore, decimal pvAfter, decimal cash)>();
 
@@ -55,34 +54,35 @@ namespace QuantConnect.Algorithm.CSharp
                 if (trade.Time < prevDate) // We Assume that trades are sotred by date. Hard requirement. If not, we don't process further, forcing the user to change the trades. This is for the purpose of fast execution.
                     throw new Exception("Tradelist (PortfolioTradeHistory) is not sorted by date.");
                 prevDate = trade.Time;
-                DateTime tradeDate = trade.Time.Date;
+                DateTime tradeDateOnlyUtc = trade.Time.Date;
                 switch (trade.Action)
                 {
                     case TradeAction.Buy:
                     case TradeAction.Sell:
-                        if (!_tradesByDate.ContainsKey(tradeDate))
-                            _tradesByDate[tradeDate] = new List<Trade>();
-                        _tradesByDate[tradeDate].Add(trade);
+                        if (!_tradesByDateOnly.ContainsKey(tradeDateOnlyUtc))
+                            _tradesByDateOnly[tradeDateOnlyUtc] = new List<Trade>();
+                        _tradesByDateOnly[tradeDateOnlyUtc].Add(trade);
                         break;
                     case TradeAction.Deposit:
                     case TradeAction.Withdrawal:
-                        if (!_cashTransactionsByDate.ContainsKey(tradeDate))
-                            _cashTransactionsByDate[tradeDate] = new List<Trade>();
-                        _cashTransactionsByDate[tradeDate].Add(trade);
+                        if (!_cashTransactionsByDateOnly.ContainsKey(tradeDateOnlyUtc))
+                            _cashTransactionsByDateOnly[tradeDateOnlyUtc] = new List<Trade>();
+                        _cashTransactionsByDateOnly[tradeDateOnlyUtc].Add(trade);
                         break;
                     default:
                         continue;
                 }
             }
 
-            _tradeDates = new List<DateTime>(_tradesByDate.Keys);
-            _cashDates = new List<DateTime>(_cashTransactionsByDate.Keys);
+            _tradeDateUtcs = new List<DateTime>(_tradesByDateOnly.Keys);
+            _cashDateUtcs = new List<DateTime>(_cashTransactionsByDateOnly.Keys);
 
             // Set initial cash and start date based on the earliest cash transaction date
-            if (_cashDates.Count > 0)
+            DateTime earliestCashDateOnlyUtc = DateTime.MinValue;
+            if (_cashDateUtcs.Count > 0)
             {
-                DateTime firstCashDate = _cashDates[0];
-                List<Trade> firstCashTransactions = _cashTransactionsByDate[firstCashDate];
+                DateTime firstCashDate = _cashDateUtcs[0];
+                List<Trade> firstCashTransactions = _cashTransactionsByDateOnly[firstCashDate];
 
                 // Calculate the _initialCash from the first day's transactions
                 _initialCash = 0m;
@@ -97,9 +97,9 @@ namespace QuantConnect.Algorithm.CSharp
                 if (_initialCash <= 0)
                     throw new Exception("Initial cash balance is not positive.");
 
-                _earliestCashDay = firstCashDate;
-                _cashDates.RemoveAt(0);
-                _cashTransactionsByDate.Remove(firstCashDate); // Remove the processed date
+                earliestCashDateOnlyUtc = firstCashDate;
+                _cashDateUtcs.RemoveAt(0);
+                _cashTransactionsByDateOnly.Remove(firstCashDate); // Remove the processed date
             }
             else
                 throw new Exception("No cash transactions found.");
@@ -107,28 +107,28 @@ namespace QuantConnect.Algorithm.CSharp
             // startDate and warmup determination
             SetWarmUp(_warmUp);
 
-            if (_forcedStartDate == DateTime.MinValue) // auto calculate if user didn't give a forced startDate. Otherwise, we are obliged to use that user specified forced date.
-                _startDate = (_tradeDates.Count > 0 && _tradeDates[0] < _earliestCashDay) ? _tradeDates[0] : _earliestCashDay;
+            if (_forcedStartDateTimeUtc == DateTime.MinValue) // auto calculate if user didn't give a forced startDate. Otherwise, we are obliged to use that user specified forced date.
+                _startDateTimeUtc = (_tradeDateUtcs.Count > 0 && _tradeDateUtcs[0] < earliestCashDateOnlyUtc) ? _tradeDateUtcs[0].AddHours(8) : earliestCashDateOnlyUtc.AddHours(8); // pure Date-T-00:00 should be converted to UtcTime with Time component. Assume morning as 8:00.
             else
-                _startDate = _forcedStartDate;
+                _startDateTimeUtc = _forcedStartDateTimeUtc;
 
-            Log($"EarliestCashDay: {_earliestCashDay: yyyy-MM-dd}, PV startDate: {_startDate: yyyy-MM-dd}");
+            Log($"EarliestCashDay: {earliestCashDateOnlyUtc: yyyy-MM-dd}, PV startDate: {_startDateTimeUtc: yyyy-MM-dd}");
 
             // endDate determination
-            if (_forcedEndDate == DateTime.MaxValue)
-                _endDate = DateTime.Now;
+            if (_forcedEndDateTimeUtc == DateTime.MaxValue)
+                _endDateTimeUtc = DateTime.UtcNow;
             else
-                _endDate = _forcedEndDate;
+                _endDateTimeUtc = _forcedEndDateTimeUtc;
 
-            if (_endDate < _startDate)
+            if (_endDateTimeUtc < _startDateTimeUtc)
             {
-                string errMsg = $"StartDate ({_startDate:yyyy-MM-dd}) should be earlier then EndDate  ({_endDate:yyyy-MM-dd}).";
+                string errMsg = $"StartDate ({_startDateTimeUtc:yyyy-MM-dd}) should be earlier then EndDate  ({_endDateTimeUtc:yyyy-MM-dd}).";
                 Log(errMsg);
                 throw new ArgumentOutOfRangeException(errMsg);
             }
 
-            SetStartDate(_startDate);
-            SetEndDate(_endDate); // QC SetEndDate(), SetStartDate() expects time to be Local time in the exchange time zone, not UTC.
+            SetStartDate(_startDateTimeUtc.ConvertFromUtc(TimeZone)); // QC SetEndDate(), SetStartDate() expects time to be Local time in the exchange time zone, not UTC.
+            SetEndDate(_endDateTimeUtc.ConvertFromUtc(TimeZone));  // QC SetEndDate(), SetStartDate() expects time to be Local time in the exchange time zone, not UTC.
             SetWarmUp(_warmUp);
             SetCash(_initialCash);
             Portfolio.MarginCallModel = MarginCallModel.Null;
@@ -165,10 +165,10 @@ namespace QuantConnect.Algorithm.CSharp
             // if(_yestPV / pvBefore < 0.9m || _yestPV / pvBefore > 1.1m)
             //     Log($"Significant overnight PV change: {slice.Time.Date}. PrevClosePV: {_yestPV}, PV now: {pvBefore}.");
             // Adjust cash based on cash transactions
-            while (_cashDates.Count > 0 && _cashDates[0] <= slice.Time.Date)
+            while (_cashDateUtcs.Count > 0 && _cashDateUtcs[0] <= slice.Time.Date)
             {
-                DateTime cashTradeDate = _cashDates[0];
-                if (_cashTransactionsByDate.TryGetValue(cashTradeDate, out List<Trade> cashTransactions))
+                DateTime cashTradeDate = _cashDateUtcs[0];
+                if (_cashTransactionsByDateOnly.TryGetValue(cashTradeDate, out List<Trade> cashTransactions))
                 {
                     foreach (Trade cashTrade in cashTransactions)
                     {
@@ -183,25 +183,25 @@ namespace QuantConnect.Algorithm.CSharp
                             Portfolio.AllRollingDeposits[cashTrade.Symbol].AddAmount(-(decimal)cashTrade.Price);
                         }
                     }
-                    _cashDates.RemoveAt(0);
-                    _cashTransactionsByDate.Remove(cashTradeDate);
+                    _cashDateUtcs.RemoveAt(0);
+                    _cashTransactionsByDateOnly.Remove(cashTradeDate);
                 }
             }
 
             // Process trades as their dates come due
-            while (_tradeDates.Count > 0 && _tradeDates[0] <= slice.Time.Date)
+            while (_tradeDateUtcs.Count > 0 && _tradeDateUtcs[0] <= slice.Time.Date)
             {
-                DateTime tradeDate = _tradeDates[0];
-                List<Trade> trades = _tradesByDate[tradeDate];
+                DateTime tradeDate = _tradeDateUtcs[0];
+                List<Trade> trades = _tradesByDateOnly[tradeDate];
                 foreach (Trade trade in trades)
                 {
                     string ticker = trade.Symbol;
-                    int adjustedQuantity = trade.Action == TradeAction.Sell ? -trade.Quantity : trade.Quantity; // In the database, we only store positive quantities, even for Sell transactions. Here we need to convert them to their negative equivalent. 
+                    int signedQuantity = trade.Action == TradeAction.Sell ? -trade.Quantity : trade.Quantity; // In the database, we only store positive quantities, even for Sell transactions. Here we need to convert them to their negative equivalent. 
                     decimal tradePrice = (decimal)trade.Price;
-                    _lastOrderTicket = FixPriceOrder(ticker, adjustedQuantity, tradePrice);
+                    _lastOrderTicket = FixPriceOrder(ticker, signedQuantity, tradePrice);
                 }
-                _tradeDates.RemoveAt(0);
-                _tradesByDate.Remove(tradeDate);
+                _tradeDateUtcs.RemoveAt(0);
+                _tradesByDateOnly.Remove(tradeDate);
             }
             decimal pvAfter = Portfolio.TotalPortfolioValue;
             // if(pvAfter / pvBefore < 0.9m || pvAfter / pvBefore > 1.1m)

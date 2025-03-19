@@ -67,13 +67,15 @@ namespace QuantConnect.Algorithm.CSharp
         public bool IsTradeInQcCloud { get { return !_isTradeInSqCore; } }
 
         StartDateAutoCalcMode _startDateAutoCalcMode = StartDateAutoCalcMode.Unknown;
-        DateTime _forcedStartDate; // user can force a startdate
-        DateTime _startDate = DateTime.MinValue; // real startDate. We expect PV chart to start from here. There can be some warmUp days before that, for which data is needed.
-        DateTime _earliestUsableDataDay = DateTime.MinValue;
+        DateTime _forcedStartDateTimeUtc; // user can force a startdate. Work UtcTime with Time component everywhere internally. Utc vs. Loc usage: see doc "C# DateTime.txt"
+        DateTime _startDateTimeUtc = DateTime.MinValue; // "2025-01-13T08:00Z", real startDate. We expect PV chart to start from here. There can be some warmUp days before that, for which data is needed.
+        
+        DateTime _forcedEndDateTimeUtc;
+        DateTime _endDateTimeUtc = DateTime.MaxValue; // "2025-01-13T23:59Z"
         TimeSpan _warmUp = TimeSpan.Zero;
 
-        DateTime _forcedEndDate;
-        DateTime _endDate = DateTime.MaxValue;
+        DateTime _earliestUsableDataDateOnly = DateTime.MinValue;
+        
 
         Dictionary<string, decimal> _weights;
         List<string> _tickers;
@@ -86,17 +88,17 @@ namespace QuantConnect.Algorithm.CSharp
         private Dictionary<string, List<QcPrice>> _adjCloses = new Dictionary<string, List<QcPrice>>();
         private Dictionary<string, List<QcDividend>> _dividends = new Dictionary<string, List<QcDividend>>();
         private Dictionary<string, Dictionary<DateTime, decimal>>? _rawClosesFromYfDicts = null;
-        DateTime _bnchmarkStartTime;
+        DateTime _bnchmarkStartTimeUtc;
         private DateTime _lastRebalance = DateTime.MinValue;
         private Dividends _sliceDividends;
         Symbol? _firstOnDataSymbol = null;
 
         public override void Initialize()
         {
-            _bnchmarkStartTime = DateTime.UtcNow; // for benchmarking how many msec the backtest takes
+            _bnchmarkStartTimeUtc = DateTime.UtcNow; // for benchmarking how many msec the backtest takes
 
             NameValueCollection algorithmParamQuery = HttpUtility.ParseQueryString(AlgorithmParam);
-            QCAlgorithmUtils.ProcessAlgorithmParam(algorithmParamQuery, out _forcedStartDate, out _forcedEndDate, out _startDateAutoCalcMode);
+            QCAlgorithmUtils.ProcessAlgorithmParam(algorithmParamQuery, out _forcedStartDateTimeUtc, out _forcedEndDateTimeUtc, out _startDateAutoCalcMode);
             ProcessAlgorithmParam(algorithmParamQuery, out _tickers, out _weights, out _rebalancePeriodDays);
             if (_rebalancePeriodDays == -1) // if invalid value (because e.g. AlgorithmParam str is empty)
                 _rebalancePeriodDays = 30; // default value
@@ -135,44 +137,44 @@ namespace QuantConnect.Algorithm.CSharp
             //_warmUp = TimeSpan.FromDays(30); // Wind time back X calendar days from start Before the _startDate. It is calendar day. E.g. If strategy need %chgPrevDay, it needs 2 trading day data. Probably set warmup to 2+2+1 = 5+ (for 2 weekend, 1 holiday).
             SetWarmUp(_warmUp);
 
-            _earliestUsableDataDay = QCAlgorithmUtils.StartDateAutoCalculation(_tradedSymbols, _startDateAutoCalcMode, out Symbol? symbolWithEarliestUsableDataDay);
-            if (_forcedStartDate == DateTime.MinValue) // auto calculate if user didn't give a forced startDate. Otherwise, we are obliged to use that user specified forced date.
+            _earliestUsableDataDateOnly = QCAlgorithmUtils.StartDateAutoCalculation(_tradedSymbols, _startDateAutoCalcMode, out Symbol? symbolWithEarliestUsableDataDay);
+            if (_forcedStartDateTimeUtc == DateTime.MinValue) // auto calculate if user didn't give a forced startDate. Otherwise, we are obliged to use that user specified forced date.
             {
-                if (_earliestUsableDataDay < QCAlgorithmUtils.g_earliestQcDay)
-                    _earliestUsableDataDay = QCAlgorithmUtils.g_earliestQcDay; // SetStartDate() exception: "Please select a start date after January 1st, 1900."
+                if (_earliestUsableDataDateOnly < QCAlgorithmUtils.g_earliestQcDay)
+                    _earliestUsableDataDateOnly = QCAlgorithmUtils.g_earliestQcDay; // SetStartDate() exception: "Please select a start date after January 1st, 1900."
 
-                _startDate = _earliestUsableDataDay.Add(_warmUp).AddDays(1); // startdate auto calculation we have to add the warmup days
+                _startDateTimeUtc = _earliestUsableDataDateOnly.Add(_warmUp).AddHours(8); // startdate auto calculation we have to add the warmup days. pure Date-T-00:00 should be converted to UtcTime with Time component. Assume morning as 8:00.
             }
             else
             {
-                _earliestUsableDataDay = _forcedStartDate.Subtract(_warmUp); // if the user forces a startDate, the needed _earliestUsableDataDay is X days before, because of warmUp days.
-                _startDate = _forcedStartDate;
+                _earliestUsableDataDateOnly = _forcedStartDateTimeUtc.Subtract(_warmUp); // if the user forces a startDate, the needed _earliestUsableDataDay is X days before, because of warmUp days.
+                _startDateTimeUtc = _forcedStartDateTimeUtc;
             }
 
             // _startDate = new DateTime(2006, 01, 01); // means Local time, not UTC
-            Log($"EarliestUsableDataDay: {_earliestUsableDataDay: yyyy-MM-dd}, PV startDate: {_startDate: yyyy-MM-dd}");
+            Log($"EarliestUsableDataDay: {_earliestUsableDataDateOnly: yyyy-MM-dd}, PV startDate: {_startDateTimeUtc: yyyy-MM-dd}");
 
             // *** Step 3: endDate determination
-            if (_forcedEndDate == DateTime.MaxValue)
-                _endDate = DateTime.Now;
+            if (_forcedEndDateTimeUtc == DateTime.MaxValue)
+                _endDateTimeUtc = DateTime.UtcNow;
             else
-                _endDate = _forcedEndDate;
+                _endDateTimeUtc = _forcedEndDateTimeUtc;
 
-            if (_endDate < _startDate)
+            if (_endDateTimeUtc < _startDateTimeUtc)
             {
-                string errMsg = $"StartDate ({_startDate:yyyy-MM-dd}) should be earlier then EndDate  ({_endDate:yyyy-MM-dd}).";
+                string errMsg = $"StartDate ({_startDateTimeUtc:yyyy-MM-dd}) should be earlier then EndDate  ({_endDateTimeUtc:yyyy-MM-dd}).";
                 Log(errMsg);
                 throw new ArgumentOutOfRangeException(errMsg);
             }
             if (!SqBacktestConfig.SqDailyTradingAtMOC)
-                _startDate = _startDate.AddDays(1); // Original QC behaviour: first PV will be StartDate() -1, and it uses previous day Close prices on StartDate:00:00 morning. We don't want that. So, increase the date by 1.
-            SetStartDate(_startDate); // by default it is 1998-01-02. If we don't call SetStartDate(), still, the PV value chart will start from 1998
-            SetEndDate(_endDate);
+                _startDateTimeUtc = _startDateTimeUtc.AddDays(1); // Original QC behaviour: first PV will be StartDate() -1, and it uses previous day Close prices on StartDate:00:00 morning. We don't want that. So, increase the date by 1.
+            SetStartDate(_startDateTimeUtc.ConvertFromUtc(TimeZone)); // QC SetEndDate(), SetStartDate() expects time to be Local time in the exchange time zone, not UTC.
+            SetEndDate(_endDateTimeUtc.ConvertFromUtc(TimeZone)); // QC SetEndDate(), SetStartDate() expects time to be Local time in the exchange time zone, not UTC.
             // SetBenchmark("SPY"); // the default benchmark is SPY, which is OK in the cloud. In SqCore, we removed the default SPY benchmark, because we don't need it.
 
             // *** Only in QcCloud: YF data download. Part 2
             if (IsTradeInQcCloud) // only in QC cloud: we need not only daily, but perMinute symbols too, because we use perMinute symbols for trading.
-                QCAlgorithmUtils.DownloadAndProcessYfData(this, _tickers, _earliestUsableDataDay, _warmUp, _endDate, out _rawClosesFromYfDicts);
+                QCAlgorithmUtils.DownloadAndProcessYfData(this, _tickers, _earliestUsableDataDateOnly, _warmUp, _endDateTimeUtc, out _rawClosesFromYfDicts);
         }
 
         public static void ProcessAlgorithmParam(NameValueCollection p_AlgorithmParamQuery, out List<string> p_tickers, out Dictionary<string, decimal> p_weights, out int p_rebalancePeriodDays)
@@ -432,7 +434,7 @@ namespace QuantConnect.Algorithm.CSharp
         }
         public override void OnEndOfAlgorithm()
         {
-            Log($"OnEndOfAlgorithm(): Backtest time: {(DateTime.UtcNow - _bnchmarkStartTime).TotalMilliseconds}ms");
+            Log($"OnEndOfAlgorithm(): Backtest time: {(DateTime.UtcNow - _bnchmarkStartTimeUtc).TotalMilliseconds}ms");
         }
 
     }

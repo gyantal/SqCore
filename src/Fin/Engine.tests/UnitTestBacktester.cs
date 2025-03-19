@@ -50,8 +50,8 @@ public class UnitTestBacktester
 
         FinDb.gFinDb.Init_WT(FinDbRunningEnvironment.WindowsUnitTest); // initialize the QC Backtesting Engine.
         SqBacktestConfig backtestConfig = new SqBacktestConfig() { SqResultStat = SqResultStat.SqSimpleStat };
-        string endDateStrForDay13 = "2025-01-13";
-        string endDateStrForDay14 = "2025-01-14";
+        string endDateStrForDay13 = "2025-01-13T23:59Z"; // https://sqcore.net/webapps/PortfolioViewer/?pid=31 sets it with the UTC time ("2025-01-13T23:59:00"), but it should not matter as SetEndTime() converts it 1 tick before midnight anyway
+        string endDateStrForDay14 = "2025-01-14T23:59Z";
 
         (DateTime startDate13,  DateTime endDate13, int quantityOnDay13) = RunBacktestAndGetQuantity(endDateStrForDay13, "UNG", backtestConfig);
         (DateTime startDate14,  DateTime endDate14, int quantityOnDay14) = RunBacktestAndGetQuantity(endDateStrForDay14, "UNG", backtestConfig);
@@ -70,7 +70,7 @@ public class UnitTestBacktester
         // 2025-01-10 morning: -1800
         // 2025-01-10 EOD: -1800  // correct
         // 2025-01-13 morning: -1800
-        // 2025-01-13 EOD: -1700  // ! Not correct. QC didn't gives 1,700, but gives back -1600, which is wrong.  So, we want to see -1700 on 2025-01-13 
+        // 2025-01-13 EOD: -1700  // ! Not correct. QC didn't give 1,700, but gives back -1600, which is wrong.  So, we want to see -1700 on 2025-01-13 
         // 2025-01-14 morning: -1,700
         // 2025-01-14 EOD: -1600  // correct
         FinDb.Exit();
@@ -80,18 +80,18 @@ public class UnitTestBacktester
     private static (DateTime, DateTime, int) RunBacktestAndGetQuantity(string p_endDate, string p_symbol, SqBacktestConfig p_backtestConfig)
     {
         string backtestAlgorithmParam = $"endDate={p_endDate}&";
-        BacktestingResultHandler? backtestResult = Backtester.BacktestInSeparateThreadWithTimeout("SqTradeAccumulation", backtestAlgorithmParam, new LegacyPortfolio { LegacyDbPortfName = "!IB-V Sobek-HL(Contango-Bond) harvester Agy Live" }.GetTradeHistory(), @"{""ema-fast"":10,""ema-slow"":20}", p_backtestConfig);
+        BacktestingResultHandler? backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqTradeAccumulation", backtestAlgorithmParam, new LegacyPortfolio { LegacyDbPortfName = "!IB-V Sobek-HL(Contango-Bond) harvester Agy Live" }.GetTradeHistory(), @"{""ema-fast"":10,""ema-slow"":20}", p_backtestConfig);
 
-        if (backtestResult == null)
+        if (backtestResults == null)
             return (DateTime.MinValue, DateTime.MaxValue, 0);
 
-        int quantity = backtestResult.Algorithm.UniverseManager.ActiveSecurities.Values
+        int quantity = backtestResults.Algorithm.UniverseManager.ActiveSecurities.Values
             .Where(security => security?.Holdings.Symbol.ToString() == p_symbol)
             .Select(security => (int)security.Holdings.Quantity)
             .FirstOrDefault();
 
-        DateTime startDate = backtestResult.SqSampledLists["rawPV"][0].Date;
-        DateTime endDate = backtestResult.SqSampledLists["rawPV"][^1].Date;
+        DateTime startDate = backtestResults.SqSampledLists["rawPV"][0].Date;
+        DateTime endDate = backtestResults.SqSampledLists["rawPV"][^1].Date;
         return (startDate, endDate, quantity);
     }
 }
