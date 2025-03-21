@@ -17,3 +17,39 @@ html {
   src: local("Times New Roman");
   unicode-range: U+0030-0039;
 }
+
+/* Common for both gptSum and gptScan */
+.selectionDropDown {
+  display: inline-block;
+}
+
+.listDropDown {
+  display: none;
+  position: absolute;
+  background-color: #f1f1f1;
+  min-width: 11.8rem;
+}
+
+.listDropDown option {
+  color: black;
+  display: block;
+}
+
+.listDropDown option:hover {
+  background-color: #ddd;
+}
+
+.selectionDropDown:hover .listDropDown {
+  display: block;
+  z-index: 1; /* using this to stackup the order*/
+}
+
+.selectionDropDown:hover .highlightInputDropDown {
+  background-color: rgba(255, 255, 128, .5);
+}
+
+.optionDropDown {
+  border: 0.1rem solid lightblue;
+  cursor: pointer;
+  height: 1.8rem;
+}
