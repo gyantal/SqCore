@@ -2,9 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Threading;
 using Fin.Base;
 using QuantConnect;
 using QuantConnect.Data;
@@ -13,7 +11,6 @@ using QuantConnect.Lean.Engine.Results;
 using QuantConnect.Packets;
 using QuantConnect.Parameters;
 using QuantConnect.Securities;
-using QuantConnect.Securities.Equity;
 using QuantConnect.Statistics;
 using QuantConnect.Util;
 using SqCommon;
@@ -101,7 +98,7 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
     // Or number of seconds from Unix epoch: '1641013200' is 10 chars. Resolution can be 1 second.
     // Although it is 2 chars more data, but we chose this, because QC uses it and also it will allow us to go intraday in the future.
     // Also it allows to show the user how up-to-date (real-time) the today value is.
-    public string? GetPortfolioRunResult(bool p_returnOnlyTwrPv, SqResultStat p_sqResultStat, DateTime? p_forcedStartDate, DateTime? p_forcedEndDate, out PortfolioRunResultStatistics p_stat, out List<DateValue> p_pv, out List<PortfolioPosition> p_prtfPoss, out ChartResolution p_chartResolution, out List<SqLog> p_sqLogs)
+    public string? GetPortfolioRunResult(bool p_returnOnlyTwrPv, SqResultStat p_sqResultStat, DateTime? p_forcedStartTimeUtc, DateTime? p_forcedEndTimeUtc, out PortfolioRunResultStatistics p_stat, out List<DateValue> p_pv, out List<PortfolioPosition> p_prtfPoss, out ChartResolution p_chartResolution, out List<SqLog> p_sqLogs)
     {
         // "Trades" type portfolios can have Trades in them for the past (for that "SqTradeAccumulation" Algorithm has to be run now),
         // but a different Algorithm ("CXO", "HL") might exist in the Portfolio.Algorithm, that will be run for the future, e.g. VBroker to determine what to trade at the broker. Or in the very far past (before the era of the trades)
@@ -111,7 +108,7 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
         if (String.IsNullOrEmpty(algorithmName)) // if there is an Algorithm, we can run it. LegacyDbTrades uses 'SqTradeAccumulation' algorithm
             return GetPortfolioRunResultDefault(out p_stat, out p_pv, out p_prtfPoss, out p_chartResolution, out p_sqLogs);
         else
-            return GetBacktestResult(algorithmName, p_returnOnlyTwrPv, p_sqResultStat, p_forcedStartDate, p_forcedEndDate, out p_pv, out p_stat, out p_prtfPoss, out p_chartResolution, out p_sqLogs);
+            return GetBacktestResult(algorithmName, p_returnOnlyTwrPv, p_sqResultStat, p_forcedStartTimeUtc, p_forcedEndTimeUtc, out p_pv, out p_stat, out p_prtfPoss, out p_chartResolution, out p_sqLogs);
 
         // #pragma warning disable IDE0066 // disable the switch suggestion warning only locally
         // switch (Type)
@@ -161,7 +158,7 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
         return null; // No Error
     }
 
-    public string? GetBacktestResult(string p_algorithmName, bool p_returnOnlyTwrPv, SqResultStat p_sqResultStat, DateTime? p_forcedStartDate, DateTime? p_forcedEndDate, out List<DateValue> p_pv, out PortfolioRunResultStatistics p_stat, out List<PortfolioPosition> p_prtfPoss, out ChartResolution p_chartResolution, out List<SqLog> p_sqLogs)
+    public string? GetBacktestResult(string p_algorithmName, bool p_returnOnlyTwrPv, SqResultStat p_sqResultStat, DateTime? p_forcedStartTimeUtc, DateTime? p_forcedEndTimeUtc, out List<DateValue> p_pv, out PortfolioRunResultStatistics p_stat, out List<PortfolioPosition> p_prtfPoss, out ChartResolution p_chartResolution, out List<SqLog> p_sqLogs)
     {
         SqBacktestConfig backtestConfig = new SqBacktestConfig() { SqResultStat = p_sqResultStat, SamplingQcOriginal = false, SamplingSqDailyRawPv = false, SamplingSqDailyTwrPv = false };
         if (p_returnOnlyTwrPv) // target is TwrPv
@@ -187,7 +184,7 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
         p_chartResolution = ChartResolution.Daily;
         p_sqLogs = new List<SqLog>();
 
-        string backtestAlgorithmParam = GetBacktestAlgorithmParam(p_forcedStartDate, p_forcedEndDate, AlgorithmParam); // AlgorithmParam itself 'can' have StartDate, EndDate. But ChartGenerator can further restricts the period with forcedStartDate/EndDate
+        string backtestAlgorithmParam = GetBacktestAlgorithmParam(p_forcedStartTimeUtc, p_forcedEndTimeUtc, AlgorithmParam); // AlgorithmParam itself 'can' have StartDate, EndDate. But ChartGenerator can further restricts the period with forcedStartDate/EndDate
         List<Base.Trade>? portTradeHist = this.GetTradeHistory(); // Don't filter TradeHist based on StartDate, because to properly backtest we need the initial trades that happend Before StartDate. StartDate refers to the ChartGeneration usually. But we have to simulate previous buying trades, even before StartDate.
         BacktestingResultHandler backtestResults = Backtester.BacktestInSeparateThreadWithTimeout(p_algorithmName, backtestAlgorithmParam, portTradeHist, @"{""ema-fast"":10,""ema-slow"":20}", backtestConfig);
         if (backtestResults == null)
@@ -202,7 +199,8 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
             btResultEndDate = backtestResults.SqSampledLists["twrPV"][^1].Date;
         }
         Console.WriteLine($"BacktestResults. btResultStartDate:{btResultStartDate}, btResultEndDate:{btResultEndDate}");
-        Console.WriteLine($"BacktestResults.PV. startPV:{backtestResults.StartingPortfolioValue:N0}, endPV:{backtestResults.DailyPortfolioValue:N0} (If noDeposit: {(backtestResults.DailyPortfolioValue / backtestResults.StartingPortfolioValue - 1) * 100:N2}%)");
+        decimal returnPct = backtestResults.StartingPortfolioValue == 0 ? 0 : (backtestResults.DailyPortfolioValue / backtestResults.StartingPortfolioValue - 1) * 100;
+        Console.WriteLine($"BacktestResults.PV. startPV:{backtestResults.StartingPortfolioValue:N0}, endPV:{backtestResults.DailyPortfolioValue:N0} (If noDeposit: {returnPct:N2}%)");
 
         // Step 0: Fill the logs.
         foreach(Packet? msg in backtestResults.Messages)
@@ -318,14 +316,8 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
 
         // Step 3: create the p_prtfPoss of the result.
         var prtfPositions = backtestResults.Algorithm;
-        // on 2025-03-19, Issue: When the user changes the Historical Positions EndDate on the UI, the "Price (Cl-Rt) on Date" is not updated.
-        // Get the real-time price from AssetCache only if EndDate is not specified.
-        // If the user changes the EndDate from today to any other date, we need to update both the real-time price and the prior close price.
-        // In this case: Consider the price from BacktestResults as the real-time price (since that’s what user requested using the forced EndDate).
-        // Also, fetch BacktestResults for the previous date (EndDate - 1 day) to update the prior close price.
-        bool isPrevDateBacktestPriceFetchRequired = false;
-        if (p_forcedEndDate != null)
-            isPrevDateBacktestPriceFetchRequired = true;
+        // Get the real-time price from AssetCache only if EndTime.Date is TodayUtc: this can be if EndTime is not specified at all or if it is specified but it is exactly TodayUtc.
+        bool getEstPriceAsRealTime = (p_forcedEndTimeUtc == null) || p_forcedEndTimeUtc?.Date == DateTime.UtcNow.Date;
         foreach (Security? security in prtfPositions.UniverseManager.ActiveSecurities.Values)
         {
             if ((int)security.Holdings.Quantity == 0) // eliminating the positions with holding quantity equals to zero
@@ -346,42 +338,20 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
                 SqTicker = "S/" + security.Holdings.Symbol.ToString(),
                 Quantity = (float)security.Holdings.Quantity,
                 AvgPrice = (float)security.Holdings.AveragePrice,
-                BacktestLastPrice = (float)security.Holdings.Price
+                BacktestLastPrice = (float)security.Holdings.Price // last price known by the backtest. If p_forcedEndTimeUtc == Null or TodayUtc, then this is the yesterdayClose. Otherwise, it is the Close price on that EndTime.Date day.
             };
 
-            if (!isPrevDateBacktestPriceFetchRequired)
+            if (getEstPriceAsRealTime)
             {
                 Asset? asset = MemDb.gMemDb.AssetsCache.TryGetAsset(posStckItem.SqTicker);
                 if (asset != null)
                     posStckItem.EstPrice = MemDb.gMemDb.GetLastRtValue(asset);
+                else
+                    posStckItem.EstPrice = (float)security.Holdings.Price;
             }
             else
-                posStckItem.EstPrice = (float)security.Holdings.Price;
+                posStckItem.EstPrice = (float)security.Holdings.Price; // EndTimeUtc is a proper past date, not TodayUtc, so the EstPrice is the price on that given past date.
             p_prtfPoss.Add(posStckItem); // Stock Tickers
-        }
-
-        if (isPrevDateBacktestPriceFetchRequired)
-        {
-            DateTime? prevForcedEndDate = p_forcedEndDate?.AddDays(-1);
-            string backtestAlgorithmParamPrevDate = GetBacktestAlgorithmParam(p_forcedStartDate, prevForcedEndDate, AlgorithmParam);
-            BacktestingResultHandler backtestResultsPrevDate = Backtester.BacktestInSeparateThreadWithTimeout(p_algorithmName, backtestAlgorithmParamPrevDate, portTradeHist, @"{""ema-fast"":10,""ema-slow"":20}", backtestConfig);
-            if (backtestResultsPrevDate == null)
-                return "Error in Backtest";
-            var prevDatePrtfPositions = backtestResultsPrevDate.Algorithm;
-            foreach (Security? security in prevDatePrtfPositions.UniverseManager.ActiveSecurities.Values)
-            {
-                if ((int)security.Holdings.Quantity == 0) // eliminating the positions with holding quantity equals to zero
-                    continue;
-                string ticker = "S/" + security?.Holdings.Symbol.ToString();
-                foreach(PortfolioPosition prtfPos in p_prtfPoss)
-                {
-                    if (prtfPos.SqTicker == ticker)
-                    {
-                        prtfPos.BacktestLastPrice = (float)security!.Holdings.Price;
-                        break;
-                    }
-                }
-            }
         }
 
         PortfolioPosition posCashItem = new(); // Cash Tickers

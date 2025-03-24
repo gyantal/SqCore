@@ -476,7 +476,7 @@ public partial class MemDb
         m_Db.AppendPortfolioTradeHistory(p_tradeHistoryId, trades, true); // p_forceChronologicalOrder = true
     }
 
-    public string? GetPortfolioRunResults(int p_portfolioId, DateTime? p_forcedStartDate, DateTime? p_forcedEndDate, out PrtfRunResult prtfRunResult)
+    public string? GetPortfolioRunResults(int p_portfolioId, DateTime? p_forcedStartTimeUtc, DateTime? p_forcedEndTimeUtc, out PrtfRunResult prtfRunResult)
     {
         prtfRunResult = new PrtfRunResult();
         // Step1: Getting the BackTestResults
@@ -489,7 +489,7 @@ public partial class MemDb
         if (errMsg == null)
         {
             bool returnOnlyTwrPv = true;
-            errMsg = prtf!.GetPortfolioRunResult(returnOnlyTwrPv, SqResultStat.SqSimpleStat, p_forcedStartDate, p_forcedEndDate, out PortfolioRunResultStatistics stat, out List<DateValue> pv, out List<PortfolioPosition> prtfPos, out ChartResolution chartResolution, out List<SqLog> sqLogs);
+            errMsg = prtf!.GetPortfolioRunResult(returnOnlyTwrPv, SqResultStat.SqSimpleStat, p_forcedStartTimeUtc, p_forcedEndTimeUtc, out PortfolioRunResultStatistics stat, out List<DateValue> pv, out List<PortfolioPosition> prtfPos, out ChartResolution chartResolution, out List<SqLog> sqLogs);
             if (errMsg == null)
             {
                 // Step2: Filling the ChartPoint Dates and Values to a list. A very condensed format. Dates are separated into its ChartDate List.

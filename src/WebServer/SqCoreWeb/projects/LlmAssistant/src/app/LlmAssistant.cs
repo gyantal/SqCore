@@ -119,6 +119,7 @@ public class LlmAssistantController : Microsoft.AspNetCore.Mvc.Controller
         if (g_openAiClient == null) // a new LlmAssistantController() instance is created for every request. Initialize openAiClient only once
         {
             string openAIApiKey = Utils.Configuration["ConnectionStrings:OpenAIApiKey"] ?? throw new SqException("OpenApiKeyIsMissing is missing from Config");
+            Console.WriteLine($"LlmAssistantController: OpenAIApiKey: '{openAIApiKey}'");
             g_openAiClient = new(openAIApiKey, new OpenAIClientOptions());
             g_messages.Add(new ChatMessage(ChatRole.System, "You are a helpful assistant."));
         }

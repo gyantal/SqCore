@@ -260,8 +260,8 @@ public class PrtfVwrWs
     public static void PortfVwrGetPortfolioRunResults(WebSocket webSocket, string p_msg, string p_outputMsgCode) // p_msg ="?pid=12" or ?pid=12&endDate=2022-01-01
     {
         // forcedStartDate and forcedEndDate are determined by specifed algorithm, if null (ex: please refer SqPctAllocation.cs file)
-        DateTime? forcedStartDate = null;
-        DateTime? forcedEndDate = null;
+        DateTime? forcedStartTimeUtc = null;
+        DateTime? forcedEndTimeUtc = null; // "2025-01-13T23:59Z", have to be specific times, not only dates. And in Utc.
 
         int idStartInd = p_msg.IndexOf("pid=");
         if (idStartInd == -1)
@@ -280,26 +280,59 @@ public class PrtfVwrWs
             int dateInd = p_msg.IndexOf("&endDate=");
             if (dateInd == -1)
                 return;
-            string endDtStr = p_msg[(dateInd + "&endDate=".Length)..];
-            DateTime endDateMorning = Utils.Str2DateTimeUtc(endDtStr); // DateTime.Parse() fills the Hour/Minute/Sec components with 00:00:00 refering to the start of the day.
-            DateTime endDateEoD = endDateMorning.Add(new TimeSpan(23, 59, 0)); // We want to run the backtest until the End of the day on that date.
-            forcedEndDate = endDateEoD;
+            string endDtStr = p_msg[(dateInd + "&endDate=".Length)..] + "Z"; // "2025-03-24" => "2025-03-24Z", so thatUtils.Str2DateTimeUtc() will create a Utc time, instead of Kind = Unspecified.
+            DateTime endDateMorningUtc = Utils.Str2DateTimeUtc(endDtStr); // DateTime.Parse() fills the Hour/Minute/Sec components with 00:00:00 refering to the start of the day.
+            DateTime endDateEoDUtc = endDateMorningUtc.Add(new TimeSpan(23, 59, 0)); // We want to run the backtest until the End of the day on that date.
+            forcedEndTimeUtc = endDateEoDUtc;
         }
-        string? errMsg = MemDb.gMemDb.GetPortfolioRunResults(id, forcedStartDate, forcedEndDate, out PrtfRunResult prtfRunResultJs);
-        // Send portfolio run result if available
-        if (errMsg == null)
-        {
-            byte[] encodedMsg = Encoding.UTF8.GetBytes($"PrtfVwr.{p_outputMsgCode}:" + Utils.CamelCaseSerialize(prtfRunResultJs));
-            if (webSocket!.State == WebSocketState.Open)
-                webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
-        }
+        string? errMsg = MemDb.gMemDb.GetPortfolioRunResults(id, forcedStartTimeUtc, forcedEndTimeUtc, out PrtfRunResult prtfRunResultJs);
         // Send error message if available
         if (errMsg != null)
         {
-            byte[] encodedMsg = Encoding.UTF8.GetBytes("PrtfVwr.ErrorToUser:" + errMsg);
+            byte[] encodedErrMsg = Encoding.UTF8.GetBytes("PrtfVwr.ErrorToUser:" + errMsg);
             if (webSocket!.State == WebSocketState.Open)
-                webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+                webSocket.SendAsync(new ArraySegment<Byte>(encodedErrMsg, 0, encodedErrMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
         }
+
+        // If the EndTime is missing or TodayUtc, then PortfolioPosition.BacktestLastPrice (yesterday ClosePrice) and EstPrice (realtime price) are correct.
+        bool isBacktestLastPriceAndEstPriceAreCorrect = (forcedEndTimeUtc == null) || forcedEndTimeUtc?.Date == DateTime.UtcNow.Date;
+        if (!isBacktestLastPriceAndEstPriceAreCorrect) // otherwise, if EndTime is a real Past date, then both BacktestLastPrice = EstPrice = close price of that day. However, then PortfolioViewer UI wants that BacktestLastPrice should be the Price of the day that is 1 day earlier than the EndTime
+        {
+            // TODO: Daya: figure it out. Use FinDb.gFinDb.HistoryProvider.GetHistory(historyRequests, sliceTimeZone).ToList(); Maybe look at the void HistoryProviderWeekdayEndTest()
+            // after that, delete these code below (I just left it temporarily here for you.) 
+            // Also, don't forget to comment.
+        }
+        // on 2025-03-19, Issue: When the user changes the Historical Positions EndDate on the UI, the "Price (Cl-Rt) on Date" is not updated.
+        // Get the real-time price from AssetCache only if EndDate is not specified.
+        // If the user changes the EndDate from today to any other date, we need to update both the real-time price and the prior close price.
+        // In this case: Consider the price from BacktestResults as the real-time price (since that’s what user requested using the forced EndDate).
+        // Also, fetch BacktestResults for the previous date (EndDate - 1 day) to update the prior close price.
+        // if (getEstPriceAsRealTime)
+        // {
+        //     DateTime? prevForcedEndDate = p_forcedEndTimeUtc?.AddDays(-1);
+        //     string backtestAlgorithmParamPrevDate = GetBacktestAlgorithmParam(p_forcedStartTimeUtc, prevForcedEndDate, AlgorithmParam);
+        //     BacktestingResultHandler backtestResultsPrevDate = Backtester.BacktestInSeparateThreadWithTimeout(p_algorithmName, backtestAlgorithmParamPrevDate, portTradeHist, @"{""ema-fast"":10,""ema-slow"":20}", backtestConfig);
+        //     if (backtestResultsPrevDate == null)
+        //         return "Error in Backtest";
+        //     var prevDatePrtfPositions = backtestResultsPrevDate.Algorithm;
+        //     foreach (Security? security in prevDatePrtfPositions.UniverseManager.ActiveSecurities.Values)
+        //     {
+        //         if ((int)security.Holdings.Quantity == 0) // eliminating the positions with holding quantity equals to zero
+        //             continue;
+        //         string ticker = "S/" + security?.Holdings.Symbol.ToString();
+        //         foreach(PortfolioPosition prtfPos in p_prtfPoss)
+        //         {
+        //             if (prtfPos.SqTicker == ticker)
+        //             {
+        //                 prtfPos.BacktestLastPrice = (float)security!.Holdings.Price;
+        //                 break;
+        //             }
+        //         }
+        //     }
+        // }
+        byte[] encodedMsg = Encoding.UTF8.GetBytes($"PrtfVwr.{p_outputMsgCode}:" + Utils.CamelCaseSerialize(prtfRunResultJs));
+        if (webSocket!.State == WebSocketState.Open)
+            webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
     }
 
     public static void PortfVwrGetPortfolioTradesHistory(WebSocket webSocket, string p_msg)

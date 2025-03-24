@@ -4,7 +4,11 @@ We should favor UTC usage with a Time component everywhere. Because that is very
 
 - As Time should be 'almost' always part of the data, variable naming terminology should be "DateTime m_startDateTimeUtc;" to emphaze that our Date variables really contain a Time component.
 Or just use it as Time, without the Date. ""DateTime m_startTimeUtc;"
-Also a good practice if there in no Time component to postfix it as "DateOnly", to name it as "transactionDateOnly". That would leave no ambiquity for the code reader.
+Also a good practice if there in no Time component to postfix it as "DateOnly", to name it as "transactionDateOnlyUtc". That would leave no ambiquity for the code reader.
+
+- When you use only Dates (without Times), always comment it why! And how should that data to be interpreted.
+E.g. transaction are in UTC, therefore, if we cut the Time part, we have "transactionDateOnlyUtc". Comment there that these Dates are Dates in UTC. So, users of that data knows that the endTime is "23:59Z"
+E.g. AAPL historical price is in Local 'data' time zone. E.g. "stockQuoteDateOnlyLoc". Comment there that these Dates are Dates in Local. So, users of that data knows that the endTime is "16:00ET" = "21:00Z" or endTime is "23:59ET" = "04:59Z"(next day)
 
 - Try to Force the Time component everywhere. Date variable should not be used without Time component.
 Otherwise, it is not properly specified. And it can lead to interpretation errors. I interpret a date '2025-03-19' as the beginning Time of the day, you intrpret it as the end Time of the day.
