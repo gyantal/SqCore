@@ -318,6 +318,14 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
 
         // Step 3: create the p_prtfPoss of the result.
         var prtfPositions = backtestResults.Algorithm;
+        // on 2025-03-19, Issue: When the user changes the Historical Positions EndDate on the UI, the "Price (Cl-Rt) on Date" is not updated.
+        // Get the real-time price from AssetCache only if EndDate is not specified.
+        // If the user changes the EndDate from today to any other date, we need to update both the real-time price and the prior close price.
+        // In this case: Consider the price from BacktestResults as the real-time price (since that’s what user requested using the forced EndDate).
+        // Also, fetch BacktestResults for the previous date (EndDate - 1 day) to update the prior close price.
+        bool isPrevDateBacktestPriceFetchRequired = false;
+        if (p_forcedEndDate != null)
+            isPrevDateBacktestPriceFetchRequired = true;
         foreach (Security? security in prtfPositions.UniverseManager.ActiveSecurities.Values)
         {
             if ((int)security.Holdings.Quantity == 0) // eliminating the positions with holding quantity equals to zero
@@ -340,10 +348,40 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
                 AvgPrice = (float)security.Holdings.AveragePrice,
                 BacktestLastPrice = (float)security.Holdings.Price
             };
-            Asset? asset = MemDb.gMemDb.AssetsCache.TryGetAsset(posStckItem.SqTicker);
-            if (asset != null)
-                posStckItem.EstPrice = MemDb.gMemDb.GetLastRtValue(asset);
+
+            if (!isPrevDateBacktestPriceFetchRequired)
+            {
+                Asset? asset = MemDb.gMemDb.AssetsCache.TryGetAsset(posStckItem.SqTicker);
+                if (asset != null)
+                    posStckItem.EstPrice = MemDb.gMemDb.GetLastRtValue(asset);
+            }
+            else
+                posStckItem.EstPrice = (float)security.Holdings.Price;
             p_prtfPoss.Add(posStckItem); // Stock Tickers
+        }
+
+        if (isPrevDateBacktestPriceFetchRequired)
+        {
+            DateTime? prevForcedEndDate = p_forcedEndDate?.AddDays(-1);
+            string backtestAlgorithmParamPrevDate = GetBacktestAlgorithmParam(p_forcedStartDate, prevForcedEndDate, AlgorithmParam);
+            BacktestingResultHandler backtestResultsPrevDate = Backtester.BacktestInSeparateThreadWithTimeout(p_algorithmName, backtestAlgorithmParamPrevDate, portTradeHist, @"{""ema-fast"":10,""ema-slow"":20}", backtestConfig);
+            if (backtestResultsPrevDate == null)
+                return "Error in Backtest";
+            var prevDatePrtfPositions = backtestResultsPrevDate.Algorithm;
+            foreach (Security? security in prevDatePrtfPositions.UniverseManager.ActiveSecurities.Values)
+            {
+                if ((int)security.Holdings.Quantity == 0) // eliminating the positions with holding quantity equals to zero
+                    continue;
+                string ticker = "S/" + security?.Holdings.Symbol.ToString();
+                foreach(PortfolioPosition prtfPos in p_prtfPoss)
+                {
+                    if (prtfPos.SqTicker == ticker)
+                    {
+                        prtfPos.BacktestLastPrice = (float)security!.Holdings.Price;
+                        break;
+                    }
+                }
+            }
         }
 
         PortfolioPosition posCashItem = new(); // Cash Tickers

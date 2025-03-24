@@ -26,7 +26,7 @@
     Example: In (change)="onDatePartChange('year', yearInput, calendarInput)", the variable yearInput directly references the HTMLInputElement.
     These variables are scoped to the components template.
     In non Angular environments, we have to rewrite this AngularDateWidget to use the time consuming document.getElementById('myInputId').-->
-  <span>Historical Positions EndDate:&nbsp;
+  <span title="UTC is used on UI. Assume Time part is the end of the day 23:59 in UTC.">Historical Positions EndTimeUtc:&nbsp;
     <input #yearInput type="text" class="commonDateInput sqIsoDateInputYYYY" placeholder="YYYY" (change)="onChangeDatePart('year', yearInput, calendarInput)"/>
     <input #monthInput type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="MM" (change)="onChangeDatePart('month', monthInput, calendarInput)"/>
     <input #dayInput type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="DD" (change)="onChangeDatePart('day', dayInput, calendarInput)"/>
@@ -35,7 +35,7 @@
       <button class="nextOrPrevDateBtn" (click)="onClickPosNextOrPrevDate('next')">&#43;</button>
       <button class="nextOrPrevDateBtn" (click)="onClickPosNextOrPrevDate('prev')">&#45;</button>
     </span>
-  </span><br><br>
+  </span>23:59Z<br><br>
   <table class="tableCommon">
     <thead>
       <tr>

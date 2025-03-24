@@ -65,3 +65,21 @@ Fox_30pct.webp: 200KB
 Fox_fast_30pct.avif: 397KB , Encoder speed1 (1sec)
 Fox_vslow_30pct.avif: 105KB, Encoder speed1 (5sec), image quality is worse than the Fox_fast_30pct.avif, but it is OK, because file size is 4x less. Let's use this.
 Conclusion: WebP_30% 200K => Avif_30% 105K, almost half size, lossy.
+
+**********20250321*****************
+Animated Image Convertion
+Problem:
+While working with an animated MarketDashboard image in WebP format, we faced an issue during conversion to JXL (lossless) using Paint.NET—the animation was not preserved in the output file.
+This limitation has lead to explore alternative tools that could retain the animation and ensure high-quality output in both JXL and AVIF formats.
+Additionally, we discovered that JXL files are not supported in most modern browsers, making it difficult to verify the results visually.
+
+Solution:
+To overcome these challenges, we tested several online converters.
+EZGIF(https://ezgif.com/) was effective in converting WebP to AVIF (lossy) while preserving the animation, and MConverter(https://mconverter.eu/convert/gif/jxl/) proved reliable for converting WebP/GIF to JXL.
+Since browser-based viewing of JXL was not possible, we explored desktop tools for validation.
+IrfanView was a dependable solution for viewing JXL files with animation, whereas XnView MP was found to be buggy during testing.
+
+Lessons Learned:
+JXL is not yet widely supported by browsers, so desktop tools like IrfanView are essential for viewing and testing.
+For best results, use EZGIF for AVIF conversions and MConverter for JXL conversions.
+Tools like Paint.NET are currently not suitable for animation-preserving conversions to JXL.

@@ -575,9 +575,9 @@ export class AppComponent implements OnInit {
 
     switch (type) {
       case 'year':
-        const YearInputVal = yearInput.value.trim();
-        if (isValidYear(YearInputVal))
-          usedDate.setFullYear(parseInt(YearInputVal, 10));
+        const yearInputVal = yearInput.value.trim();
+        if (isValidYear(yearInputVal))
+          usedDate.setFullYear(parseInt(yearInputVal, 10));
         else // If the year is invalid (e.g., the user typed a non-numeric character like 'z'). We force back the old date part from the calendarInput into the inputElement)
           yearInput.value = usedDate.getFullYear().toString();
         break;
