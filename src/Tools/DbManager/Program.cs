@@ -106,7 +106,7 @@ class Program
                 Controller.g_controller.BackupLegacyDb("C:/SqCoreWeb_LegacyDb");
                 break;
             case "4":
-                Controller.g_controller.RestoreLegacyDbTables("C:/SqCoreWeb_LegacyDb");
+                RestoreLegacyDbWithUserOption();
                 break;
             case "5":
                 Controller.g_controller.ExportLegacyDbAsBacpac("C:/SqCoreWeb_LegacyDb");
@@ -115,6 +115,24 @@ class Program
                 return "UserChosenExit";
         }
         return string.Empty;
+    }
+
+    // Allowing the user to enter a custom file path or proceed with the default backup path.
+    public static void RestoreLegacyDbWithUserOption()
+    {
+        Console.Write("Do you want to provide the full path (Y/N).");
+        string confirmFirstStr = Console.ReadLine() ?? string.Empty;
+        if (confirmFirstStr.ToLower() == "y")
+        {
+            Console.Write("Enter the full path: "); // e.g,'C:/SqCoreWeb_LegacyDb/legacyDbBackup_250320T0902.7z'
+            string confirmSecondStr = Console.ReadLine()?.Trim('"', '\'') ?? string.Empty;
+            if (confirmSecondStr.EndsWith("7z"))
+                Controller.g_controller.RestoreLegacyDbTables(confirmSecondStr);
+            else
+                Console.Write("Check your path");
+        }
+        else if (confirmFirstStr.ToLower() == "n")
+            Controller.g_controller.RestoreLegacyDbTables("C:/SqCoreWeb_LegacyDb");
     }
 
     public static readonly Dictionary<string, WorkMode> gStrToWorkMode = new()

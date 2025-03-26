@@ -236,20 +236,27 @@ class Controller
         }
     }
 
-    public void RestoreLegacyDbTables(string p_backupPath)
+    public void RestoreLegacyDbTables(string p_backupPathFileOrDir)
     {
-        // Step 1: Identify the latest backup file (.7z) in the specified directory
-        FileInfo? latestZipFile = new DirectoryInfo(p_backupPath).GetFiles("*.7z").OrderByDescending(f => f.LastWriteTime).FirstOrDefault();
-        if (latestZipFile == null)
+        // Step 1: Identify the backup file (.7z) in the specified directory
+        Console.WriteLine($"Restore {p_backupPathFileOrDir}");
+        string zipFileFullPath;
+        string backupPath;
+        if (p_backupPathFileOrDir.EndsWith(".7z")) // If it ends with .7z assume the file was given as parameter
         {
-            Console.WriteLine("No ZIP files found in the directory.");
-            return;
+            zipFileFullPath = p_backupPathFileOrDir;
+            int lastSlashIndex = p_backupPathFileOrDir.LastIndexOf('\\');
+            backupPath = p_backupPathFileOrDir.Substring(0, lastSlashIndex);
         }
         else
-            Console.WriteLine($"Latest ZIP file: {latestZipFile.FullName}");
+        {
+            FileInfo? latestZipFile = new DirectoryInfo(p_backupPathFileOrDir).GetFiles("*.7z").OrderByDescending(f => f.LastWriteTime).FirstOrDefault();
+            zipFileFullPath = latestZipFile!.FullName;
+            backupPath = p_backupPathFileOrDir;
+        }
         // Step 2: Extract the contents of the ZIP file to the backup path using 7-Zip
         string zipExePath = @"C:\Program Files\7-Zip\7z.exe";
-        string zipProcessArgs = $"x \"{latestZipFile!.FullName}\" -o\"{p_backupPath}\" -y";
+        string zipProcessArgs = $"x \"{zipFileFullPath}\" -o\"{backupPath}\" -y";
         (string zipOutputMsg, string zipErrorMsg) = ProcessCommandHelper(zipExePath, zipProcessArgs);
         if (!string.IsNullOrWhiteSpace(zipErrorMsg))
         {
@@ -276,7 +283,7 @@ class Controller
             Console.WriteLine($"Deletion complete for table: {legacyDbTables[i]}");
         }
         // Step 4: Insert data from extracted CSV files into the respective tables
-        string[] csvFiles = Directory.GetFiles(p_backupPath, "*.csv");
+        string[] csvFiles = Directory.GetFiles(backupPath, "*.csv");
         foreach (string file in csvFiles)
         {
             string fileName = Path.GetFileName(file);
@@ -286,6 +293,13 @@ class Controller
         }
         Console.WriteLine("Legacy DB restoration complete.");
         g_connection.Close();
+        // step5: Delete the csv files after Inserting
+        foreach (string fileName in csvFiles)
+        {
+            string filePath = Path.Combine(backupPath, fileName);
+            if (File.Exists(filePath))
+                File.Delete(filePath);
+        }
     }
 
     private void InsertCsvFileToLegacyDbTable(SqlConnection p_connection, string p_filePath, string p_tableName)
