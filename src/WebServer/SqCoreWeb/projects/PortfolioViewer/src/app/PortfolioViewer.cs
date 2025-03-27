@@ -10,6 +10,10 @@ using System.Threading.Tasks;
 using Fin.Base;
 using Fin.MemDb;
 using Microsoft.AspNetCore.Http;
+using QuantConnect;
+using QuantConnect.Data;
+using QuantConnect.Data.Market;
+using QuantConnect.Securities;
 using SqCommon;
 
 namespace SqCoreWeb;
@@ -298,38 +302,34 @@ public class PrtfVwrWs
         bool isBacktestLastPriceAndEstPriceAreCorrect = (forcedEndTimeUtc == null) || forcedEndTimeUtc?.Date == DateTime.UtcNow.Date;
         if (!isBacktestLastPriceAndEstPriceAreCorrect) // otherwise, if EndTime is a real Past date, then both BacktestLastPrice = EstPrice = close price of that day. However, then PortfolioViewer UI wants that BacktestLastPrice should be the Price of the day that is 1 day earlier than the EndTime
         {
-            // TODO: Daya: figure it out. Use FinDb.gFinDb.HistoryProvider.GetHistory(historyRequests, sliceTimeZone).ToList(); Maybe look at the void HistoryProviderWeekdayEndTest()
-            // after that, delete these code below (I just left it temporarily here for you.) 
-            // Also, don't forget to comment.
+            DateTime endTimeUtc = forcedEndTimeUtc!.Value;
+            DateTime startTimeUtc = endTimeUtc.Date.AddDays(-1).AddHours(8); // To retrieve data for the same day, specify the time explicitly, e.g., new(2008, 01, 01, 8, 0, 0). see HistoryProviderSaturdayEndTest()
+            if (startTimeUtc.IsWeekend()) // Check for weekend
+                startTimeUtc = startTimeUtc.DayOfWeek == DayOfWeek.Sunday ? endTimeUtc.Date.AddDays(-3).AddHours(8) : endTimeUtc.Date.AddDays(-2).AddHours(8);
+
+            foreach(PortfolioPosition prtfPos in prtfRunResultJs.PrtfPoss)
+            {
+                if (prtfPos.SqTicker == "C/USD")
+                    continue;
+                // extract the ticker. e.g, "S/USO" => "USO"
+                int startIndOfSlash = prtfPos.SqTicker.IndexOf("/");
+                if (startIndOfSlash == -1)
+                    return;
+                string ticker = prtfPos.SqTicker.Substring(startIndOfSlash + 1); // if symbol.zip doesn't exist in Data folder, it will not download it (cost money, you have to download in their shop). It raises an exception.
+                Symbol symbol = new(SecurityIdentifier.GenerateEquity(ticker, Market.USA, true, FinDb.gFinDb.MapFileProvider), ticker);
+                // Use TickType.TradeBar. That is in the daily CSV file. TickType.Quote file would contains Ask(Open/High/Low/Close) + Bid(Open/High/Low/Close), like a Quote from a Broker at trading realtime.
+                HistoryRequest[] historyRequests = new[]
+                {
+                        new HistoryRequest(startTimeUtc, endTimeUtc, typeof(TradeBar), symbol, Resolution.Daily, SecurityExchangeHours.AlwaysOpen(TimeZones.NewYork),
+                            TimeZones.NewYork, null, false, false, DataNormalizationMode.Raw, QuantConnect.TickType.Trade)
+                };
+
+                NodaTime.DateTimeZone sliceTimeZone = TimeZones.NewYork; // "algorithm.TimeZone"
+                List<Slice> result = FinDb.gFinDb.HistoryProvider.GetHistory(historyRequests, sliceTimeZone).ToList();
+                prtfPos.BacktestLastPrice = (float)result[0].Bars.Values.Last().Price;
+                prtfPos.EstPrice = (float)result[1].Bars.Values.Last().Price;
+            }
         }
-        // on 2025-03-19, Issue: When the user changes the Historical Positions EndDate on the UI, the "Price (Cl-Rt) on Date" is not updated.
-        // Get the real-time price from AssetCache only if EndDate is not specified.
-        // If the user changes the EndDate from today to any other date, we need to update both the real-time price and the prior close price.
-        // In this case: Consider the price from BacktestResults as the real-time price (since that’s what user requested using the forced EndDate).
-        // Also, fetch BacktestResults for the previous date (EndDate - 1 day) to update the prior close price.
-        // if (getEstPriceAsRealTime)
-        // {
-        //     DateTime? prevForcedEndDate = p_forcedEndTimeUtc?.AddDays(-1);
-        //     string backtestAlgorithmParamPrevDate = GetBacktestAlgorithmParam(p_forcedStartTimeUtc, prevForcedEndDate, AlgorithmParam);
-        //     BacktestingResultHandler backtestResultsPrevDate = Backtester.BacktestInSeparateThreadWithTimeout(p_algorithmName, backtestAlgorithmParamPrevDate, portTradeHist, @"{""ema-fast"":10,""ema-slow"":20}", backtestConfig);
-        //     if (backtestResultsPrevDate == null)
-        //         return "Error in Backtest";
-        //     var prevDatePrtfPositions = backtestResultsPrevDate.Algorithm;
-        //     foreach (Security? security in prevDatePrtfPositions.UniverseManager.ActiveSecurities.Values)
-        //     {
-        //         if ((int)security.Holdings.Quantity == 0) // eliminating the positions with holding quantity equals to zero
-        //             continue;
-        //         string ticker = "S/" + security?.Holdings.Symbol.ToString();
-        //         foreach(PortfolioPosition prtfPos in p_prtfPoss)
-        //         {
-        //             if (prtfPos.SqTicker == ticker)
-        //             {
-        //                 prtfPos.BacktestLastPrice = (float)security!.Holdings.Price;
-        //                 break;
-        //             }
-        //         }
-        //     }
-        // }
         byte[] encodedMsg = Encoding.UTF8.GetBytes($"PrtfVwr.{p_outputMsgCode}:" + Utils.CamelCaseSerialize(prtfRunResultJs));
         if (webSocket!.State == WebSocketState.Open)
             webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
