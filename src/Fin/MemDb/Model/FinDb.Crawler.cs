@@ -126,8 +126,16 @@ public partial class FinDb
             string ticker = tickers[i];
             try
             {
+                // The first date in the map file represents the creation date of the original ticker.
+                // The last date represents the delisting date or the end date of the last ticker.
+                // Any intermediate dates (if present) indicate ticker changes: each represents the last day of a previous ticker.
+                // The new ticker becomes active on the next calendar day.
+                // Therefore, if there was no ticker change, the first date is the start date of the current ticker.
+                // If there was a ticker change, the current ticker's start date is the day after the last but one date, so we increment it by one day in that case.
                 DateTime startDate = DateTime.ParseExact(mapFilesFirstRows[i], "yyyyMMdd", CultureInfo.InvariantCulture);
-                DateTime startDateCurrTicker = DateTime.ParseExact(mapFilesLastButOneRows[i], "yyyyMMdd", CultureInfo.InvariantCulture).AddDays(1);
+                DateTime startDateCurrTicker = DateTime.ParseExact(mapFilesLastButOneRows[i], "yyyyMMdd", CultureInfo.InvariantCulture);
+                if (startDate != startDateCurrTicker)
+                    startDateCurrTicker = startDateCurrTicker.AddDays(1);
                 DateTime endDate = DateTime.ParseExact(mapFilesLastRows[i], "yyyyMMdd", CultureInfo.InvariantCulture);
                 if (endDate < DateTime.Today) // If not alive, don't create new factor file
                     continue;

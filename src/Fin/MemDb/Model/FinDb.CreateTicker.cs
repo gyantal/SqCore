@@ -84,7 +84,7 @@ public partial class FinDb
             // Simple case: only ticker, initial date, and exchange
             contentBuilder.AppendLine($"{initialDateStr},{ticker.ToLower()},{exchange}");
             contentBuilder.AppendLine($"20501231,{ticker.ToLower()},{exchange}");
-            startDateCurrTicker = DateTime.ParseExact(initialDateStr, "yyyyMMdd", CultureInfo.InvariantCulture).AddDays(1); // Initial date as startDateCurrTicker
+            startDateCurrTicker = DateTime.ParseExact(initialDateStr, "yyyyMMdd", CultureInfo.InvariantCulture); // Initial date as startDateCurrTicker. See comment in FinDb.Crawler.cs.
         }
         else if (parts.Length > 3)
         {
