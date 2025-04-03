@@ -7,15 +7,14 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace DbManager;
 
-enum WorkMode { UserConsoleMenu, LegacyDbBackup, LegacyDbRestore, RedisDbBackup, RedisDbRestore, PostgreDbBackup, PostgreDbRestore };
+enum WorkMode { UserConsoleMenu, LegacyDbTablesBackup, LegacyDbTablesRestore, LegacyDbFullBackup, LegacyDbFullRestore, RedisDbBackup, RedisDbRestore, PostgreDbBackup, PostgreDbRestore };
 
 class Program
 {
     //private static readonly NLog.Logger gLogger = NLog.LogManager.GetCurrentClassLogger();   // the name of the logger will be the "Namespace.Class"
     private static readonly NLog.Logger gLogger = NLog.LogManager.GetLogger("Program");   // the name of the logger will be not the "Namespace.Class", but whatever you prefer: "Program"
     public static IConfigurationRoot gConfiguration = new ConfigurationBuilder().Build();
-
-    static List<WorkMode> gWorkModes = new();
+    static Dictionary<WorkMode, string> gWorkModes = new();
 
     static void Main(string[] p_args)
     {
@@ -32,17 +31,38 @@ class Program
         gConfiguration = builder.Build();
 
         // Step 2: Process command line args
-        for (int i = 0; i < p_args.Length; i++)
-            gWorkModes.Add(gStrToWorkMode[p_args[i]]);
+        for (int i = 0; i < p_args.Length; i += 2) // Arguments are provided in pairs (e.g., "-legacytablesbackup" "C:/SqCoreWeb_LegacyDb"), so we increment i by 2 to process multiple work modes correctly.
+        {
+            string workmodeStr = p_args[i].Trim();
+            string folderPath = (i + 1 < p_args.Length) ? p_args[i + 1].Trim().Trim('"') : string.Empty;
+            if (gStrToWorkMode.TryGetValue(workmodeStr, out WorkMode workMode))
+                gWorkModes[workMode] = folderPath;
+            else
+                Console.WriteLine($"Warning: Unrecognized work mode '{workmodeStr}'");
+        }
 
         // Step 3: Process the 'automatic' workmodes
-        if (gWorkModes.Contains(WorkMode.LegacyDbBackup))
-            Controller.g_controller.BackupLegacyDb("C:/SqCoreWeb_LegacyDb");
+        foreach (WorkMode key in gWorkModes.Keys)
+        {
+            switch (key)
+            {
+                case WorkMode.LegacyDbTablesBackup:
+                    Controller.g_controller.BackupLegacyDb(gWorkModes[key]);
+                    break;
+                case WorkMode.LegacyDbTablesRestore:
+                    Controller.g_controller.RestoreLegacyDbTables(gWorkModes[key]);
+                    break;
+            }
+        }
 
         // Step 4: Show the User Console menu if necessary (if UserConsoleMenu)
-        if (gWorkModes.IsNullOrEmpty() || gWorkModes.Contains(WorkMode.UserConsoleMenu))
+        if (gWorkModes.IsNullOrEmpty() || gWorkModes.Keys.Contains(WorkMode.UserConsoleMenu))
             ShowUserConsoleMenu(appName, sensitiveConfigFullPath);
-
+        else
+        {
+            Console.WriteLine("\nPress ENTER to end.");
+            Console.ReadLine();
+        }
         NLog.LogManager.Shutdown();
     }
 
@@ -137,11 +157,13 @@ class Program
 
     public static readonly Dictionary<string, WorkMode> gStrToWorkMode = new()
     {
-        { "legacybackup", WorkMode.LegacyDbBackup },
-        { "legacyDbRestore", WorkMode.LegacyDbRestore },
-        { "redisDbBackup", WorkMode.RedisDbBackup },
-        { "redisDbRestore", WorkMode.RedisDbRestore },
-        { "postgreDbBackup", WorkMode.PostgreDbBackup },
-        { "postgreDbRestore", WorkMode.PostgreDbRestore },
+        { "-legacytablesbackup", WorkMode.LegacyDbTablesBackup },
+        { "-legacytablesrestore", WorkMode.LegacyDbTablesRestore },
+        { "-legacyfullbackup", WorkMode.LegacyDbFullBackup },
+        { "-legacyfullrestore", WorkMode.LegacyDbFullRestore },
+        { "-redisbackup", WorkMode.RedisDbBackup },
+        { "-redisrestore", WorkMode.RedisDbRestore },
+        { "-postgrebackup", WorkMode.PostgreDbBackup },
+        { "-postgrerestore", WorkMode.PostgreDbRestore },
     };
 }

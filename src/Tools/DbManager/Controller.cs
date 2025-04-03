@@ -245,8 +245,7 @@ class Controller
         if (p_backupPathFileOrDir.EndsWith(".7z")) // If it ends with .7z assume the file was given as parameter
         {
             zipFileFullPath = p_backupPathFileOrDir;
-            int lastSlashIndex = p_backupPathFileOrDir.LastIndexOf('\\');
-            backupPath = p_backupPathFileOrDir.Substring(0, lastSlashIndex);
+            backupPath = Path.GetDirectoryName(p_backupPathFileOrDir) ?? p_backupPathFileOrDir;
         }
         else
         {
