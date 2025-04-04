@@ -304,8 +304,10 @@ public class PrtfVwrWs
         {
             DateTime endTimeUtc = forcedEndTimeUtc!.Value;
             DateTime startTimeUtc = endTimeUtc.Date.AddDays(-1).AddHours(8); // To retrieve data for the same day, specify the time explicitly, e.g., new(2008, 01, 01, 8, 0, 0). see HistoryProviderSaturdayEndTest()
-            if (startTimeUtc.IsWeekend()) // Check for weekend
-                startTimeUtc = startTimeUtc.DayOfWeek == DayOfWeek.Sunday ? endTimeUtc.Date.AddDays(-3).AddHours(8) : endTimeUtc.Date.AddDays(-2).AddHours(8);
+            if (startTimeUtc.DayOfWeek == DayOfWeek.Saturday)
+                startTimeUtc = startTimeUtc.AddDays(-1);
+            else if (startTimeUtc.DayOfWeek == DayOfWeek.Sunday)
+                startTimeUtc = startTimeUtc.AddDays(-2);
 
             foreach(PortfolioPosition prtfPos in prtfRunResultJs.PrtfPoss)
             {
@@ -327,7 +329,7 @@ public class PrtfVwrWs
                 NodaTime.DateTimeZone sliceTimeZone = TimeZones.NewYork; // "algorithm.TimeZone"
                 List<Slice> result = FinDb.gFinDb.HistoryProvider.GetHistory(historyRequests, sliceTimeZone).ToList();
                 prtfPos.BacktestLastPrice = (float)result[0].Bars.Values.Last().Price;
-                prtfPos.EstPrice = (float)result[1].Bars.Values.Last().Price;
+                // prtfPos.EstPrice = (float)result[1].Bars.Values.Last().Price; // No need to update EstPrice, as in the backtest if the EndTime is a proper past time, then BacktestLastPrice = EstPrice = close price of that last day is correct.
             }
         }
         byte[] encodedMsg = Encoding.UTF8.GetBytes($"PrtfVwr.{p_outputMsgCode}:" + Utils.CamelCaseSerialize(prtfRunResultJs));
