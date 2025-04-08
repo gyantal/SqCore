@@ -241,21 +241,21 @@ class Controller
         // Step 1: Identify the backup file (.7z) in the specified directory
         Console.WriteLine($"Restore {p_backupPathFileOrDir}");
         string zipFileFullPath;
-        string backupPath;
+        string backupDir;
         if (p_backupPathFileOrDir.EndsWith(".7z")) // If it ends with .7z assume the file was given as parameter
         {
             zipFileFullPath = p_backupPathFileOrDir;
-            backupPath = Path.GetDirectoryName(p_backupPathFileOrDir) ?? p_backupPathFileOrDir;
+            backupDir = Path.GetDirectoryName(p_backupPathFileOrDir) ?? throw new SqException("Invalid path: Directory doesnt exists");
         }
         else
         {
             FileInfo? latestZipFile = new DirectoryInfo(p_backupPathFileOrDir).GetFiles("*.7z").OrderByDescending(f => f.LastWriteTime).FirstOrDefault();
             zipFileFullPath = latestZipFile!.FullName;
-            backupPath = p_backupPathFileOrDir;
+            backupDir = p_backupPathFileOrDir;
         }
         // Step 2: Extract the contents of the ZIP file to the backup path using 7-Zip
         string zipExePath = @"C:\Program Files\7-Zip\7z.exe";
-        string zipProcessArgs = $"x \"{zipFileFullPath}\" -o\"{backupPath}\" -y";
+        string zipProcessArgs = $"x \"{zipFileFullPath}\" -o\"{backupDir}\" -y";
         (string zipOutputMsg, string zipErrorMsg) = ProcessCommandHelper(zipExePath, zipProcessArgs);
         if (!string.IsNullOrWhiteSpace(zipErrorMsg))
         {
@@ -282,7 +282,7 @@ class Controller
             Console.WriteLine($"Deletion complete for table: {legacyDbTables[i]}");
         }
         // Step 4: Insert data from extracted CSV files into the respective tables
-        string[] csvFiles = Directory.GetFiles(backupPath, "*.csv");
+        string[] csvFiles = Directory.GetFiles(backupDir, "*.csv");
         foreach (string file in csvFiles)
         {
             string fileName = Path.GetFileName(file);
@@ -295,7 +295,7 @@ class Controller
         // step5: Delete the csv files after Inserting
         foreach (string fileName in csvFiles)
         {
-            string filePath = Path.Combine(backupPath, fileName);
+            string filePath = Path.Combine(backupDir, fileName);
             if (File.Exists(filePath))
                 File.Delete(filePath);
         }
@@ -362,5 +362,71 @@ class Controller
             transaction.Rollback(); // Roll back the transaction if any error occurs during processing or insertion
             Console.WriteLine($"Error during insert: {ex.Message}");
         }
+    }
+
+    public void RestoreLegacyDbFull(string p_backupPathFileOrDir)
+    {
+        // Step1: Check SqlPackage Version
+        string cmdExePath = "cmd.exe";
+        string sqlPackageVersionArgs = "/c SqlPackage /Version";
+        (string sqlPackageVersion, string sqlPackageErr) = ProcessCommandHelper(cmdExePath, sqlPackageVersionArgs);
+        if (!string.IsNullOrWhiteSpace(sqlPackageErr))
+        {
+            Console.WriteLine($"SqlPackage Version Error: {sqlPackageErr}");
+            return;
+        }
+        Console.WriteLine($"SqlPackage Version: {sqlPackageVersion}");
+        // Step2: Locate SqlPackage.exe Path
+        string sqlPackageLocateArgs = "/c where SqlPackage";
+        (string sqlPackagePath, string sqlPackagePathErr) = ProcessCommandHelper(cmdExePath, sqlPackageLocateArgs);
+        if (!string.IsNullOrWhiteSpace(sqlPackagePathErr))
+        {
+            Console.WriteLine($"SqlPackage Path Error: {sqlPackagePathErr}");
+            return;
+        }
+        // If multiple paths are returned, select the first one that is non-empty and points to an existing file
+        string? sqlPackageExePath = sqlPackagePath.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault(path => !string.IsNullOrWhiteSpace(path) && File.Exists(path));
+        if (sqlPackageExePath == null)
+        {
+            Console.WriteLine("SqlPackage.exe not found or invalid path returned.");
+            return;
+        }
+        Console.WriteLine($"SqlPackage Path: {sqlPackageExePath}");
+
+        // string legacyDbConnString = Program.gConfiguration.GetConnectionString("LegacyMsSqlDefault") ?? throw new SqException("ConnectionString is missing from Config");
+        string legacyDbConnString = "Data Source=DAYA-DESKTOP\\MSSQLSERVER1;Initial Catalog=master;User ID=sa;Password=11235;TrustServerCertificate=True"; // To be deleted, just showing as a refernce.
+        // Step3: Delete the database
+        g_connection = new SqlConnection(legacyDbConnString);
+        g_connection.Open();
+        using (SqlCommand cmd = new SqlCommand("DROP DATABASE legacyDbBackup_250314T0731", g_connection)) // replace "legacyDbBackup_250314T0731" with actual database to be deleted.
+        {
+            cmd.CommandTimeout = 300;
+            cmd.ExecuteNonQuery();
+        }
+        Console.WriteLine("Deleted existing database: legacyDbBackup_250314T0731");
+
+        // Step4: import the bacpac file
+        string bacpacFileFullPath;
+        if (p_backupPathFileOrDir.EndsWith(".bacpac")) // If it ends with .bacpac assume the file was given as parameter
+            bacpacFileFullPath = p_backupPathFileOrDir;
+        else
+        {
+            FileInfo? latestBacpacFile = new DirectoryInfo(p_backupPathFileOrDir).GetFiles("*.bacpac").OrderByDescending(f => f.LastWriteTime).FirstOrDefault();
+            if (latestBacpacFile == null)
+            {
+                Console.WriteLine("No .bacpac files found in the specified directory.");
+                return;
+            }
+            bacpacFileFullPath = latestBacpacFile.FullName;
+        }
+        string targetDbName = Path.GetFileNameWithoutExtension(bacpacFileFullPath); // This will be used as the database name
+        string targetDbConnString = $"Data Source=DAYA-DESKTOP\\MSSQLSERVER1;Initial Catalog={targetDbName};User ID=sa;Password=11235;TrustServerCertificate=True";
+        string bacpacImportArgs = $"/Action:Import /TargetConnectionString:\"{targetDbConnString}\" /SourceFile:\"{bacpacFileFullPath}\"";
+        (string importOutputMsg, string importErrorMsg) = ProcessCommandHelper(sqlPackageExePath, bacpacImportArgs);
+        if (importErrorMsg == null)
+            Console.WriteLine("Successfully imported the bacpac file");
+        else
+            Console.WriteLine($"importErrorMsg: {importErrorMsg}");
+        g_connection.Close();
     }
 }

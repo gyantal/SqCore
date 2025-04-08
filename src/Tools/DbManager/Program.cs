@@ -52,6 +52,12 @@ class Program
                 case WorkMode.LegacyDbTablesRestore:
                     Controller.g_controller.RestoreLegacyDbTables(gWorkModes[key]);
                     break;
+                case WorkMode.LegacyDbFullBackup:
+                    Controller.g_controller.BackupLegacyDbFull(gWorkModes[key]);
+                    break;
+                case WorkMode.LegacyDbFullRestore:
+                    Controller.g_controller.RestoreLegacyDbFull(gWorkModes[key]);
+                    break;
             }
         }
 
@@ -129,7 +135,10 @@ class Program
                 RestoreLegacyDbWithUserOption();
                 break;
             case "5":
-                Controller.g_controller.ExportLegacyDbAsBacpac("C:/SqCoreWeb_LegacyDb");
+                Controller.g_controller.BackupLegacyDbFull("C:/SqCoreWeb_LegacyDb");
+                break;
+            case "6":
+                Controller.g_controller.RestoreLegacyDbFull("C:/SqCoreWeb_LegacyDb");
                 break;
             case "9":
                 return "UserChosenExit";
