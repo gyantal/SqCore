@@ -86,7 +86,7 @@ class Controller
                 ExportLegacyDbTableToCsv(g_connection, p_backupPath, item.TableName, item.FileName);
             // step3: compress all csv files using 7z tool
             CompressLegacyDbBackupFiles(p_backupPath, legacyDbTablesAndFileNames.Select(r => r.FileName).ToList(), utcDateTimeStr);
-            Console.WriteLine($"Backup process completed. zip file created");
+            Console.WriteLine($"Success - Backup process completed");
         }
         catch (Exception e)
         {
@@ -171,41 +171,22 @@ class Controller
         }
     }
 
-    public void ExportLegacyDbAsBacpac(string p_backupPath)
+    public void BackupLegacyDbFull(string p_backupPath)
     {
-        // Step1: Check SqlPackage Version
-        string cmdExePath = "cmd.exe";
-        string sqlPackageVersionArgs = "/c SqlPackage /Version";
-        (string sqlPackageVersion, string sqlPackageErr) = ProcessCommandHelper(cmdExePath, sqlPackageVersionArgs);
-        if (!string.IsNullOrWhiteSpace(sqlPackageErr))
+        (string? sqlPackageExePath, string? errorMsg) = GetSqlPackageExePath();
+        if (errorMsg != null)
         {
-            Console.WriteLine($"SqlPackage Version Error: {sqlPackageErr}");
+            Console.WriteLine($"{errorMsg}");
             return;
         }
-        Console.WriteLine($"SqlPackage Version: {sqlPackageVersion}");
-        // Step2: Locate SqlPackage.exe Path
-        string sqlPackageLocateArgs = "/c where SqlPackage";
-        (string sqlPackagePath, string sqlPackagePathErr) = ProcessCommandHelper(cmdExePath, sqlPackageLocateArgs);
-        if (!string.IsNullOrWhiteSpace(sqlPackagePathErr))
-        {
-            Console.WriteLine($"SqlPackage Path Error: {sqlPackagePathErr}");
-            return;
-        }
-        // If multiple paths are returned, select the first one that is non-empty and points to an existing file
-        string? sqlPackageExePath = sqlPackagePath.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault(path => !string.IsNullOrWhiteSpace(path) && File.Exists(path));
-        if (sqlPackageExePath == null)
-        {
-            Console.WriteLine("SqlPackage.exe not found or invalid path returned.");
-            return;
-        }
-        Console.WriteLine($"SqlPackage Path: {sqlPackageExePath}");
+
         // Step3: Export Legacy Database to BACPAC
         string legacyDbConnString = Program.gConfiguration.GetConnectionString("LegacyMsSqlDefault") ?? throw new SqException("ConnectionString is missing from Config"); // apporxiamte Time : 2 mins 30 secs
         // string legacyDbConnString = "Data Source=DAYA-DESKTOP\\MSSQLSERVER1;Initial Catalog=HqSqlDb20250225_old;User ID=sa;Password=11235;TrustServerCertificate=True"; // To be deleted, just showing as a refernce.
         string bacpacLegacyDbFileName = $"legacyDbBackup_{DateTime.UtcNow.ToYYMMDDTHHMM()}.bacpac";
         string bacpacBackupFilePath = Path.Combine(p_backupPath, bacpacLegacyDbFileName);
         string bacpacExportArgs = $"/Action:Export /SourceConnectionString:\"{legacyDbConnString}\" /TargetFile:\"{bacpacBackupFilePath}\"";
-        (string bacpacOutputMsg, string bacpacErrorMsg) = ProcessCommandHelper(sqlPackageExePath, bacpacExportArgs);
+        (string bacpacOutputMsg, string bacpacErrorMsg) = ProcessCommandHelper(sqlPackageExePath!, bacpacExportArgs);
         if (!string.IsNullOrWhiteSpace(bacpacErrorMsg))
             Console.WriteLine("Error: " + bacpacErrorMsg);
         else
@@ -366,33 +347,12 @@ class Controller
 
     public void RestoreLegacyDbFull(string p_backupPathFileOrDir)
     {
-        // Step1: Check SqlPackage Version
-        string cmdExePath = "cmd.exe";
-        string sqlPackageVersionArgs = "/c SqlPackage /Version";
-        (string sqlPackageVersion, string sqlPackageErr) = ProcessCommandHelper(cmdExePath, sqlPackageVersionArgs);
-        if (!string.IsNullOrWhiteSpace(sqlPackageErr))
+        (string? sqlPackageExePath, string? errorMsg) = GetSqlPackageExePath();
+        if (errorMsg != null)
         {
-            Console.WriteLine($"SqlPackage Version Error: {sqlPackageErr}");
+            Console.WriteLine($"{errorMsg}");
             return;
         }
-        Console.WriteLine($"SqlPackage Version: {sqlPackageVersion}");
-        // Step2: Locate SqlPackage.exe Path
-        string sqlPackageLocateArgs = "/c where SqlPackage";
-        (string sqlPackagePath, string sqlPackagePathErr) = ProcessCommandHelper(cmdExePath, sqlPackageLocateArgs);
-        if (!string.IsNullOrWhiteSpace(sqlPackagePathErr))
-        {
-            Console.WriteLine($"SqlPackage Path Error: {sqlPackagePathErr}");
-            return;
-        }
-        // If multiple paths are returned, select the first one that is non-empty and points to an existing file
-        string? sqlPackageExePath = sqlPackagePath.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault(path => !string.IsNullOrWhiteSpace(path) && File.Exists(path));
-        if (sqlPackageExePath == null)
-        {
-            Console.WriteLine("SqlPackage.exe not found or invalid path returned.");
-            return;
-        }
-        Console.WriteLine($"SqlPackage Path: {sqlPackageExePath}");
-
         // string legacyDbConnString = Program.gConfiguration.GetConnectionString("LegacyMsSqlDefault") ?? throw new SqException("ConnectionString is missing from Config");
         string legacyDbConnString = "Data Source=DAYA-DESKTOP\\MSSQLSERVER1;Initial Catalog=master;User ID=sa;Password=11235;TrustServerCertificate=True"; // To be deleted, just showing as a refernce.
         // Step3: Delete the database
@@ -422,11 +382,35 @@ class Controller
         string targetDbName = Path.GetFileNameWithoutExtension(bacpacFileFullPath); // This will be used as the database name
         string targetDbConnString = $"Data Source=DAYA-DESKTOP\\MSSQLSERVER1;Initial Catalog={targetDbName};User ID=sa;Password=11235;TrustServerCertificate=True";
         string bacpacImportArgs = $"/Action:Import /TargetConnectionString:\"{targetDbConnString}\" /SourceFile:\"{bacpacFileFullPath}\"";
-        (string importOutputMsg, string importErrorMsg) = ProcessCommandHelper(sqlPackageExePath, bacpacImportArgs);
+        (string importOutputMsg, string importErrorMsg) = ProcessCommandHelper(sqlPackageExePath!, bacpacImportArgs);
         if (importErrorMsg == null)
             Console.WriteLine("Successfully imported the bacpac file");
         else
             Console.WriteLine($"importErrorMsg: {importErrorMsg}");
         g_connection.Close();
+    }
+
+    static (string? sqlPackageExePath, string? errorMsg) GetSqlPackageExePath()
+    {
+        string cmdExePath = "cmd.exe";
+        string sqlPackageVersionArgs = "/c SqlPackage /Version";
+        // Step1: Check SqlPackage Version
+        (string sqlPackageVersion, string sqlPackageErr) = ProcessCommandHelper(cmdExePath, sqlPackageVersionArgs);
+        if (!string.IsNullOrWhiteSpace(sqlPackageErr))
+            return (null, $"SqlPackage Version Error: {sqlPackageErr}");
+        Console.WriteLine($"SqlPackage Version: {sqlPackageVersion}");
+
+        // Step 2: Locate SqlPackage.exe Path
+        string sqlPackageLocateArgs = "/c where SqlPackage";
+        (string sqlPackagePath, string sqlPackagePathErr) = ProcessCommandHelper(cmdExePath, sqlPackageLocateArgs);
+        if (!string.IsNullOrWhiteSpace(sqlPackagePathErr))
+            return (null, $"SqlPackage Path Error: {sqlPackagePathErr}");
+
+        // Step 3: Get the first valid executable path
+        string? sqlPackageExePath = sqlPackagePath.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault(path => !string.IsNullOrWhiteSpace(path) && File.Exists(path));
+        if (sqlPackageExePath == null)
+            return (null, "SqlPackage.exe not found or invalid path returned.");
+
+        return (sqlPackageExePath, null);
     }
 }
