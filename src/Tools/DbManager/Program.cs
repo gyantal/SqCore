@@ -129,21 +129,53 @@ class Program
                 Controller.g_controller.TestLegacyDb();
                 break;
             case "3":
-                Controller.g_controller.BackupLegacyDb("C:/SqCoreWeb_LegacyDb");
+                string? backupDirPath = GetDirectoryFromUserInput();
+                if (!string.IsNullOrEmpty(backupDirPath))
+                    Controller.g_controller.BackupLegacyDb(backupDirPath);
                 break;
             case "4":
                 RestoreLegacyDbWithUserOption();
                 break;
             case "5":
-                Controller.g_controller.BackupLegacyDbFull("C:/SqCoreWeb_LegacyDb");
+                string? fullBackupDirPath = GetDirectoryFromUserInput();
+                if (!string.IsNullOrEmpty(fullBackupDirPath))
+                    Controller.g_controller.BackupLegacyDbFull(fullBackupDirPath);
                 break;
             case "6":
-                Controller.g_controller.RestoreLegacyDbFull("C:/SqCoreWeb_LegacyDb");
+                string? restoreDirPath = GetDirectoryFromUserInput();
+                if (!string.IsNullOrEmpty(restoreDirPath))
+                    Controller.g_controller.RestoreLegacyDbFull(restoreDirPath);
                 break;
             case "9":
                 return "UserChosenExit";
         }
         return string.Empty;
+    }
+
+    public static string GetDirectoryFromUserInput()
+    {
+        Console.WriteLine("Enter the directory:");
+        try
+        {
+            string userInput = Console.ReadLine() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(userInput))
+            {
+                Console.WriteLine("Directory path cannot be empty.");
+                return string.Empty;
+            }
+            string directoryPath = userInput.Trim();
+            if (!Directory.Exists(directoryPath))
+            {
+                Console.WriteLine($"The directory path '{directoryPath}' does not exist.");
+                return string.Empty;
+            }
+            return directoryPath;
+        }
+        catch (IOException e)
+        {
+            gLogger.Info($"Console.ReadLine() exception. Somebody closes the Terminal Window: {e.Message}");
+            return "ConsoleIsForcedToShutDown";
+        }
     }
 
     // Allowing the user to enter a custom file path or proceed with the default backup path.
