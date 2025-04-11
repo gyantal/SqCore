@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { ServerResponse, UserInput } from '../lib/gpt-common';
+import { ServerResponse, UserInput, ChatResponse } from '../lib/gpt-common';
 
 @Component({
   selector: 'app-llm-chat',
@@ -11,7 +11,7 @@ import { ServerResponse, UserInput } from '../lib/gpt-common';
 export class LlmChatComponent implements OnInit {
   m_httpClient: HttpClient;
   m_controllerBaseUrl: string;
-  m_selectedLlmModel: string = 'auto';
+  m_selectedLlmModel: string = 'grok';
   m_chatHistory: string[] = [];
 
   constructor(http: HttpClient) {
@@ -30,6 +30,11 @@ export class LlmChatComponent implements OnInit {
     // this._httpClient.post(this._chatGptUrl, body, { responseType: 'text'}).subscribe(resultText => { // if message comes not as a properly formatted JSON string
     this.m_httpClient.post<ServerResponse>(this.m_controllerBaseUrl + 'getchatresponse', body).subscribe((result) => { // if message comes as a properly formatted JSON string ("\n" => "\\n")
       this.m_chatHistory.push('- Assistant: ' + result.Response.replace('\n', '<br/>'));
+    }, (error) => console.error(error));
+
+    this.m_httpClient.post<ChatResponse>(this.m_controllerBaseUrl + 'getchatresponsegrok', body).subscribe((result) => {
+      const content = result.choices?.[0]?.message?.content ?? 'No response';
+      this.m_chatHistory.push('- Assistant: ' + content.replace(/\n/g, '<br/>'));
     }, (error) => console.error(error));
   }
 

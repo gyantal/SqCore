@@ -139,8 +139,9 @@ public class LlmAssistantController : Microsoft.AspNetCore.Mvc.Controller
         return msg;
     }
 
-    [Route("[action]")] // By using the "[action]" string as a parameter here, we state that the URI must contain this action’s name in addition to the controller’s name: http[s]://[domain]/[controller]/[action]
-    [HttpPost("getchatresponse")] // Complex string cannot be in the Url. Use Post instead of Get. Test with Chrome extension 'Talend API Tester'
+    // Temporarily commented out until we test grok(xAi)
+    // [Route("[action]")] // By using the "[action]" string as a parameter here, we state that the URI must contain this action’s name in addition to the controller’s name: http[s]://[domain]/[controller]/[action]
+    // [HttpPost("getchatresponse")] // Complex string cannot be in the Url. Use Post instead of Get. Test with Chrome extension 'Talend API Tester'
     public IActionResult GetChatResponse([FromBody] LlmUserInput p_inMsg)
     {
         if (p_inMsg == null)
@@ -747,5 +748,46 @@ public class LlmAssistantController : Microsoft.AspNetCore.Mvc.Controller
         earningsDate = earningsDateSpan.ToString();
 
         return earningsDate;
+    }
+
+    [Route("[action]")] // By using the "[action]" string as a parameter here, we state that the URI must contain this action’s name in addition to the controller’s name: http[s]://[domain]/[controller]/[action]
+    [HttpPost("getchatresponsegrok")] // Complex string cannot be in the Url. Use Post instead of Get. Test with Chrome extension 'Talend API Tester'
+    public IActionResult GetChatResponseGrok([FromBody] LlmUserInput p_inMsg)
+    {
+        if (p_inMsg == null)
+            return BadRequest("Invalid data");
+        Console.WriteLine(p_inMsg.Msg);
+        string responseStr;
+        responseStr = GenerateChatResponseUsingGrok(p_inMsg).Result;
+        return Ok(responseStr);
+    }
+
+    public async Task<string> GenerateChatResponseUsingGrok(LlmUserInput p_inMsg)
+    {
+        string grokAIApiKey = Utils.Configuration["ConnectionStrings:GrokAIApiKey"] ?? throw new SqException("GrokApiKeyIsMissing is missing from Config");
+        string apiUrl = "https://api.x.ai/v1/chat/completions";
+        string llmModelName = p_inMsg.LlmModelName;
+        if (llmModelName == "grok")
+        {
+            llmModelName = "grok-2-latest";
+        }
+
+        using (HttpClient client = new HttpClient())
+        {
+            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {grokAIApiKey}");
+            var requestBody = new
+            {
+                model = llmModelName,
+                messages = new[]
+                {
+                    new { role = "user", content = p_inMsg.Msg }
+                }
+            };
+            string json = JsonSerializer.Serialize(requestBody);
+            StringContent content = new StringContent(json, Encoding.UTF8, "application/json");
+            HttpResponseMessage response = await client.PostAsync(apiUrl, content);
+            string result = await response.Content.ReadAsStringAsync();
+            return result;
+        }
     }
 }
