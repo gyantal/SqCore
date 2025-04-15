@@ -107,6 +107,7 @@ class Program
         Console.WriteLine("4. Restore LegacyDb (important tables)");
         Console.WriteLine("5. Backup LegacyDb (all, into *.bacpac)");
         Console.WriteLine("6. Restore LegacyDb (all, from *.bacpac)"); // warning SQL server should be configured as: EXEC sp_configure 'contained database authentication', 1; RECONFIGURE;
+        Console.WriteLine("7. Restore LegacyDb Safe (important tables)");
         Console.WriteLine("9. Exit gracefully (Avoid Ctrl-^C).");
         string userInput;
         try
@@ -145,6 +146,9 @@ class Program
                 string? restoreDirPath = GetDirectoryFromUserInput();
                 if (!string.IsNullOrEmpty(restoreDirPath))
                     Controller.g_controller.RestoreLegacyDbFull(restoreDirPath);
+                break;
+            case "7": // Temp: to be deleted
+                Controller.g_controller.RestoreLegacyDbTablesSafe("C:/SqCoreWeb_LegacyDb");
                 break;
             case "9":
                 return "UserChosenExit";
