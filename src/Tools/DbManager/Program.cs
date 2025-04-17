@@ -130,25 +130,29 @@ class Program
                 Controller.g_controller.TestLegacyDb();
                 break;
             case "3":
-                string? backupDirPath = GetDirectoryFromUserInput();
-                if (!string.IsNullOrEmpty(backupDirPath))
+                string? backupDirPath = GetDirOrFullPathFromUser();
+                if (!string.IsNullOrEmpty(backupDirPath) && backupDirPath != "ConsoleIsForcedToShutDown")
                     Controller.g_controller.BackupLegacyDb(backupDirPath);
                 break;
             case "4":
-                RestoreLegacyDbWithUserOption();
+                string? restoreDirPath = GetDirOrFullPathFromUser();
+                if (!string.IsNullOrEmpty(restoreDirPath) && restoreDirPath != "ConsoleIsForcedToShutDown")
+                    Controller.g_controller.RestoreLegacyDbTables(restoreDirPath);
                 break;
             case "5":
-                string? fullBackupDirPath = GetDirectoryFromUserInput();
-                if (!string.IsNullOrEmpty(fullBackupDirPath))
+                string? fullBackupDirPath = GetDirOrFullPathFromUser();
+                if (!string.IsNullOrEmpty(fullBackupDirPath) && fullBackupDirPath != "ConsoleIsForcedToShutDown")
                     Controller.g_controller.BackupLegacyDbFull(fullBackupDirPath);
                 break;
             case "6":
-                string? restoreDirPath = GetDirectoryFromUserInput();
-                if (!string.IsNullOrEmpty(restoreDirPath))
-                    Controller.g_controller.RestoreLegacyDbFull(restoreDirPath);
+                string? fullRestoreDirPath = GetDirOrFullPathFromUser();
+                if (!string.IsNullOrEmpty(fullRestoreDirPath) && fullRestoreDirPath != "ConsoleIsForcedToShutDown")
+                    Controller.g_controller.RestoreLegacyDbFull(fullRestoreDirPath);
                 break;
             case "7": // Temp: to be deleted
-                Controller.g_controller.RestoreLegacyDbTablesSafe("C:/SqCoreWeb_LegacyDb");
+                string? restoreTableDirPath = GetDirOrFullPathFromUser();
+                if (!string.IsNullOrEmpty(restoreTableDirPath) && restoreTableDirPath != "ConsoleIsForcedToShutDown")
+                    Controller.g_controller.RestoreLegacyDbTablesSafe(restoreTableDirPath);
                 break;
             case "9":
                 return "UserChosenExit";
@@ -156,48 +160,51 @@ class Program
         return string.Empty;
     }
 
-    public static string GetDirectoryFromUserInput()
+    public static string? GetDirOrFullPathFromUser()
     {
-        Console.WriteLine("Enter the directory:");
+        Console.Write("Do you want to provide the full path to a file (Y/N)? ");
+        string userInputFirstStr = Console.ReadLine() ?? string.Empty;
+        bool isInputFolder = !userInputFirstStr.Equals("y", StringComparison.OrdinalIgnoreCase);
+        Console.WriteLine(isInputFolder ? "Please enter the directory path (e.g., C:/SqCoreWeb_LegacyDb):" : "Please enter the full file path (e.g., C:/SqCoreWeb_LegacyDb/backup.7z):");
+
         try
         {
-            string userInput = Console.ReadLine() ?? string.Empty;
-            if (string.IsNullOrWhiteSpace(userInput))
+            string userInputSecondStr = Console.ReadLine()?.Trim('"', '\'') ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(userInputSecondStr))
             {
-                Console.WriteLine("Directory path cannot be empty.");
+                Console.WriteLine("Path cannot be empty.");
                 return string.Empty;
             }
-            string directoryPath = userInput.Trim();
-            if (!Directory.Exists(directoryPath))
+
+            if (isInputFolder)
             {
-                Console.WriteLine($"The directory path '{directoryPath}' does not exist.");
-                return string.Empty;
+                if (!Directory.Exists(userInputSecondStr))
+                {
+                    Console.WriteLine($"The directory path '{userInputSecondStr}' does not exist.");
+                    return string.Empty;
+                }
             }
-            return directoryPath;
+            else
+            {
+                if (!File.Exists(userInputSecondStr))
+                {
+                    Console.WriteLine($"The file path '{userInputSecondStr}' does not exist.");
+                    return string.Empty;
+                }
+
+                if (!userInputSecondStr.EndsWith(".7z", StringComparison.OrdinalIgnoreCase))
+                {
+                    Console.WriteLine("The file must have a .7z extension.");
+                    return string.Empty;
+                }
+            }
+            return userInputSecondStr;
         }
         catch (IOException e)
         {
             gLogger.Info($"Console.ReadLine() exception. Somebody closes the Terminal Window: {e.Message}");
             return "ConsoleIsForcedToShutDown";
         }
-    }
-
-    // Allowing the user to enter a custom file path or proceed with the default backup path.
-    public static void RestoreLegacyDbWithUserOption()
-    {
-        Console.Write("Do you want to provide the full path (Y/N).");
-        string confirmFirstStr = Console.ReadLine() ?? string.Empty;
-        if (confirmFirstStr.ToLower() == "y")
-        {
-            Console.Write("Enter the full path: "); // e.g,'C:/SqCoreWeb_LegacyDb/legacyDbBackup_250320T0902.7z'
-            string confirmSecondStr = Console.ReadLine()?.Trim('"', '\'') ?? string.Empty;
-            if (confirmSecondStr.EndsWith("7z"))
-                Controller.g_controller.RestoreLegacyDbTables(confirmSecondStr);
-            else
-                Console.Write("Check your path");
-        }
-        else if (confirmFirstStr.ToLower() == "n")
-            Controller.g_controller.RestoreLegacyDbTables("C:/SqCoreWeb_LegacyDb");
     }
 
     public static readonly Dictionary<string, WorkMode> gStrToWorkMode = new()
