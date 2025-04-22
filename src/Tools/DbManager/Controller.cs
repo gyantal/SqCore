@@ -172,7 +172,7 @@ class Controller
         }
     }
 
-    // 2025-04-09: LiveDB BackupFull to *.bacpac time (from India): ~20 minutes, filesize: 2,062,797 bytes.
+    // 2025-04-09: LiveDB BackupFull to *.bacpac time (from India or from UK): ~20 minutes, filesize: 2,062,797 bytes.
     public void BackupLegacyDbFull(string p_backupPath)
     {
         (string? sqlPackageExePath, string? errorMsg) = GetSqlPackageExePath();
@@ -294,63 +294,151 @@ class Controller
         g_connection = new SqlConnection(legacyDbConnString);
         g_connection.Open();
         string utcDateTimeStr = DateTime.UtcNow.ToYYMMDDTHHMM();
-        // Step1: Create New tables
-        string? createQueryErrorMsg = CreateStockTable(g_connection, utcDateTimeStr);
-        if (createQueryErrorMsg != null)
+        List<string> legacyDbTables = [ "FileSystemItem", "Stock", "PortfolioItem" ];
+        foreach (string table in legacyDbTables)
         {
-            Console.WriteLine(createQueryErrorMsg);
+            // Step1: Create New tables
+            string? createQueryErrorMsg = CreateTable(g_connection, utcDateTimeStr, table);
+            if (createQueryErrorMsg != null)
+            {
+                Console.WriteLine(createQueryErrorMsg);
+                return;
+            }
+        }
+
+        string zipFileFullPath;
+        string backupDir;
+        if (p_backupPathFileOrDir.EndsWith(".7z"))
+        {
+            zipFileFullPath = p_backupPathFileOrDir;
+            backupDir = Path.GetDirectoryName(p_backupPathFileOrDir) ?? throw new SqException("Invalid path: Directory doesn't exist");
+        }
+        else
+        {
+            FileInfo? latestZipFile = new DirectoryInfo(p_backupPathFileOrDir).GetFiles("*.7z").OrderByDescending(f => f.LastWriteTime).FirstOrDefault();
+            if (latestZipFile == null)
+            {
+                Console.WriteLine("No .7z backup file found in the directory.");
+                return;
+            }
+            zipFileFullPath = latestZipFile.FullName;
+            backupDir = p_backupPathFileOrDir;
+        }
+
+        // Extract the contents of the ZIP file
+        string zipExePath = @"C:\Program Files\7-Zip\7z.exe";
+        string zipProcessArgs = $"x \"{zipFileFullPath}\" -o\"{backupDir}\" -y";
+        (string zipOutputMsg, string zipErrorMsg) = ProcessCommandHelper(zipExePath, zipProcessArgs);
+        if (!string.IsNullOrWhiteSpace(zipErrorMsg))
+        {
+            Console.WriteLine(zipOutputMsg);
             return;
         }
-        // Step2: InsertData
-        string? InsertDataErrMsg = InsertData(p_backupPathFileOrDir, g_connection, utcDateTimeStr);
-        if (InsertDataErrMsg != null)
+        string[] csvFiles = Directory.GetFiles(backupDir, "*.csv");
+        foreach (string table in legacyDbTables)
         {
-            Console.WriteLine(InsertDataErrMsg);
-            return;
+            // Step2: InsertData
+            string? insertDataErrMsg = InsertData(backupDir, g_connection, utcDateTimeStr, table, csvFiles);
+            if (insertDataErrMsg != null)
+            {
+                Console.WriteLine(insertDataErrMsg);
+                return;
+            }
         }
         // Step3: Rename and Drop
-        string? renameAndDropTableErrMsg = RenameAndDropTable(g_connection, utcDateTimeStr);
-        if (renameAndDropTableErrMsg != null)
+        for (int i = legacyDbTables.Count - 1; i >= 0; i--) // Deleting in reverse order to ensure PortfolioItem is deleted before FileSystem and Stock entries
         {
-            Console.WriteLine(renameAndDropTableErrMsg);
-            return;
+            string? renameAndDropTableErrMsg = RenameAndDropTable(g_connection, utcDateTimeStr, legacyDbTables[i]);
+            if (renameAndDropTableErrMsg != null)
+            {
+                Console.WriteLine(renameAndDropTableErrMsg);
+                return;
+            }
         }
         Console.WriteLine("Success - Restored legacyDb tables");
         g_connection.Close();
     }
 
-    private static string? CreateStockTable(SqlConnection p_connection, string utcDateTimeStr)
+    // PK or FK Constraint names like "CONSTRAINT [PK_MyConstraintName] PRIMARY KEY CLUSTERED", must be unique across the entire database.
+    private static string? CreateTable(SqlConnection p_connection, string p_utcDateTimeStr, string p_tableName)
     {
         try
         {
-            string createQueryStr = $@" CREATE TABLE [dbo].[Stock_New{utcDateTimeStr}](
-            [ID] [int] IDENTITY(1,1) NOT NULL,
-            [CompanyID] [int] NULL,
-            [FundID] [int] NULL,
-            [ISIN] [varchar](12) NULL,
-            [Ticker] [varchar](20) NOT NULL,
-            [IsAlive] [bit] NOT NULL,
-            [CurrencyID] [smallint] NULL,
-            [StockExchangeID] [tinyint] NULL,
-            [Name] [nvarchar](128) NULL,
-        CONSTRAINT [PK_Stock_New{utcDateTimeStr}] PRIMARY KEY CLUSTERED 
-            ( [ID] ASC )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, 
-                            ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-        ) ON [PRIMARY];
-        ALTER TABLE [dbo].[Stock_New{utcDateTimeStr}]
-            ADD CONSTRAINT [DF_Stock_IsAlive_New{utcDateTimeStr}] DEFAULT ((1)) FOR [IsAlive];
-        ALTER TABLE [dbo].[Stock_New{utcDateTimeStr}] WITH NOCHECK
-            ADD CONSTRAINT [FK_Stock_Company_New{utcDateTimeStr}] FOREIGN KEY([CompanyID]) REFERENCES [dbo].[Company] ([ID]);
-        ALTER TABLE [dbo].[Stock_New{utcDateTimeStr}] NOCHECK CONSTRAINT [FK_Stock_Company_New{utcDateTimeStr}];
-        ALTER TABLE [dbo].[Stock_New{utcDateTimeStr}] WITH NOCHECK
-            ADD CONSTRAINT [FK_Stock_Currency_New{utcDateTimeStr}] FOREIGN KEY([CurrencyID]) REFERENCES [dbo].[Currency] ([ID]);
-        ALTER TABLE [dbo].[Stock_New{utcDateTimeStr}] NOCHECK CONSTRAINT [FK_Stock_Currency_New{utcDateTimeStr}];
-        ALTER TABLE [dbo].[Stock_New{utcDateTimeStr}] WITH NOCHECK
-            ADD CONSTRAINT [FK_Stock_StockExchange_New{utcDateTimeStr}] FOREIGN KEY([StockExchangeID]) REFERENCES [dbo].[StockExchange] ([ID]);
-        ALTER TABLE [dbo].[Stock_New{utcDateTimeStr}] NOCHECK CONSTRAINT [FK_Stock_StockExchange_New{utcDateTimeStr}];";
-        SqlCommand createSqlCmd = new(createQueryStr, p_connection);
-        createSqlCmd.ExecuteNonQuery();
-        return null;
+            string? createQueryStr = null;
+            switch (p_tableName)
+            {
+                case "FileSystemItem":
+                    createQueryStr = $@" CREATE TABLE [dbo].[FileSystemItem_New{p_utcDateTimeStr}](
+                        [ID] [int] IDENTITY(1,1) NOT NULL,
+                        [Name] [nvarchar](1024) NOT NULL,
+                        [UserID] [int] NOT NULL,
+                        [TypeID] [tinyint] NOT NULL,
+                        [ParentFolderID] [int] NOT NULL,
+                        [LastWriteTime] [datetime] NOT NULL,
+                        [Note] [varchar](1024) NULL,
+                    CONSTRAINT [PK_FileSystemItem_New{p_utcDateTimeStr}] PRIMARY KEY CLUSTERED
+                    ( [ID] ASC )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON,
+                        OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF, DATA_COMPRESSION = PAGE) ON [PRIMARY] ) ON [PRIMARY];
+                    ALTER TABLE [dbo].[FileSystemItem_New{p_utcDateTimeStr}]
+                        ADD CONSTRAINT [DF_FileSystemItem_ParentFolderID_New{p_utcDateTimeStr}] DEFAULT ((-1)) FOR [ParentFolderID];
+                    ALTER TABLE [dbo].[FileSystemItem_New{p_utcDateTimeStr}]
+                        ADD CONSTRAINT [DF_FileSystemItem_LastWriteTime_New{p_utcDateTimeStr}] DEFAULT (getutcdate()) FOR [LastWriteTime];
+                    ALTER TABLE [dbo].[FileSystemItem_New{p_utcDateTimeStr}] WITH NOCHECK
+                        ADD CONSTRAINT [FK_FileSystemItem_HQUser_New{p_utcDateTimeStr}] FOREIGN KEY([UserID]) REFERENCES [dbo].[HQUser] ([ID]);
+                    ALTER TABLE [dbo].[FileSystemItem_New{p_utcDateTimeStr}] NOCHECK CONSTRAINT [FK_FileSystemItem_HQUser_New{p_utcDateTimeStr}];";
+                    break;
+                case "Stock":
+                    createQueryStr = $@" CREATE TABLE [dbo].[Stock_New{p_utcDateTimeStr}](
+                        [ID] [int] IDENTITY(1,1) NOT NULL,
+                        [CompanyID] [int] NULL,
+                        [FundID] [int] NULL,
+                        [ISIN] [varchar](12) NULL,
+                        [Ticker] [varchar](20) NOT NULL,
+                        [IsAlive] [bit] NOT NULL,
+                        [CurrencyID] [smallint] NULL,
+                        [StockExchangeID] [tinyint] NULL,
+                        [Name] [nvarchar](128) NULL,
+                    CONSTRAINT [PK_Stock_New{p_utcDateTimeStr}] PRIMARY KEY CLUSTERED
+                    ( [ID] ASC )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF,
+                        ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY] ) ON [PRIMARY];
+                    ALTER TABLE [dbo].[Stock_New{p_utcDateTimeStr}]
+                        ADD CONSTRAINT [DF_Stock_IsAlive_New{p_utcDateTimeStr}] DEFAULT ((1)) FOR [IsAlive];
+                    ALTER TABLE [dbo].[Stock_New{p_utcDateTimeStr}] WITH NOCHECK
+                        ADD CONSTRAINT [FK_Stock_Company_New{p_utcDateTimeStr}] FOREIGN KEY([CompanyID]) REFERENCES [dbo].[Company] ([ID]);
+                    ALTER TABLE [dbo].[Stock_New{p_utcDateTimeStr}] NOCHECK CONSTRAINT [FK_Stock_Company_New{p_utcDateTimeStr}];
+                    ALTER TABLE [dbo].[Stock_New{p_utcDateTimeStr}] WITH NOCHECK
+                        ADD CONSTRAINT [FK_Stock_Currency_New{p_utcDateTimeStr}] FOREIGN KEY([CurrencyID]) REFERENCES [dbo].[Currency] ([ID]);
+                    ALTER TABLE [dbo].[Stock_New{p_utcDateTimeStr}] NOCHECK CONSTRAINT [FK_Stock_Currency_New{p_utcDateTimeStr}];
+                    ALTER TABLE [dbo].[Stock_New{p_utcDateTimeStr}] WITH NOCHECK
+                        ADD CONSTRAINT [FK_Stock_StockExchange_New{p_utcDateTimeStr}] FOREIGN KEY([StockExchangeID]) REFERENCES [dbo].[StockExchange] ([ID]);
+                    ALTER TABLE [dbo].[Stock_New{p_utcDateTimeStr}] NOCHECK CONSTRAINT [FK_Stock_StockExchange_New{p_utcDateTimeStr}];";
+                    break;
+                case "PortfolioItem":
+                    createQueryStr = $@"CREATE TABLE [dbo].[PortfolioItem_New{p_utcDateTimeStr}](
+                        [ID] [int] IDENTITY(1,1) NOT NULL,
+                        [PortfolioID] [int] NOT NULL,
+                        [TransactionType] [tinyint] NULL,
+                        [AssetTypeID] [tinyint] NOT NULL,
+                        [AssetSubTableID] [int] NOT NULL,
+                        [Volume] [int] NULL,
+                        [Price] [real] NULL,
+                        [Date] [smalldatetime] NOT NULL,
+                        [Note] [varchar](1024) NULL,
+                    CONSTRAINT [PK_PortfolioItem_New{p_utcDateTimeStr}] PRIMARY KEY CLUSTERED
+                    ( [PortfolioID] ASC, [ID] ASC )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON,
+                        OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF, DATA_COMPRESSION = PAGE) ON [PRIMARY] ) ON [PRIMARY];
+                    ALTER TABLE [dbo].[PortfolioItem_New{p_utcDateTimeStr}] ADD CONSTRAINT [DF_PortfolioItem_TransactionType_New{p_utcDateTimeStr}] DEFAULT ((1)) FOR [TransactionType];
+                    ALTER TABLE [dbo].[PortfolioItem_New{p_utcDateTimeStr}]  WITH NOCHECK ADD CONSTRAINT [FK_PortfolioItem_AssetType_New{p_utcDateTimeStr}] FOREIGN KEY([AssetTypeID])
+                    REFERENCES [dbo].[AssetType] ([ID]);
+                    ALTER TABLE [dbo].[PortfolioItem_New{p_utcDateTimeStr}] NOCHECK CONSTRAINT [FK_PortfolioItem_AssetType_New{p_utcDateTimeStr}];
+                    ALTER TABLE [dbo].[PortfolioItem_New{p_utcDateTimeStr}] WITH NOCHECK ADD CONSTRAINT [FK_PortfolioItem_FSPortfolio_New{p_utcDateTimeStr}] FOREIGN KEY([PortfolioID])
+                    REFERENCES [dbo].[FSPortfolio] ([FileSystemItemID]);
+                    ALTER TABLE [dbo].[PortfolioItem_New{p_utcDateTimeStr}] NOCHECK CONSTRAINT [FK_PortfolioItem_FSPortfolio_New{p_utcDateTimeStr}];";
+                    break;
+            }
+            SqlCommand createSqlCmd = new(createQueryStr, p_connection);
+            createSqlCmd.ExecuteNonQuery();
+            return null;
         }
         catch (SqlException ex)
         {
@@ -362,54 +450,27 @@ class Controller
         }
     }
 
-    private static string? InsertData(string p_backupPathFileOrDir, SqlConnection p_connection, string p_utcDateTimeStr)
+    private static string? InsertData(string p_backupPathFileOrDir, SqlConnection p_connection, string p_utcDateTimeStr, string p_tableName, string[] p_legacyDbCsvFiles)
     {
         try
         {
-            string zipFileFullPath;
-            string backupDir;
-            if (p_backupPathFileOrDir.EndsWith(".7z"))
-            {
-                zipFileFullPath = p_backupPathFileOrDir;
-                backupDir = Path.GetDirectoryName(p_backupPathFileOrDir) ?? throw new SqException("Invalid path: Directory doesn't exist");
-            }
-            else
-            {
-                FileInfo? latestZipFile = new DirectoryInfo(p_backupPathFileOrDir).GetFiles("*.7z").OrderByDescending(f => f.LastWriteTime).FirstOrDefault();
-                if (latestZipFile == null)
-                    return "No .7z backup file found in the directory.";
-
-                zipFileFullPath = latestZipFile.FullName;
-                backupDir = p_backupPathFileOrDir;
-            }
-
-            // Extract the contents of the ZIP file
-            string zipExePath = @"C:\Program Files\7-Zip\7z.exe";
-            string zipProcessArgs = $"x \"{zipFileFullPath}\" -o\"{backupDir}\" -y";
-            (string zipOutputMsg, string zipErrorMsg) = ProcessCommandHelper(zipExePath, zipProcessArgs);
-
-            if (!string.IsNullOrWhiteSpace(zipErrorMsg))
-                return zipErrorMsg;
-
-            string[] csvFiles = Directory.GetFiles(backupDir, "*.csv");
-            foreach (string file in csvFiles)
+            foreach (string file in p_legacyDbCsvFiles)
             {
                 string fileName = Path.GetFileName(file);
-                if (fileName.StartsWith("stock"))
-                    InsertCsvFileToLegacyDbTable(p_connection, file, $"Stock_New{p_utcDateTimeStr}");
-            }
-            // Delete the csv files after inserting
-            foreach (string fileName in csvFiles)
-            {
-                string filePath = Path.Combine(backupDir, fileName);
-                if (File.Exists(filePath))
-                    File.Delete(filePath);
+                if (fileName.Contains(p_tableName, StringComparison.OrdinalIgnoreCase))
+                {
+                    InsertCsvFileToLegacyDbTable(p_connection, file, $"{p_tableName}_New{p_utcDateTimeStr}");
+                    string filePath = Path.Combine(p_backupPathFileOrDir, fileName);
+                    if (File.Exists(filePath))
+                        File.Delete(filePath); // Delete the csv file after inserting
+                    break;
+                }
             }
             return null;
         }
         catch (Exception ex)
         {
-            return $"Error: {ex.Message}";
+            return $"Error while processing table '{p_tableName}': {ex.Message}";
         }
     }
 
@@ -476,93 +537,124 @@ class Controller
         }
     }
 
-    private static string? RenameAndDropTable(SqlConnection p_connection, string p_utcDateTimeStr)
+    private static string? RenameAndDropTable(SqlConnection p_connection, string p_utcDateTimeStr, string p_tableName)
     {
+        using SqlTransaction transaction = p_connection.BeginTransaction();
         try
         {
-            // Rename original table and constraints
-            string renameOriginalQuery = $@"
-                EXEC sp_rename N'dbo.Stock', N'Stock_Old{p_utcDateTimeStr}';
-                EXEC sp_rename N'PK_Stock', N'PK_Stock_Old{p_utcDateTimeStr}';
-                EXEC sp_rename N'DF_Stock_IsAlive', N'DF_Stock_IsAlive_Old{p_utcDateTimeStr}';
-                EXEC sp_rename N'FK_Stock_Company', N'FK_Stock_Company_Old{p_utcDateTimeStr}';
-                EXEC sp_rename N'FK_Stock_Currency', N'FK_Stock_Currency_Old{p_utcDateTimeStr}';
-                EXEC sp_rename N'FK_Stock_StockExchange', N'FK_Stock_StockExchange_Old{p_utcDateTimeStr}';";
-            SqlCommand renameOriginalCmd = new(renameOriginalQuery, p_connection);
-            renameOriginalCmd.ExecuteNonQuery();
+            List<string> cmdsToRenameActualTblAsOld = new();
+            List<string> cmdsToRenameNewTblAsActual = new();
+            List<string> cmdsToDropOldTbl = new();
+            switch (p_tableName)
+            {
+                case "Stock":
+                    cmdsToRenameActualTblAsOld.AddRange(
+                    [
+                        $"EXEC sp_rename N'dbo.Stock', N'Stock_Old{p_utcDateTimeStr}'",
+                        $"EXEC sp_rename N'PK_Stock', N'PK_Stock_Old{p_utcDateTimeStr}'",
+                        $"EXEC sp_rename N'DF_Stock_IsAlive', N'DF_Stock_IsAlive_Old{p_utcDateTimeStr}'",
+                        $"EXEC sp_rename N'FK_Stock_Company', N'FK_Stock_Company_Old{p_utcDateTimeStr}'",
+                        $"EXEC sp_rename N'FK_Stock_Currency', N'FK_Stock_Currency_Old{p_utcDateTimeStr}'",
+                        $"EXEC sp_rename N'FK_Stock_StockExchange', N'FK_Stock_StockExchange_Old{p_utcDateTimeStr}'"
+                    ]);
 
-            // Rename new table and constraints to original names
-            string renameNewQuery = $@"
-                EXEC sp_rename N'dbo.Stock_New{p_utcDateTimeStr}', N'Stock';
-                EXEC sp_rename N'PK_Stock_New{p_utcDateTimeStr}', N'PK_Stock';
-                EXEC sp_rename N'DF_Stock_IsAlive_New{p_utcDateTimeStr}', N'DF_Stock_IsAlive';
-                EXEC sp_rename N'FK_Stock_Company_New{p_utcDateTimeStr}', N'FK_Stock_Company';
-                EXEC sp_rename N'FK_Stock_Currency_New{p_utcDateTimeStr}', N'FK_Stock_Currency';
-                EXEC sp_rename N'FK_Stock_StockExchange_New{p_utcDateTimeStr}', N'FK_Stock_StockExchange';";
-            SqlCommand renameNewCmd = new(renameNewQuery, p_connection);
-            renameNewCmd.ExecuteNonQuery();
+                    cmdsToRenameNewTblAsActual.AddRange([
+                        $"EXEC sp_rename N'dbo.Stock_New{p_utcDateTimeStr}', N'Stock'",
+                        $"EXEC sp_rename N'PK_Stock_New{p_utcDateTimeStr}', N'PK_Stock'",
+                        $"EXEC sp_rename N'DF_Stock_IsAlive_New{p_utcDateTimeStr}', N'DF_Stock_IsAlive'",
+                        $"EXEC sp_rename N'FK_Stock_Company_New{p_utcDateTimeStr}', N'FK_Stock_Company'",
+                        $"EXEC sp_rename N'FK_Stock_Currency_New{p_utcDateTimeStr}', N'FK_Stock_Currency'",
+                        $"EXEC sp_rename N'FK_Stock_StockExchange_New{p_utcDateTimeStr}', N'FK_Stock_StockExchange'"
+                    ]);
 
-            // Drop the old table
-            string oldTableName = $"Stock_Old{p_utcDateTimeStr}";
-            DropTableAfterRemovingReferences(p_connection, oldTableName);
+                    cmdsToDropOldTbl.AddRange([
+                        $"ALTER TABLE [Stock_Old{p_utcDateTimeStr}] DROP CONSTRAINT [FK_Stock_StockExchange_Old{p_utcDateTimeStr}]",
+                        $"ALTER TABLE [Stock_Old{p_utcDateTimeStr}] DROP CONSTRAINT [FK_Stock_Company_Old{p_utcDateTimeStr}]",
+                        $"ALTER TABLE [Stock_Old{p_utcDateTimeStr}] DROP CONSTRAINT [FK_Stock_Currency_Old{p_utcDateTimeStr}]",
+                        $"DROP TABLE [Stock_Old{p_utcDateTimeStr}]"
+                    ]);
+                    break;
+                case "FileSystemItem":
+                    cmdsToRenameActualTblAsOld.AddRange(
+                    [
+                        $"EXEC sp_rename N'dbo.FileSystemItem', N'FileSystemItem_Old{p_utcDateTimeStr}'",
+                        $"EXEC sp_rename N'PK_FileSystemItem', N'PK_FileSystemItem_Old{p_utcDateTimeStr}'",
+                        $"EXEC sp_rename N'DF_FileSystemItem_ParentFolderID', N'DF_FileSystemItem_ParentFolderID_Old{p_utcDateTimeStr}'",
+                        $"EXEC sp_rename N'DF_FileSystemItem_LastWriteTime', N'DF_FileSystemItem_LastWriteTime_Old{p_utcDateTimeStr}'",
+                        $"EXEC sp_rename N'FK_FileSystemItem_HQUser', N'FK_FileSystemItem_HQUser_Old{p_utcDateTimeStr}'"
+                    ]);
+
+                    cmdsToRenameNewTblAsActual.AddRange(
+                    [
+                        $"EXEC sp_rename N'dbo.FileSystemItem_New{p_utcDateTimeStr}', N'FileSystemItem'",
+                        $"EXEC sp_rename N'PK_FileSystemItem_New{p_utcDateTimeStr}', N'PK_FileSystemItem'",
+                        $"EXEC sp_rename N'DF_FileSystemItem_ParentFolderID_New{p_utcDateTimeStr}', N'DF_FileSystemItem_ParentFolderID'",
+                        $"EXEC sp_rename N'DF_FileSystemItem_LastWriteTime_New{p_utcDateTimeStr}', N'DF_FileSystemItem_LastWriteTime'",
+                        $"EXEC sp_rename N'FK_FileSystemItem_HQUser_New{p_utcDateTimeStr}', N'FK_FileSystemItem_HQUser'"
+                    ]);
+
+                    cmdsToDropOldTbl.AddRange([
+                        $"ALTER TABLE [FileSystemItem_Old{p_utcDateTimeStr}] DROP CONSTRAINT [FK_FileSystemItem_HQUser_Old{p_utcDateTimeStr}]",
+                        $"DROP TABLE [FileSystemItem_Old{p_utcDateTimeStr}]"
+                    ]);
+                    break;
+
+                case "PortfolioItem":
+                    cmdsToRenameActualTblAsOld.AddRange(
+                    [
+                        $"EXEC sp_rename N'dbo.PortfolioItem', N'PortfolioItem_Old{p_utcDateTimeStr}'",
+                        $"EXEC sp_rename N'PK_PortfolioItem', N'PK_PortfolioItem_Old{p_utcDateTimeStr}'",
+                        $"EXEC sp_rename N'DF_PortfolioItem_TransactionType', N'DF_PortfolioItem_TransactionType_Old{p_utcDateTimeStr}'",
+                        $"EXEC sp_rename N'FK_PortfolioItem_AssetType', N'FK_PortfolioItem_AssetType_Old{p_utcDateTimeStr}'",
+                        $"EXEC sp_rename N'FK_PortfolioItem_FSPortfolio', N'FK_PortfolioItem_FSPortfolio_Old{p_utcDateTimeStr}'"
+                    ]);
+
+                    cmdsToRenameNewTblAsActual.AddRange(
+                    [
+                        $"EXEC sp_rename N'dbo.PortfolioItem_New{p_utcDateTimeStr}', N'PortfolioItem'",
+                        $"EXEC sp_rename N'PK_PortfolioItem_New{p_utcDateTimeStr}', N'PK_PortfolioItem'",
+                        $"EXEC sp_rename N'DF_PortfolioItem_TransactionType_New{p_utcDateTimeStr}', N'DF_PortfolioItem_TransactionType'",
+                        $"EXEC sp_rename N'FK_PortfolioItem_AssetType_New{p_utcDateTimeStr}', N'FK_PortfolioItem_AssetType'",
+                        $"EXEC sp_rename N'FK_PortfolioItem_FSPortfolio_New{p_utcDateTimeStr}', N'FK_PortfolioItem_FSPortfolio'"
+                    ]);
+
+                    cmdsToDropOldTbl.AddRange([
+                        $"ALTER TABLE [PortfolioItem_Old{p_utcDateTimeStr}] DROP CONSTRAINT [FK_PortfolioItem_AssetType_Old{p_utcDateTimeStr}]",
+                        $"ALTER TABLE [PortfolioItem_Old{p_utcDateTimeStr}] DROP CONSTRAINT [FK_PortfolioItem_FSPortfolio_Old{p_utcDateTimeStr}]",
+                        $"DROP TABLE [PortfolioItem_Old{p_utcDateTimeStr}]"
+                    ]);
+                    break;
+            }
+
+            // Table renaming process:
+            // 1. Rename the existing table to "_Old".
+            // 2. If successful, rename the new table to the original table name.
+            // 3. If both renames succeed, drop the "_Old" table.
+            foreach (string renameActualTblCmd in cmdsToRenameActualTblAsOld)
+            {
+                using SqlCommand cmd = new(renameActualTblCmd, p_connection, transaction);
+                cmd.ExecuteNonQuery();
+            }
+
+            foreach (string renameNewTblCmd in cmdsToRenameNewTblAsActual)
+            {
+                using SqlCommand cmd = new(renameNewTblCmd, p_connection, transaction);
+                cmd.ExecuteNonQuery();
+            }
+
+            foreach (string dropOldTblCmd in cmdsToDropOldTbl)
+            {
+                using SqlCommand cmd = new(dropOldTblCmd, p_connection, transaction);
+                cmd.ExecuteNonQuery();
+            }
+
+            transaction.Commit();
             return null;
-        }
-        catch (SqlException ex)
-        {
-            return $"Error - SQL exception during renaming or deletion: {ex.Message}";
         }
         catch (Exception ex)
         {
-            return $"Error - {ex.Message}";
-        }
-    }
-
-    // Creating a safe way to delete the target table by identifying and removing all foreign key constraints that reference it.
-    // SQL Server does not allow dropping a table if it is referenced by any foreign key constraints in other tables.
-    private static void DropTableAfterRemovingReferences(SqlConnection p_connection, string p_tableName)
-    {
-        // Step 1: Query to find all foreign keys that reference the specified table
-        string findFKsQuery = $@"
-            SELECT 
-                fk.name AS ForeignKeyName,
-                referencedTable.name AS ReferencingTable
-            FROM 
-                sys.foreign_keys fk
-            JOIN sys.foreign_key_columns fkc ON fk.object_id = fkc.constraint_object_id
-            JOIN sys.tables referencingTable ON fkc.parent_object_id = referencingTable.object_id
-            JOIN sys.tables referencedTable ON fkc.referenced_object_id = referencedTable.object_id
-            WHERE referencedTable.name = '{p_tableName}';
-        ";
-
-        using (SqlCommand command = new SqlCommand(findFKsQuery, p_connection))
-        using (SqlDataReader reader = command.ExecuteReader())
-        {
-            List<string> foreignKeyDropStatements = new List<string>();
-            // Step 2: Build ALTER TABLE statements to drop each foreign key constraint
-            while (reader.Read())
-            {
-                string? fkName = reader["ForeignKeyName"] as string;
-                string? referenceTable = reader["ReferencingTable"] as string;
-
-                if (!string.IsNullOrWhiteSpace(fkName) && !string.IsNullOrWhiteSpace(referenceTable))
-                    foreignKeyDropStatements.Add($"ALTER TABLE [{referenceTable}] DROP CONSTRAINT [{fkName}];");
-            }
-            reader.Close();
-
-            // Step 3: Drop all foreign keys
-            foreach (string dropConstraintSql in foreignKeyDropStatements)
-            {
-                using (SqlCommand dropCmd = new SqlCommand(dropConstraintSql , p_connection))
-                {
-                    dropCmd.ExecuteNonQuery();
-                }
-            }
-
-            // Step 4: Drop the target table after all FKs referencing are removed
-            using (SqlCommand dropTableCmd = new SqlCommand($"DROP TABLE {p_tableName};", p_connection))
-            {
-                dropTableCmd.ExecuteNonQuery();
-            }
+            transaction.Rollback(); // roll back to the original database state, if any of the above steps are failed.
+            return $"Failed to rename table {p_tableName}: {ex.Message}";
         }
     }
 
