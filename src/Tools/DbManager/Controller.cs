@@ -85,7 +85,8 @@ class Controller
         try
         {
             string utcDateTimeStr = DateTime.UtcNow.ToYYMMDDTHHMM();
-            List<(string TableName, string FileName)> legacyDbTablesAndFileNames = [ ("PortfolioItem", $"portfolioItemBackup{utcDateTimeStr}.csv"), ("FileSystemItem", $"fileSystemItemBackup{utcDateTimeStr}.csv"), ("Stock", $"stockBackup{utcDateTimeStr}.csv") ];
+            // List<(string TableName, string FileName)> legacyDbTablesAndFileNames = [ ("PortfolioItem", $"portfolioItemBackup{utcDateTimeStr}.csv"), ("FileSystemItem", $"fileSystemItemBackup{utcDateTimeStr}.csv"), ("Stock", $"stockBackup{utcDateTimeStr}.csv") ];
+            List<(string TableName, string FileName)> legacyDbTablesAndFileNames = [ ("PortfolioItem", $"portfolioItemBackup{utcDateTimeStr}.csv") ]; // Testing purpose
             // step2: export legacyDb selected tables to csv file
             foreach ((string TableName, string FileName) item in legacyDbTablesAndFileNames)
                 ExportLegacyDbTableToCsv(sqlConnection, p_backupPath, item.TableName, item.FileName);
@@ -229,6 +230,7 @@ class Controller
         }
     }
 
+    // 2025-04-24: LiveDB RestoreTables: ? min (but in SSMS ExportWizard: PortfolioItem table from DB to DB (both on the server): 55min, 50M rows)
     public void RestoreLegacyDbTables(string p_backupPathFileOrDir)
     {
         string legacyDbConnString;
@@ -240,7 +242,8 @@ class Controller
         SqlConnection? sqlConnection = new SqlConnection(legacyDbConnString);
         sqlConnection.Open();
         string utcDateTimeStr = DateTime.UtcNow.ToYYMMDDTHHMM();
-        List<string> legacyDbTables = [ "FileSystemItem", "Stock", "PortfolioItem" ];
+        // List<string> legacyDbTables = [ "FileSystemItem", "Stock", "PortfolioItem" ];
+        List<string> legacyDbTables = [ "PortfolioItem" ]; // Testing purpose
         foreach (string table in legacyDbTables)
         {
             // Step1: Create New tables
@@ -461,7 +464,7 @@ class Controller
 
             // Create a SqlBulkCopy object to efficiently insert the data into SQL Server
             SqlBulkCopy bulkCopy = new SqlBulkCopy(p_connection, SqlBulkCopyOptions.KeepIdentity, transaction);
-            bulkCopy.BulkCopyTimeout = 10800;  // Set timeout to 3 hour (in seconds), because portfolioItemBackup.csv is 3.8GB, and with an upload of 200Mbps, this should take 3min to upload
+            bulkCopy.BulkCopyTimeout = 10 * 60 * 60; // Set timeout to 10 hours (in seconds), because portfolioItemBackup.csv is 3.8GB, and with an upload of 200Mbps, this should take 3min to upload
             bulkCopy.DestinationTableName = p_tableName;
             bulkCopy.WriteToServer(dataTable);
 
@@ -476,9 +479,7 @@ class Controller
         catch (Exception ex)
         {
             transaction.Rollback(); // Roll back the transaction if any error occurs during processing or insertion
-            string errMsg = $"Error - During insert: {ex.Message}";
-            Console.WriteLine(errMsg);
-            return errMsg;
+            return $"Error - During insert: {ex.Message}";
         }
     }
 
@@ -490,6 +491,10 @@ class Controller
             List<string> cmdsToRenameActualTblAsOld = new();
             List<string> cmdsToRenameNewTblAsActual = new();
             List<string> cmdsToDropOldTbl = new();
+
+            // After dropping and creating the table, set these, otherwise at SQL INSERT fails with:"The INSERT permission was denied on the object 'PortfolioItem'"
+            string cmdPostprocess = $"GRANT INSERT, DELETE, UPDATE ON [dbo].[{p_tableName}] TO [gyantal], [blukucz], [drcharmat], [lnemeth], [HQDeveloper], [HQServer], [HQServer2];";
+
             switch (p_tableName)
             {
                 case "Stock":
@@ -593,6 +598,8 @@ class Controller
                 cmd.ExecuteNonQuery();
             }
 
+            new SqlCommand(cmdPostprocess, p_connection, transaction).ExecuteNonQuery();
+
             transaction.Commit();
             return null;
         }
@@ -603,6 +610,7 @@ class Controller
         }
     }
 
+    // 2025-04-24: LiveDB RestoreFull from *.bacpac time (from UK): ~720 minutes = 12h
     public void RestoreLegacyDbFull(string p_backupPathFileOrDir)
     {
         (string? sqlPackageExePath, string? errorMsg) = GetSqlPackageExePath();
