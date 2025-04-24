@@ -47,7 +47,7 @@ class Program
             switch (key)
             {
                 case WorkMode.LegacyDbTablesBackup:
-                    Controller.g_controller.BackupLegacyDb(gWorkModes[key]);
+                    Controller.g_controller.BackupLegacyDbTables(gWorkModes[key]);
                     break;
                 case WorkMode.LegacyDbTablesRestore:
                     Controller.g_controller.RestoreLegacyDbTables(gWorkModes[key]);
@@ -130,29 +130,24 @@ class Program
                 Controller.g_controller.TestLegacyDb();
                 break;
             case "3":
-                string? backupDirPath = GetDirOrFullPathFromUser();
+                string? backupDirPath = GetDirOrFullPathFromUser(true); // For backup isInputFolder = true
                 if (!string.IsNullOrEmpty(backupDirPath) && backupDirPath != "ConsoleIsForcedToShutDown")
-                    Controller.g_controller.BackupLegacyDb(backupDirPath);
+                    Controller.g_controller.BackupLegacyDbTables(backupDirPath);
                 break;
             case "4":
-                string? restoreDirPath = GetDirOrFullPathFromUser();
-                if (!string.IsNullOrEmpty(restoreDirPath) && restoreDirPath != "ConsoleIsForcedToShutDown")
-                    Controller.g_controller.RestoreLegacyDbTables(restoreDirPath);
+                string? restoreFilePath = GetDirOrFullPathFromUser(false); // For restore isInputFolder = false, because we need the full file path
+                if (!string.IsNullOrEmpty(restoreFilePath) && restoreFilePath != "ConsoleIsForcedToShutDown")
+                    Controller.g_controller.RestoreLegacyDbTables(restoreFilePath);
                 break;
             case "5":
-                string? fullBackupDirPath = GetDirOrFullPathFromUser();
+                string? fullBackupDirPath = GetDirOrFullPathFromUser(true); // For backup isInputFolder = true
                 if (!string.IsNullOrEmpty(fullBackupDirPath) && fullBackupDirPath != "ConsoleIsForcedToShutDown")
                     Controller.g_controller.BackupLegacyDbFull(fullBackupDirPath);
                 break;
             case "6":
-                string? fullRestoreDirPath = GetDirOrFullPathFromUser();
-                if (!string.IsNullOrEmpty(fullRestoreDirPath) && fullRestoreDirPath != "ConsoleIsForcedToShutDown")
-                    Controller.g_controller.RestoreLegacyDbFull(fullRestoreDirPath);
-                break;
-            case "7": // Temp: to be deleted
-                string? restoreTableDirPath = GetDirOrFullPathFromUser();
-                if (!string.IsNullOrEmpty(restoreTableDirPath) && restoreTableDirPath != "ConsoleIsForcedToShutDown")
-                    Controller.g_controller.RestoreLegacyDbTablesSafe(restoreTableDirPath);
+                string? fullRestoreFilePath = GetDirOrFullPathFromUser(false); // For restore isInputFolder = false, because we need the full file path
+                if (!string.IsNullOrEmpty(fullRestoreFilePath) && fullRestoreFilePath != "ConsoleIsForcedToShutDown")
+                    Controller.g_controller.RestoreLegacyDbFull(fullRestoreFilePath);
                 break;
             case "9":
                 return "UserChosenExit";
@@ -160,12 +155,9 @@ class Program
         return string.Empty;
     }
 
-    public static string? GetDirOrFullPathFromUser()
+    public static string? GetDirOrFullPathFromUser(bool p_isInputFolder)
     {
-        Console.Write("Do you want to provide the full path to a file (Y/N)? ");
-        string userInputFirstStr = Console.ReadLine() ?? string.Empty;
-        bool isInputFolder = !userInputFirstStr.Equals("y", StringComparison.OrdinalIgnoreCase);
-        Console.WriteLine(isInputFolder ? "Please enter the directory path (e.g., C:/SqCoreWeb_LegacyDb):" : "Please enter the full file path (e.g., C:/SqCoreWeb_LegacyDb/backup.7z):");
+        Console.WriteLine(p_isInputFolder ? "Please enter the directory path (e.g., C:/SqCoreWeb_LegacyDb):" : "Please enter the full file path (e.g., C:/SqCoreWeb_LegacyDb/backup.7z):");
 
         try
         {
@@ -176,7 +168,7 @@ class Program
                 return string.Empty;
             }
 
-            if (isInputFolder)
+            if (p_isInputFolder)
             {
                 if (!Directory.Exists(userInputSecondStr))
                 {

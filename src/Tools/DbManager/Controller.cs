@@ -17,7 +17,6 @@ namespace DbManager;
 class Controller
 {
     public static Controller g_controller = new();
-    private SqlConnection? g_connection = null;
     static bool g_isUseLiveSqlDb = false; // to switch easily between Live (default) or Test (Developer local SQL)
 
     internal static void Start()
@@ -30,20 +29,20 @@ class Controller
 
     public void TestLegacyDb()
     {
-        string legacySqlConnString = Program.gConfiguration.GetConnectionString("LegacyMsSqlDefault") ?? throw new SqException("ConnectionString is missing from Config");
-        g_connection = new SqlConnection(legacySqlConnString);
-        g_connection.Open();
+        string legacySqlConnString = Program.gConfiguration.GetConnectionString("LegacyMsSqlDefault") ?? throw new SqException("ConnectionString is missing from Config"); // UserID=HQServer
+        SqlConnection? sqlConnection = new SqlConnection(legacySqlConnString);
+        sqlConnection.Open();
 
         // Create a command to execute a simple SELECT query
         string queryStr = "SELECT COUNT(*) FROM [dbo].[Stock]";
-        SqlCommand command = new(queryStr, g_connection);
+        SqlCommand sqlCmd = new(queryStr, sqlConnection);
 
         try
         {
-            using SqlDataReader reader = command.ExecuteReader();
-            if (reader.Read())
+            using SqlDataReader sqlReader = sqlCmd.ExecuteReader();
+            if (sqlReader.Read())
             {
-                int rowCount = reader.GetInt32(0); // Get the count value
+                int rowCount = sqlReader.GetInt32(0); // Get the count value
                 Console.WriteLine($"Total rows in Stock table: {rowCount}");
             }
             else
@@ -54,21 +53,26 @@ class Controller
             Utils.Logger.Error($"TestLegacyDb Error. An error occurred while executing the query: {e.Message}");
         }
 
-        g_connection.Close();
+        sqlConnection.Close();
     }
 
-    public void BackupLegacyDb(string p_backupPath) // e.g, backupPath:"C:/SqCoreWeb_LegacyDb"
+    public void BackupLegacyDbTables(string p_backupPath) // e.g, backupPath:"C:/SqCoreWeb_LegacyDb"
     {
-        string legacyDbConnString = Program.gConfiguration.GetConnectionString("LegacyMsSqlDefault") ?? throw new SqException("ConnectionString is missing from Config");
+        string legacyDbConnString;
+        if (g_isUseLiveSqlDb)
+            legacyDbConnString = Program.gConfiguration.GetConnectionString("LegacyMsSqlDefault") ?? throw new SqException("ConnectionString is missing from Config"); // UserID=HQServer
+        else
+            legacyDbConnString = "Data Source=DAYA-DESKTOP\\MSSQLSERVER1;Initial Catalog=legacyDbBackup_250407T1121;User ID=sa;Password=11235;TrustServerCertificate=True"; // For testing. (Developer local SQL)
         Utils.Logger.Info($"LegacyDbBackup(). ConnStr:{legacyDbConnString}");
-        g_connection = new SqlConnection(legacyDbConnString);
-        g_connection.Open();
+        SqlConnection? sqlConnection = new SqlConnection(legacyDbConnString);
+        sqlConnection.Open();
 
-        if (g_connection?.State != System.Data.ConnectionState.Open)
+        if (sqlConnection?.State != System.Data.ConnectionState.Open)
         {
             Utils.Logger.Error("LegacyDbBackup Error. Connection to SQL Server has not established successfully.");
             return;
         }
+        Console.WriteLine($"Backup process started. SqlConnection is Open. Expected backup time: 5min. (3.8GB CSV)");
 
         // step1: check if the backupPath exists
         if (!Directory.Exists(p_backupPath))
@@ -84,7 +88,7 @@ class Controller
             List<(string TableName, string FileName)> legacyDbTablesAndFileNames = [ ("PortfolioItem", $"portfolioItemBackup{utcDateTimeStr}.csv"), ("FileSystemItem", $"fileSystemItemBackup{utcDateTimeStr}.csv"), ("Stock", $"stockBackup{utcDateTimeStr}.csv") ];
             // step2: export legacyDb selected tables to csv file
             foreach ((string TableName, string FileName) item in legacyDbTablesAndFileNames)
-                ExportLegacyDbTableToCsv(g_connection, p_backupPath, item.TableName, item.FileName);
+                ExportLegacyDbTableToCsv(sqlConnection, p_backupPath, item.TableName, item.FileName);
             // step3: compress all csv files using 7z tool
             CompressLegacyDbBackupFiles(p_backupPath, legacyDbTablesAndFileNames.Select(r => r.FileName).ToList(), utcDateTimeStr);
             Console.WriteLine($"Success - Backup process completed");
@@ -93,33 +97,34 @@ class Controller
         {
             Utils.Logger.Error($"An error occurred: {e.Message}");
         }
-        g_connection.Close();
+        sqlConnection.Close();
     }
 
     static void ExportLegacyDbTableToCsv(SqlConnection p_connection, string p_backupPath, string p_tableName, string p_fileName)
     {
-        string queryStr = $"SELECT TOP 100 * FROM {p_tableName}"; // Limit to 100 rows for testing
-        using SqlCommand command = new(queryStr, p_connection);
-        using SqlDataReader reader = command.ExecuteReader();
+        // string queryStr = $"SELECT TOP 100 * FROM {p_tableName}"; // Limit to 100 rows for testing
+        string queryStr = $"SELECT * FROM {p_tableName}";
+        using SqlCommand sqlCmd = new(queryStr, p_connection);
+        using SqlDataReader sqlReader = sqlCmd.ExecuteReader();
 
         string exportFilePath = Path.Combine(p_backupPath, p_fileName);
         using StreamWriter writer = new StreamWriter(exportFilePath);
         // Write column headers
-        for (int i = 0; i < reader.FieldCount; i++)
+        for (int i = 0; i < sqlReader.FieldCount; i++)
         {
-            writer.Write(reader.GetName(i)); // Write the column name
-            if (i < reader.FieldCount - 1) // Add a comma between columns (except for the last column)
+            writer.Write(sqlReader.GetName(i)); // Write the column name
+            if (i < sqlReader.FieldCount - 1) // Add a comma between columns (except for the last column)
                 writer.Write(",");
         }
         writer.WriteLine(); // End line
 
         // Write row data
-        while (reader.Read())
+        while (sqlReader.Read())
         {
-            for (int i = 0; i < reader.FieldCount; i++)
+            for (int i = 0; i < sqlReader.FieldCount; i++)
             {
-                writer.Write($"\"{reader[i]?.ToString()?.Replace("\"", "\"\"") ?? ""}\""); // ensures the values containing quotes or any other special charaters are correctly written to the csv file
-                if (i < reader.FieldCount - 1) // Add a comma between columns (except for the last column)
+                writer.Write($"\"{sqlReader[i]?.ToString()?.Replace("\"", "\"\"") ?? ""}\""); // ensures the values containing quotes or any other special charaters are correctly written to the csv file
+                if (i < sqlReader.FieldCount - 1) // Add a comma between columns (except for the last column)
                     writer.Write(",");
             }
             writer.WriteLine(); // End line
@@ -182,9 +187,14 @@ class Controller
             return;
         }
 
-        // Step3: Export Legacy Database to BACPAC
-        string legacyDbConnString = Program.gConfiguration.GetConnectionString("LegacyMsSqlDefault") ?? throw new SqException("ConnectionString is missing from Config"); // apporxiamte Time : 2 mins 30 secs
-        // string legacyDbConnString = "Data Source=DAYA-DESKTOP\\MSSQLSERVER1;Initial Catalog=HqSqlDb20250225_old;User ID=sa;Password=11235;TrustServerCertificate=True"; // To be deleted, just showing as a refernce.
+        // Step1: Export Legacy Database to BACPAC. The SqlUser should have the 'VIEW DEFINITION' permission on the database. UserID=HQServer has that permission.
+        string legacyDbConnString;
+        if (g_isUseLiveSqlDb)
+            legacyDbConnString = Program.gConfiguration.GetConnectionString("LegacyMsSqlDefault") ?? throw new SqException("ConnectionString is missing from Config"); // UserID=HQServer, error: CREATE TABLE permission denied
+            // legacyDbConnString = Program.gConfiguration.GetConnectionString("LegacyMsSqlSa") ?? throw new SqException("ConnectionString is missing from Config"); // UserID=sa
+        else
+            legacyDbConnString = "Data Source=DAYA-DESKTOP\\MSSQLSERVER1;Initial Catalog=legacyDbFull;User ID=sa;Password=11235;TrustServerCertificate=True"; // For testing. (Developer local SQL)
+
         string bacpacLegacyDbFileName = $"legacyDbBackup_{DateTime.UtcNow.ToYYMMDDTHHMM()}.bacpac";
         string bacpacBackupFilePath = Path.Combine(p_backupPath, bacpacLegacyDbFileName);
         string bacpacExportArgs = $"/Action:Export /SourceConnectionString:\"{legacyDbConnString}\" /TargetFile:\"{bacpacBackupFilePath}\"";
@@ -221,84 +231,20 @@ class Controller
 
     public void RestoreLegacyDbTables(string p_backupPathFileOrDir)
     {
-        // Step 1: Identify the backup file (.7z) in the specified directory
-        Console.WriteLine($"Restore {p_backupPathFileOrDir}");
-        string zipFileFullPath;
-        string backupDir;
-        if (p_backupPathFileOrDir.EndsWith(".7z")) // If it ends with .7z assume the file was given as parameter
-        {
-            zipFileFullPath = p_backupPathFileOrDir;
-            backupDir = Path.GetDirectoryName(p_backupPathFileOrDir) ?? throw new SqException("Invalid path: Directory doesnt exists");
-        }
-        else
-        {
-            FileInfo? latestZipFile = new DirectoryInfo(p_backupPathFileOrDir).GetFiles("*.7z").OrderByDescending(f => f.LastWriteTime).FirstOrDefault();
-            zipFileFullPath = latestZipFile!.FullName;
-            backupDir = p_backupPathFileOrDir;
-        }
-        // Step 2: Extract the contents of the ZIP file to the backup path using 7-Zip
-        string zipExePath = @"C:\Program Files\7-Zip\7z.exe";
-        string zipProcessArgs = $"x \"{zipFileFullPath}\" -o\"{backupDir}\" -y";
-        (string zipOutputMsg, string zipErrorMsg) = ProcessCommandHelper(zipExePath, zipProcessArgs);
-        if (!string.IsNullOrWhiteSpace(zipErrorMsg))
-        {
-            Console.WriteLine($"SqlPackage Path Error: {zipErrorMsg}");
-            return;
-        }
-        Console.WriteLine($"Extraction completed {zipOutputMsg}");
-        // We have to pay attention to the dependency relations between data tables.
-        // PortfolioItem.PortfolioID refers to rows in the FileSystemItem table.
-        // PortfolioItem.AssetSubTableID refers to rows in the Stock (or Options) table. (although this in not strictly enforced in the SQL table)
-        // Therefore, when we delete old data, delete in the following order: 1. PortfolioItem, 2. FileSystemItem and Stock.
-        // When we create the new data tables, do it in the following order: 1. FileSystemItem and Stock. 2. PortfolioItem
-
-        // Step 3: Connect to the legacy database and delete existing data (in reverse dependency order)
-        string legacyDbConnString = "Data Source=DAYA-DESKTOP\\MSSQLSERVER1;Initial Catalog=HqSqlDb20250225_Copy;User ID=sa;Password=11235;TrustServerCertificate=True"; // Try it with your localDbConn string
-        g_connection = new SqlConnection(legacyDbConnString);
-        g_connection.Open();
-        List<string> legacyDbTables = [ "FileSystemItem", "Stock", "PortfolioItem" ];
-        for (int i = legacyDbTables.Count - 1; i >= 0; i--) // Deleting in reverse order to ensure PortfolioItem is deleted before FileSystem and Stock entries
-        {
-            SqlCommand cmd = new SqlCommand($"DELETE FROM {legacyDbTables[i]}", g_connection);
-            cmd.CommandTimeout = 300;
-            cmd.ExecuteNonQuery();
-            Console.WriteLine($"Deletion complete for table: {legacyDbTables[i]}");
-        }
-        // Step 4: Insert data from extracted CSV files into the respective tables
-        string[] csvFiles = Directory.GetFiles(backupDir, "*.csv");
-        foreach (string file in csvFiles)
-        {
-            string fileName = Path.GetFileName(file);
-            string? matchedTable = legacyDbTables.FirstOrDefault(table => fileName.Contains(table, StringComparison.OrdinalIgnoreCase)); // Find matching table name from the list
-            if (matchedTable != null)
-                InsertCsvFileToLegacyDbTable(g_connection, file, matchedTable);
-        }
-        Console.WriteLine("Legacy DB restoration complete.");
-        g_connection.Close();
-        // step5: Delete the csv files after Inserting
-        foreach (string fileName in csvFiles)
-        {
-            string filePath = Path.Combine(backupDir, fileName);
-            if (File.Exists(filePath))
-                File.Delete(filePath);
-        }
-    }
-
-    public void RestoreLegacyDbTablesSafe(string p_backupPathFileOrDir)
-    {
         string legacyDbConnString;
         if (g_isUseLiveSqlDb)
-            legacyDbConnString = Program.gConfiguration.GetConnectionString("LegacyMsSqlDefault") ?? throw new SqException("ConnectionString is missing from Config");
+            // legacyDbConnString = Program.gConfiguration.GetConnectionString("LegacyMsSqlDefault") ?? throw new SqException("ConnectionString is missing from Config"); // UserID=HQServer, error: CREATE TABLE permission denied
+            legacyDbConnString = Program.gConfiguration.GetConnectionString("LegacyMsSqlSa") ?? throw new SqException("ConnectionString is missing from Config"); // UserID=sa
         else
-            legacyDbConnString = "Data Source=DAYA-DESKTOP\\MSSQLSERVER1;Initial Catalog=legacyDbFull;User ID=sa;Password=11235;TrustServerCertificate=True"; // For testing. (Developer local SQL)
-        g_connection = new SqlConnection(legacyDbConnString);
-        g_connection.Open();
+            legacyDbConnString = "Data Source=DAYA-DESKTOP\\MSSQLSERVER1;Initial Catalog=legacyDbBackup_250407T1121;User ID=sa;Password=11235;TrustServerCertificate=True;Connect Timeout=3600"; // For testing. (Developer local SQL)
+        SqlConnection? sqlConnection = new SqlConnection(legacyDbConnString);
+        sqlConnection.Open();
         string utcDateTimeStr = DateTime.UtcNow.ToYYMMDDTHHMM();
         List<string> legacyDbTables = [ "FileSystemItem", "Stock", "PortfolioItem" ];
         foreach (string table in legacyDbTables)
         {
             // Step1: Create New tables
-            string? createQueryErrorMsg = CreateTable(g_connection, utcDateTimeStr, table);
+            string? createQueryErrorMsg = CreateTable(sqlConnection, utcDateTimeStr, table);
             if (createQueryErrorMsg != null)
             {
                 Console.WriteLine(createQueryErrorMsg);
@@ -315,14 +261,8 @@ class Controller
         }
         else
         {
-            FileInfo? latestZipFile = new DirectoryInfo(p_backupPathFileOrDir).GetFiles("*.7z").OrderByDescending(f => f.LastWriteTime).FirstOrDefault();
-            if (latestZipFile == null)
-            {
-                Console.WriteLine("No .7z backup file found in the directory.");
-                return;
-            }
-            zipFileFullPath = latestZipFile.FullName;
-            backupDir = p_backupPathFileOrDir;
+            Console.WriteLine($"Error: {p_backupPathFileOrDir} is not a .7z file.");
+            return;
         }
 
         // Extract the contents of the ZIP file
@@ -338,7 +278,7 @@ class Controller
         foreach (string table in legacyDbTables)
         {
             // Step2: InsertData
-            string? insertDataErrMsg = InsertData(backupDir, g_connection, utcDateTimeStr, table, csvFiles);
+            string? insertDataErrMsg = InsertData(backupDir, sqlConnection, utcDateTimeStr, table, csvFiles);
             if (insertDataErrMsg != null)
             {
                 Console.WriteLine(insertDataErrMsg);
@@ -348,7 +288,7 @@ class Controller
         // Step3: Rename and Drop
         for (int i = legacyDbTables.Count - 1; i >= 0; i--) // Deleting in reverse order to ensure PortfolioItem is deleted before FileSystem and Stock entries
         {
-            string? renameAndDropTableErrMsg = RenameAndDropTable(g_connection, utcDateTimeStr, legacyDbTables[i]);
+            string? renameAndDropTableErrMsg = RenameAndDropTable(sqlConnection, utcDateTimeStr, legacyDbTables[i]);
             if (renameAndDropTableErrMsg != null)
             {
                 Console.WriteLine(renameAndDropTableErrMsg);
@@ -356,7 +296,7 @@ class Controller
             }
         }
         Console.WriteLine("Success - Restored legacyDb tables");
-        g_connection.Close();
+        sqlConnection.Close();
     }
 
     // PK or FK Constraint names like "CONSTRAINT [PK_MyConstraintName] PRIMARY KEY CLUSTERED", must be unique across the entire database.
@@ -459,7 +399,9 @@ class Controller
                 string fileName = Path.GetFileName(file);
                 if (fileName.Contains(p_tableName, StringComparison.OrdinalIgnoreCase))
                 {
-                    InsertCsvFileToLegacyDbTable(p_connection, file, $"{p_tableName}_New{p_utcDateTimeStr}");
+                    string? errMsg = InsertCsvFileToLegacyDbTable(p_connection, file, $"{p_tableName}_New{p_utcDateTimeStr}");
+                    if (errMsg != null) // if there is an error, stop processing and propagate error higher
+                        return errMsg;
                     string filePath = Path.Combine(p_backupPathFileOrDir, fileName);
                     if (File.Exists(filePath))
                         File.Delete(filePath); // Delete the csv file after inserting
@@ -474,7 +416,7 @@ class Controller
         }
     }
 
-    private static void InsertCsvFileToLegacyDbTable(SqlConnection p_connection, string p_filePath, string p_tableName)
+    private static string? InsertCsvFileToLegacyDbTable(SqlConnection p_connection, string p_filePath, string p_tableName)
     {
         Console.WriteLine($"Inserting data from: {Path.GetFileName(p_filePath)}");
         SqlTransaction transaction = p_connection.BeginTransaction();
@@ -519,7 +461,7 @@ class Controller
 
             // Create a SqlBulkCopy object to efficiently insert the data into SQL Server
             SqlBulkCopy bulkCopy = new SqlBulkCopy(p_connection, SqlBulkCopyOptions.KeepIdentity, transaction);
-            bulkCopy.BulkCopyTimeout = 300;
+            bulkCopy.BulkCopyTimeout = 10800;  // Set timeout to 3 hour (in seconds), because portfolioItemBackup.csv is 3.8GB, and with an upload of 200Mbps, this should take 3min to upload
             bulkCopy.DestinationTableName = p_tableName;
             bulkCopy.WriteToServer(dataTable);
 
@@ -529,11 +471,14 @@ class Controller
             }
 
             transaction.Commit(); // Commit the transaction after successful insertion
+            return null;
         }
         catch (Exception ex)
         {
             transaction.Rollback(); // Roll back the transaction if any error occurs during processing or insertion
-            Console.WriteLine($"Error - During insert: {ex.Message}");
+            string errMsg = $"Error - During insert: {ex.Message}";
+            Console.WriteLine(errMsg);
+            return errMsg;
         }
     }
 
@@ -666,17 +611,28 @@ class Controller
             Console.WriteLine($"{errorMsg}");
             return;
         }
-        // string legacyDbConnString = Program.gConfiguration.GetConnectionString("LegacyMsSqlDefault") ?? throw new SqException("ConnectionString is missing from Config");
-        string legacyDbConnString = "Data Source=DAYA-DESKTOP\\MSSQLSERVER1;Initial Catalog=master;User ID=sa;Password=11235;TrustServerCertificate=True"; // To be deleted, just showing as a refernce.
-        // Step3: Delete the database
-        g_connection = new SqlConnection(legacyDbConnString);
-        g_connection.Open();
-        using (SqlCommand cmd = new SqlCommand("DROP DATABASE legacyDbBackup_250314T0731", g_connection)) // replace "legacyDbBackup_250314T0731" with actual database to be deleted.
+        string legacyDbConnString;
+        string legacyDbDatabaseName;
+        if (g_isUseLiveSqlDb)
         {
-            cmd.CommandTimeout = 300;
-            cmd.ExecuteNonQuery();
+            // legacyDbConnString = Program.gConfiguration.GetConnectionString("LegacyMsSqlDefault") ?? throw new SqException("ConnectionString is missing from Config"); // UserID=HQServer
+            legacyDbConnString = Program.gConfiguration.GetConnectionString("LegacyMsSqlSa") ?? throw new SqException("ConnectionString is missing from Config"); // UserID=sa, HQServer doesn't have permission to restore
+            legacyDbDatabaseName = "HedgeQuant";
         }
-        Console.WriteLine("Deleted existing database: legacyDbBackup_250314T0731");
+        else
+        {
+            legacyDbConnString = "Data Source=DAYA-DESKTOP\\MSSQLSERVER1;Initial Catalog=master;User ID=sa;Password=11235;TrustServerCertificate=True"; // For testing. (Developer local SQL)
+            legacyDbDatabaseName = "legacyDbBackup_250314T0731"; // Provide your local Database name
+        }
+        // Step3: Delete the database
+        SqlConnection? sqlConnection = new SqlConnection(legacyDbConnString);
+        sqlConnection.Open();
+        using (SqlCommand sqlCmd = new SqlCommand($"DROP DATABASE {legacyDbDatabaseName}", sqlConnection)) // replace "legacyDbBackup_250314T0731" with actual database to be deleted.
+        {
+            sqlCmd.CommandTimeout = 300;
+            sqlCmd.ExecuteNonQuery();
+        }
+        Console.WriteLine($"Deleted existing database: {legacyDbDatabaseName}");
 
         // Step4: import the bacpac file
         string bacpacFileFullPath;
@@ -700,7 +656,7 @@ class Controller
             Console.WriteLine("Successfully imported the bacpac file");
         else
             Console.WriteLine($"importErrorMsg: {importErrorMsg}");
-        g_connection.Close();
+        sqlConnection.Close();
     }
 
     static (string? sqlPackageExePath, string? errorMsg) GetSqlPackageExePath()
@@ -726,4 +682,70 @@ class Controller
 
         return (sqlPackageExePath, null);
     }
+
+    // ** The below method was developed without creating the temporary tables **
+    // public void RestoreLegacyDbTables_Old(string p_backupPathFileOrDir)
+    // {
+    //     // Step 1: Identify the backup file (.7z) in the specified directory
+    //     Console.WriteLine($"Restore {p_backupPathFileOrDir}");
+    //     string zipFileFullPath;
+    //     string backupDir;
+    //     if (p_backupPathFileOrDir.EndsWith(".7z")) // If it ends with .7z assume the file was given as parameter
+    //     {
+    //         zipFileFullPath = p_backupPathFileOrDir;
+    //         backupDir = Path.GetDirectoryName(p_backupPathFileOrDir) ?? throw new SqException("Invalid path: Directory doesnt exists");
+    //     }
+    //     else
+    //     {
+    //         FileInfo? latestZipFile = new DirectoryInfo(p_backupPathFileOrDir).GetFiles("*.7z").OrderByDescending(f => f.LastWriteTime).FirstOrDefault();
+    //         zipFileFullPath = latestZipFile!.FullName;
+    //         backupDir = p_backupPathFileOrDir;
+    //     }
+    //     // Step 2: Extract the contents of the ZIP file to the backup path using 7-Zip
+    //     string zipExePath = @"C:\Program Files\7-Zip\7z.exe";
+    //     string zipProcessArgs = $"x \"{zipFileFullPath}\" -o\"{backupDir}\" -y";
+    //     (string zipOutputMsg, string zipErrorMsg) = ProcessCommandHelper(zipExePath, zipProcessArgs);
+    //     if (!string.IsNullOrWhiteSpace(zipErrorMsg))
+    //     {
+    //         Console.WriteLine($"SqlPackage Path Error: {zipErrorMsg}");
+    //         return;
+    //     }
+    //     Console.WriteLine($"Extraction completed {zipOutputMsg}");
+    //     // We have to pay attention to the dependency relations between data tables.
+    //     // PortfolioItem.PortfolioID refers to rows in the FileSystemItem table.
+    //     // PortfolioItem.AssetSubTableID refers to rows in the Stock (or Options) table. (although this in not strictly enforced in the SQL table)
+    //     // Therefore, when we delete old data, delete in the following order: 1. PortfolioItem, 2. FileSystemItem and Stock.
+    //     // When we create the new data tables, do it in the following order: 1. FileSystemItem and Stock. 2. PortfolioItem
+
+    //     // Step 3: Connect to the legacy database and delete existing data (in reverse dependency order)
+    //     string legacyDbConnString = "Data Source=DAYA-DESKTOP\\MSSQLSERVER1;Initial Catalog=HqSqlDb20250225_Copy;User ID=sa;Password=11235;TrustServerCertificate=True"; // Try it with your localDbConn string
+    //     g_connection = new SqlConnection(legacyDbConnString);
+    //     g_connection.Open();
+    //     List<string> legacyDbTables = [ "FileSystemItem", "Stock", "PortfolioItem" ];
+    //     for (int i = legacyDbTables.Count - 1; i >= 0; i--) // Deleting in reverse order to ensure PortfolioItem is deleted before FileSystem and Stock entries
+    //     {
+    //         SqlCommand cmd = new SqlCommand($"DELETE FROM {legacyDbTables[i]}", g_connection);
+    //         cmd.CommandTimeout = 300;
+    //         cmd.ExecuteNonQuery();
+    //         Console.WriteLine($"Deletion complete for table: {legacyDbTables[i]}");
+    //     }
+    //     // Step 4: Insert data from extracted CSV files into the respective tables
+    //     string[] csvFiles = Directory.GetFiles(backupDir, "*.csv");
+    //     foreach (string file in csvFiles)
+    //     {
+    //         string fileName = Path.GetFileName(file);
+    //         string? matchedTable = legacyDbTables.FirstOrDefault(table => fileName.Contains(table, StringComparison.OrdinalIgnoreCase)); // Find matching table name from the list
+    //         if (matchedTable != null)
+    //             InsertCsvFileToLegacyDbTable(g_connection, file, matchedTable);
+    //     }
+    //     Console.WriteLine("Legacy DB restoration complete.");
+    //     g_connection.Close();
+    //     // step5: Delete the csv files after Inserting
+    //     foreach (string fileName in csvFiles)
+    //     {
+    //         string filePath = Path.Combine(backupDir, fileName);
+    //         if (File.Exists(filePath))
+    //             File.Delete(filePath);
+    //     }
+    // }
 }
