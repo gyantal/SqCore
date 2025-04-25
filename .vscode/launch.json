@@ -173,6 +173,25 @@
             }
         },
         {
+            "name": "Tools/DbManager with Args (DEBUG)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "DbManager build Debug",
+            "program": "${workspaceFolder}/src/Tools/DbManager/bin/Debug/net8.0/DbManager.dll",
+            "args": [
+                "-legacytablesbackup",
+                "g:\\work\\_archive\\SqlServer_SqDesktop\\ImportantTablesOnly"
+            ],
+            "cwd": "${workspaceFolder}/src/Tools/DbManager",
+            "console": "externalTerminal",
+            "stopAtEntry": false,
+            "presentation": {
+                "group": "2_Tools",
+                "order": 1,
+                "hidden": false
+            }
+        },
+        {
             "name": "Tools/SqGPT (DEBUG)",
             "type": "coreclr",
             "request": "launch",

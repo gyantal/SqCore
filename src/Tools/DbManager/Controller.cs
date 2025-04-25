@@ -230,7 +230,7 @@ class Controller
         }
     }
 
-    // 2025-04-24: LiveDB RestoreTables: ? min (but in SSMS ExportWizard: PortfolioItem table from DB to DB (both on the server): 55min, 50M rows)
+    // 2025-04-24: LiveDB RestoreTables: 80 min (but in SSMS ExportWizard: PortfolioItem table from DB to DB (both on the server): 55min, 50M rows)
     public void RestoreLegacyDbTables(string p_backupPathFileOrDir)
     {
         string legacyDbConnString;
@@ -277,16 +277,25 @@ class Controller
             Console.WriteLine(zipOutputMsg);
             return;
         }
-        string[] csvFiles = Directory.GetFiles(backupDir, "*.csv");
-        foreach (string table in legacyDbTables)
+
+        int timeStampStartInd = p_backupPathFileOrDir.LastIndexOf('_') + 1;
+        int timeStampEndInd = p_backupPathFileOrDir.LastIndexOf('.');
+        string zipFileTimeStampStr = p_backupPathFileOrDir.Substring(timeStampStartInd, timeStampEndInd - timeStampStartInd);
+
+        foreach (string tableName in legacyDbTables) // tableName = "PortfolioItem"
         {
             // Step2: InsertData
-            string? insertDataErrMsg = InsertData(backupDir, sqlConnection, utcDateTimeStr, table, csvFiles);
-            if (insertDataErrMsg != null)
+            // e.g. p_backupPathFileOrDir = "g:\\work\\_archive\\SqlServer_SqDesktop\\ImportantTablesOnly\\legacyDbBackup_250425T1349.7z"
+            // we have to create csvFullPath = "g:\\work\\_archive\\SqlServer_SqDesktop\\ImportantTablesOnly\\portfolioItemBackup250425T1349.csv"
+            string csvFullPath = $"{backupDir}\\{char.ToLower(tableName[0]) + tableName.Substring(1)}Backup{zipFileTimeStampStr}.csv";
+            string? insertDataErrMsg = InsertCsvFileToLegacyDbTable(sqlConnection, csvFullPath, $"{tableName}_New{utcDateTimeStr}");
+            if (insertDataErrMsg != null) // if there is an error, stop processing and propagate error higher
             {
                 Console.WriteLine(insertDataErrMsg);
                 return;
             }
+            if (File.Exists(csvFullPath))
+                File.Delete(csvFullPath); // Delete the csv file after inserting
         }
         // Step3: Rename and Drop
         for (int i = legacyDbTables.Count - 1; i >= 0; i--) // Deleting in reverse order to ensure PortfolioItem is deleted before FileSystem and Stock entries
@@ -390,32 +399,6 @@ class Controller
         catch (Exception ex)
         {
             return $"Error - Unexpected exception during table creation: {ex.Message}";
-        }
-    }
-
-    private static string? InsertData(string p_backupPathFileOrDir, SqlConnection p_connection, string p_utcDateTimeStr, string p_tableName, string[] p_legacyDbCsvFiles)
-    {
-        try
-        {
-            foreach (string file in p_legacyDbCsvFiles)
-            {
-                string fileName = Path.GetFileName(file);
-                if (fileName.Contains(p_tableName, StringComparison.OrdinalIgnoreCase))
-                {
-                    string? errMsg = InsertCsvFileToLegacyDbTable(p_connection, file, $"{p_tableName}_New{p_utcDateTimeStr}");
-                    if (errMsg != null) // if there is an error, stop processing and propagate error higher
-                        return errMsg;
-                    string filePath = Path.Combine(p_backupPathFileOrDir, fileName);
-                    if (File.Exists(filePath))
-                        File.Delete(filePath); // Delete the csv file after inserting
-                    break;
-                }
-            }
-            return null;
-        }
-        catch (Exception ex)
-        {
-            return $"Error while processing table '{p_tableName}': {ex.Message}";
         }
     }
 

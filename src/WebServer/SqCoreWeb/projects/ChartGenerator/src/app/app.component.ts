@@ -614,6 +614,11 @@ export class AppComponent implements OnInit {
       this.m_startDateStr = calendarInput.value;
     else
       this.m_endDateStr = calendarInput.value;
+    // onUserChangedStartOrEndDateWidgets() call requires that m_startDateStr, m_endDateStr are already updated.
+    // So, 2-way data binding [(ngModel)]="m_startDateStr" wouldn't help, because that would change m_startDateStr too late. We have to change them right now, at this point of execution.
+    // Also, assigning it in HTML ((change)="m_startDateStr = onChangeDateFromCalendarPicker(...)" wouldn't help, because that is too late.
+    // The only thing that would help is to Wrap m_startDateStr in an Object:
+    // m_startDateObj = { dateStr: '' }; // Wrap the string in an object, then you can pass that object in HTML template function as a reference (not value)
     this.onUserChangedStartOrEndDateWidgets();
   }
 }
