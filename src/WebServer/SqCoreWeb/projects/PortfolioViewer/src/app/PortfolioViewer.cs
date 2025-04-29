@@ -391,6 +391,8 @@ public class PrtfVwrWs
 
         if (testAndInsertTradeResult == null)
           testAndInsertTradeResult = $"OK. Trades are successfully inserted for portfolio '{legacyPrtfName}'.";
+        else
+            Utils.Logger.Error($"LegacyDbTestAndInsertTrades Error: {testAndInsertTradeResult}");
 
         byte[] encodedMsg = Encoding.UTF8.GetBytes("PrtfVwr.LegacyDbTradesTestAndInsert:" + testAndInsertTradeResult);
         if (webSocket!.State == WebSocketState.Open)

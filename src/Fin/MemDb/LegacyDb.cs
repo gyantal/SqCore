@@ -295,7 +295,7 @@ public class LegacyDb : IDisposable
             int rowsAffected = command.ExecuteNonQuery();
             int insertedRows = rowsAffected - 1; // One(1) row is for the index table in the SQL database, so subtract 1 from the total rowsAffected.
             if (insertedRows != p_newTrades.Count)
-                return $"LegacyDb Error. Failed to insert trades for portfolio '{p_legacyDbPortfName}'.";
+                return $"LegacyDb Error. Failed to insert trades for portfolio '{p_legacyDbPortfName}'. insertedRows({insertedRows}) != p_newTrades.Count({p_newTrades.Count}) ";
         }
         catch (Exception ex)
         {
