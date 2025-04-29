@@ -543,44 +543,59 @@ public class LlmAssistantController : Microsoft.AspNetCore.Mvc.Controller
         return (responseStr, string.Empty);
     }
 
-    static string ProcessHtmlContentFast(string p_html) // Elapsed Time: 91 microseconds
+    // As of 2024-06-10, the method to find the index was based on "</p><div>", but it stopped working because the HTML format changed to "</p><div id="view-cmts-cta-d9f6eab7-b4bb-3acb-b8d4-6b234d1fc821" class="view-cmts-cta-wrapper">". Interestingly, the id is unique for each news article so using "class=view-cmts-cta-wrapper>" to find the index.
+    // As of 2025-04-28, method for finding the news content using the "class=view-cmts-cta-wrapper>" has stopped.
+    // Previously, content was extracted using "class=view-cmts-cta-wrapper" has changed to "class=atoms-wrapper", and multiple "atoms-wrapper" blocks can exist in a single URL.
+    // The method is modified to iterate through each "atoms-wrapper" block and extract the content within the <p class="yf-1090901"> tags inside each block.
+    // e.g, the news is wrapped as <div class=atoms-wrapper><p class=yf-1090901>Some news </p></div>
+    static string ProcessHtmlContentFast(string p_html)
     {
         Stopwatch sw = new();
         sw.Start();
         StringBuilder sb = new();
         ReadOnlySpan<char> htmlSpan = p_html.AsSpan();
 
-        int divWithCaasbodyStartPos = htmlSpan.IndexOf("caas-body>");
-        if (divWithCaasbodyStartPos == -1)
-        {
-            Console.WriteLine("Cannot find caas-body. Stop processing.");
-            return string.Empty;
-        }
-        divWithCaasbodyStartPos += "caas-body>".Length;
-        ReadOnlySpan<char> htmlBodySpan = htmlSpan.Slice(divWithCaasbodyStartPos);
-        // As of 2024-06-10, the method to find the index was based on "</p><div>", but it stopped working because the HTML format changed to "</p><div id="view-cmts-cta-d9f6eab7-b4bb-3acb-b8d4-6b234d1fc821" class="view-cmts-cta-wrapper">". Interestingly, the id is unique for each news article so using "class=view-cmts-cta-wrapper>" to find the index.
-        int divWithCaasbodyEndPos = htmlBodySpan.IndexOf("class=view-cmts-cta-wrapper>");
-        if (divWithCaasbodyEndPos == -1)
-        {
-            Console.WriteLine("Cannot find class=view-cmts-cta-wrapper>. Stop processing.");
-            return string.Empty;
-        }
-        // divWithCaasbodyEndPos -= "</p>".Length; // keeping the end paragraph tag "</p>", so that we can iterate between paragraph opening and ending tags
-        ReadOnlySpan<char> span = htmlBodySpan.Slice(start: 0, length: divWithCaasbodyEndPos);
-
         while (true)
         {
-            // Find the next occurrence of <p> and </p> html tags
-            int pTagStartPos = span.IndexOf("<p>");
-            int pTagEndPos = span.IndexOf("</p>");
-
-            if (pTagStartPos == -1 || pTagEndPos == -1) // If no more <p> tags are found, exit the loop
+            int divWithClassAtomsWrapperStart = htmlSpan.IndexOf("class=\"atoms-wrapper\"");
+            if (divWithClassAtomsWrapperStart == -1)
                 break;
 
-            ReadOnlySpan<char> content = span.Slice(pTagStartPos + 3, pTagEndPos - (pTagStartPos + 3)); // Extract the content between <p> and </p> and append to StringBuilder
-            sb.Append(content);
+            divWithClassAtomsWrapperStart += "class=\"atoms-wrapper\"".Length;
+            ReadOnlySpan<char> divWithClassAtomsWrapperSpan = htmlSpan.Slice(divWithClassAtomsWrapperStart);
 
-            span = span.Slice(pTagEndPos + 4); // Move the span position to the end of the </p> tag
+            int divWithClassAtomsWrapperEnd = divWithClassAtomsWrapperSpan.IndexOf("</p></div>");
+            if (divWithClassAtomsWrapperEnd == -1)
+                break;
+
+            ReadOnlySpan<char> atomsWrapperSpan = divWithClassAtomsWrapperSpan.Slice(0, divWithClassAtomsWrapperEnd + "</p></div>".Length);
+
+            // extract all <p class="yf-1090901">some news</p>
+            while (true)
+            {
+                int pTagStart = atomsWrapperSpan.IndexOf("<p class=\"yf-1090901\"");
+                if (pTagStart == -1)
+                    break;
+
+                int pTagStartClose = atomsWrapperSpan.Slice(pTagStart).IndexOf('>');
+                if (pTagStartClose == -1)
+                    break;
+
+                int pContentStart = pTagStart + pTagStartClose + 1;
+                int pTagEnd = atomsWrapperSpan.Slice(pContentStart).IndexOf("</p>");
+                if (pTagEnd == -1)
+                    break;
+
+                string contentStr = atomsWrapperSpan.Slice(pContentStart, pTagEnd).ToString();
+                contentStr = contentStr.Replace("<!-- HTML_TAG_START -->", string.Empty).Replace("<!-- HTML_TAG_END -->", string.Empty).Trim(); // Remove <!-- HTML_TAG_START --> and <!-- HTML_TAG_END --> inside the content
+
+                sb.Append(contentStr);
+                sb.AppendLine();
+
+                atomsWrapperSpan = atomsWrapperSpan.Slice(pContentStart + pTagEnd + "</p>".Length); // Move the atomsWrapperSpan position to the end of the </p>
+            }
+
+            htmlSpan = divWithClassAtomsWrapperSpan.Slice(divWithClassAtomsWrapperEnd + "</p></div>".Length); // Move the htmlSpan position to the end of the </p></div> to find next "atoms-wrapper"
         }
         sw.Stop();
 
