@@ -12,6 +12,47 @@ using CsvHelper;
 using CsvHelper.Configuration;
 using SqCommon;
 
+/**************************************************************************
+// SQL LegacyDb regular backups: ImportantTables
+// George-PC: Every Monday, Wednesday, Friday (12:45Local)
+// Daya-PC: every Tuesday, Thursday at 13:00Local
+
+// SQL LegacyDb regular backups: Full *.bacpac
+// George-PC: Every Monday (13:00Local)
+// Daya-PC: every Wednesday at 13:00Local
+
+// After dropping and creating the table, set these, otherwise at SQL inserts error:"The INSERT permission was denied on the object 'PortfolioItem'"
+GRANT INSERT, DELETE, UPDATE ON [dbo].[PortfolioItem] TO [gyantal], [blukucz], [drcharmat], [lnemeth], [HQDeveloper], [HQServer], [HQServer2];
+GRANT INSERT, DELETE, UPDATE ON [dbo].[FileSystemItem] TO [gyantal], [blukucz], [drcharmat], [lnemeth], [HQDeveloper], [HQServer], [HQServer2];
+GRANT INSERT, DELETE, UPDATE ON [dbo].[Stock] TO [gyantal], [blukucz], [drcharmat], [lnemeth], [HQDeveloper], [HQServer], [HQServer2];
+
+// To count the number of rows in important table before and after the restore
+USE [HedgeQuant]
+GO
+SELECT COUNT(*) FROM [dbo].[Stock] 
+GO
+SELECT COUNT(*) FROM [dbo].[FileSystemItem] 
+GO
+SELECT COUNT(*) FROM [dbo].[PortfolioItem] 
+GO
+SELECT MAX([Date]) FROM [dbo].[PortfolioItem];
+GO
+SELECT p.*, f.[Name] FROM [dbo].[PortfolioItem] p LEFT JOIN [dbo].[FileSystemItem] f ON f.[ID] = p.[PortfolioID]
+WHERE p.[Date] > '2025-04-22 00:00:00' ORDER BY p.[Date] DESC
+
+// To count the number of lines in 4GB CSV: (in PS: PowerShell)
+// PS: $lineCount = 0; Get-Content "portfolioItemBackup250424T1908.csv" -ReadCount 1000 | ForEach-Object { $lineCount += $_.Count }; $lineCount
+// To list the lines with a date string:
+// PS: Select-String -Path "portfolioItemBackup250424T1908.csv" -Pattern "2025-04-23" | ForEach-Object { $_.Line }
+// But TotalCommander internal F3 Viewer can actually open and search properly, just some latest dates can be in the middle.
+
+// for testing backup / restore examples:
+DbManager.exe -legacytablesbackup "g:\work\_archive\SqlServer_SqDesktop\ImportantTablesOnly"   // specify a folder without forward slash (/)
+DbManager.exe -legacytablesrestore "g:\work\_archive\SqlServer_SqDesktop\ImportantTablesOnly\legacyDbBackup_250425T1349.7z" // specify the zip file
+
+
+**************************************************************************/
+
 namespace DbManager;
 
 class Controller
@@ -85,8 +126,8 @@ class Controller
         try
         {
             string utcDateTimeStr = DateTime.UtcNow.ToYYMMDDTHHMM();
-            // List<(string TableName, string FileName)> legacyDbTablesAndFileNames = [ ("PortfolioItem", $"portfolioItemBackup{utcDateTimeStr}.csv"), ("FileSystemItem", $"fileSystemItemBackup{utcDateTimeStr}.csv"), ("Stock", $"stockBackup{utcDateTimeStr}.csv") ];
-            List<(string TableName, string FileName)> legacyDbTablesAndFileNames = [ ("PortfolioItem", $"portfolioItemBackup{utcDateTimeStr}.csv") ]; // Testing purpose
+            // List<(string TableName, string FileName)> legacyDbTablesAndFileNames = [ ("PortfolioItem", $"portfolioItemBackup{utcDateTimeStr}.csv"), ("FileSystemItem", $"fileSystemItemBackup{utcDateTimeStr}.csv"), ("Stock", $"stockBackup{utcDateTimeStr}.csv"), ("Fund", $"fundBackup{utcDateTimeStr}.csv"), ("Company", $"companyBackup{utcDateTimeStr}.csv") ];
+            List<(string TableName, string FileName)> legacyDbTablesAndFileNames = [ ("FileSystemItem", $"fileSystemItemBackup{utcDateTimeStr}.csv"), ("PortfolioItem", $"portfolioItemBackup{utcDateTimeStr}.csv"), ("Fund", $"fundBackup{utcDateTimeStr}.csv") ]; // Testing purpose
             // step2: export legacyDb selected tables to csv file
             foreach ((string TableName, string FileName) item in legacyDbTablesAndFileNames)
                 ExportLegacyDbTableToCsv(sqlConnection, p_backupPath, item.TableName, item.FileName);
@@ -242,8 +283,8 @@ class Controller
         SqlConnection? sqlConnection = new SqlConnection(legacyDbConnString);
         sqlConnection.Open();
         string utcDateTimeStr = DateTime.UtcNow.ToYYMMDDTHHMM();
-        // List<string> legacyDbTables = [ "FileSystemItem", "Stock", "PortfolioItem" ];
-        List<string> legacyDbTables = [ "PortfolioItem" ]; // Testing purpose
+        // List<string> legacyDbTables = [ "FileSystemItem", "PortfolioItem", "Company", "Stock", "Fund" ];
+        List<string> legacyDbTables = [ "FileSystemItem", "PortfolioItem", "Fund" ]; // Testing purpose
         foreach (string table in legacyDbTables)
         {
             // Step1: Create New tables
@@ -297,13 +338,37 @@ class Controller
             if (File.Exists(csvFullPath))
                 File.Delete(csvFullPath); // Delete the csv file after inserting
         }
-        // Step3: Rename and Drop
+        // Step3: Rename Table
+        foreach (string tableName in legacyDbTables) // tableName = "PortfolioItem"
+        {
+            string? renameTableErrMsg = RenameTable(sqlConnection, utcDateTimeStr, tableName);
+            if (renameTableErrMsg != null)
+            {
+                Console.WriteLine(renameTableErrMsg);
+                return;
+            }
+        }
+
+        // Step4: Drop Table
         for (int i = legacyDbTables.Count - 1; i >= 0; i--) // Deleting in reverse order to ensure PortfolioItem is deleted before FileSystem and Stock entries
         {
-            string? renameAndDropTableErrMsg = RenameAndDropTable(sqlConnection, utcDateTimeStr, legacyDbTables[i]);
-            if (renameAndDropTableErrMsg != null)
+            string? dropTableErrMsg = DropTable(sqlConnection, utcDateTimeStr, legacyDbTables[i]);
+            if (dropTableErrMsg != null)
             {
-                Console.WriteLine(renameAndDropTableErrMsg);
+                Console.WriteLine(dropTableErrMsg);
+                return;
+            }
+        }
+
+        // Step5: Add Triggers
+        foreach (string tableName in legacyDbTables) // tableName = "PortfolioItem"
+        {
+            if (tableName == "Fund" || tableName == "Company" || tableName == "Stock") // Skipping Fund, Company, and Stock tables as we're currently testing only FileSystemItem and PortfolioItem, and Fund has no triggers
+                continue;
+            string? addTriggerErrMsg = AddTriggersToTable(sqlConnection, tableName);
+            if (addTriggerErrMsg != null)
+            {
+                Console.WriteLine(addTriggerErrMsg);
                 return;
             }
         }
@@ -338,6 +403,29 @@ class Controller
                     ALTER TABLE [dbo].[FileSystemItem_New{p_utcDateTimeStr}] WITH NOCHECK
                         ADD CONSTRAINT [FK_FileSystemItem_HQUser_New{p_utcDateTimeStr}] FOREIGN KEY([UserID]) REFERENCES [dbo].[HQUser] ([ID]);
                     ALTER TABLE [dbo].[FileSystemItem_New{p_utcDateTimeStr}] NOCHECK CONSTRAINT [FK_FileSystemItem_HQUser_New{p_utcDateTimeStr}];";
+                    break;
+                case "Company":
+                        createQueryStr = $@" CREATE TABLE [dbo].[Company_New{p_utcDateTimeStr}](
+                            [ID] [int] IDENTITY(1,1) NOT NULL,
+                            [Name] [nvarchar](128) NULL,
+                            [Description] [nvarchar](max) NULL,
+                            [WebSite] [nvarchar](max) NULL,
+                            [BaseCurrencyID] [smallint] NULL,
+                            [BaseCountryID] [smallint] NULL,
+                    CONSTRAINT [PK_Company_New{p_utcDateTimeStr}] PRIMARY KEY CLUSTERED
+                    ( [ID] ASC )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+                    ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY];
+                    ALTER TABLE [dbo].[Company_New{p_utcDateTimeStr}] WITH NOCHECK ADD CONSTRAINT [FK_Company_Currency_New{p_utcDateTimeStr}] FOREIGN KEY([BaseCurrencyID]) REFERENCES [dbo].[Currency] ([ID]);
+                    ALTER TABLE [dbo].[Company_New{p_utcDateTimeStr}] NOCHECK CONSTRAINT [FK_Company_Currency_New{p_utcDateTimeStr}];";
+                    break;
+                case "Fund":
+                    createQueryStr = $@" CREATE TABLE [dbo].[Fund_New{p_utcDateTimeStr}](
+                        [ID] [int] IDENTITY(1,1) NOT NULL,
+                        [FundManagerID] [int] NULL,
+                        [Name] [nvarchar](max) NULL,
+                    CONSTRAINT [PK_Fund_New{p_utcDateTimeStr}] PRIMARY KEY CLUSTERED
+                    ( [ID] ASC )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+                    ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY];";
                     break;
                 case "Stock":
                     createQueryStr = $@" CREATE TABLE [dbo].[Stock_New{p_utcDateTimeStr}](
@@ -466,20 +554,47 @@ class Controller
         }
     }
 
-    private static string? RenameAndDropTable(SqlConnection p_connection, string p_utcDateTimeStr, string p_tableName)
+    private static string? RenameTable(SqlConnection p_connection, string p_utcDateTimeStr, string p_tableName)
     {
         using SqlTransaction transaction = p_connection.BeginTransaction();
         try
         {
             List<string> cmdsToRenameActualTblAsOld = new();
             List<string> cmdsToRenameNewTblAsActual = new();
-            List<string> cmdsToDropOldTbl = new();
 
             // After dropping and creating the table, set these, otherwise at SQL INSERT fails with:"The INSERT permission was denied on the object 'PortfolioItem'"
             string cmdPostprocess = $"GRANT INSERT, DELETE, UPDATE ON [dbo].[{p_tableName}] TO [gyantal], [blukucz], [drcharmat], [lnemeth], [HQDeveloper], [HQServer], [HQServer2];";
 
             switch (p_tableName)
             {
+                case "Fund":
+                    cmdsToRenameActualTblAsOld.AddRange(
+                    [
+                        $"EXEC sp_rename N'dbo.Fund', N'Fund_Old{p_utcDateTimeStr}'",
+                        $"EXEC sp_rename N'PK_Fund', N'PK_Fund_Old{p_utcDateTimeStr}'"
+                    ]);
+
+                    cmdsToRenameNewTblAsActual.AddRange(
+                    [
+                        $"EXEC sp_rename N'dbo.Fund_New{p_utcDateTimeStr}', N'Fund'",
+                        $"EXEC sp_rename N'PK_Fund_New{p_utcDateTimeStr}', N'PK_Fund'"
+                    ]);
+                    break;
+                case "Company":
+                    cmdsToRenameActualTblAsOld.AddRange(
+                    [
+                        $"EXEC sp_rename N'dbo.Company', N'Company_Old{p_utcDateTimeStr}'",
+                        $"EXEC sp_rename N'PK_Company', N'PK_Company_Old{p_utcDateTimeStr}'",
+                        $"EXEC sp_rename N'FK_Company_Currency', N'FK_Company_Currency_Old{p_utcDateTimeStr}'"
+                    ]);
+
+                    cmdsToRenameNewTblAsActual.AddRange(
+                    [
+                        $"EXEC sp_rename N'dbo.Company_New{p_utcDateTimeStr}', N'Company'",
+                        $"EXEC sp_rename N'PK_Company_New{p_utcDateTimeStr}', N'PK_Company'",
+                        $"EXEC sp_rename N'FK_Company_Currency_New{p_utcDateTimeStr}', N'FK_Company_Currency'"
+                    ]);
+                    break;
                 case "Stock":
                     cmdsToRenameActualTblAsOld.AddRange(
                     [
@@ -498,13 +613,6 @@ class Controller
                         $"EXEC sp_rename N'FK_Stock_Company_New{p_utcDateTimeStr}', N'FK_Stock_Company'",
                         $"EXEC sp_rename N'FK_Stock_Currency_New{p_utcDateTimeStr}', N'FK_Stock_Currency'",
                         $"EXEC sp_rename N'FK_Stock_StockExchange_New{p_utcDateTimeStr}', N'FK_Stock_StockExchange'"
-                    ]);
-
-                    cmdsToDropOldTbl.AddRange([
-                        $"ALTER TABLE [Stock_Old{p_utcDateTimeStr}] DROP CONSTRAINT [FK_Stock_StockExchange_Old{p_utcDateTimeStr}]",
-                        $"ALTER TABLE [Stock_Old{p_utcDateTimeStr}] DROP CONSTRAINT [FK_Stock_Company_Old{p_utcDateTimeStr}]",
-                        $"ALTER TABLE [Stock_Old{p_utcDateTimeStr}] DROP CONSTRAINT [FK_Stock_Currency_Old{p_utcDateTimeStr}]",
-                        $"DROP TABLE [Stock_Old{p_utcDateTimeStr}]"
                     ]);
                     break;
                 case "FileSystemItem":
@@ -525,13 +633,7 @@ class Controller
                         $"EXEC sp_rename N'DF_FileSystemItem_LastWriteTime_New{p_utcDateTimeStr}', N'DF_FileSystemItem_LastWriteTime'",
                         $"EXEC sp_rename N'FK_FileSystemItem_HQUser_New{p_utcDateTimeStr}', N'FK_FileSystemItem_HQUser'"
                     ]);
-
-                    cmdsToDropOldTbl.AddRange([
-                        $"ALTER TABLE [FileSystemItem_Old{p_utcDateTimeStr}] DROP CONSTRAINT [FK_FileSystemItem_HQUser_Old{p_utcDateTimeStr}]",
-                        $"DROP TABLE [FileSystemItem_Old{p_utcDateTimeStr}]"
-                    ]);
                     break;
-
                 case "PortfolioItem":
                     cmdsToRenameActualTblAsOld.AddRange(
                     [
@@ -550,19 +652,12 @@ class Controller
                         $"EXEC sp_rename N'FK_PortfolioItem_AssetType_New{p_utcDateTimeStr}', N'FK_PortfolioItem_AssetType'",
                         $"EXEC sp_rename N'FK_PortfolioItem_FSPortfolio_New{p_utcDateTimeStr}', N'FK_PortfolioItem_FSPortfolio'"
                     ]);
-
-                    cmdsToDropOldTbl.AddRange([
-                        $"ALTER TABLE [PortfolioItem_Old{p_utcDateTimeStr}] DROP CONSTRAINT [FK_PortfolioItem_AssetType_Old{p_utcDateTimeStr}]",
-                        $"ALTER TABLE [PortfolioItem_Old{p_utcDateTimeStr}] DROP CONSTRAINT [FK_PortfolioItem_FSPortfolio_Old{p_utcDateTimeStr}]",
-                        $"DROP TABLE [PortfolioItem_Old{p_utcDateTimeStr}]"
-                    ]);
                     break;
             }
 
             // Table renaming process:
             // 1. Rename the existing table to "_Old".
             // 2. If successful, rename the new table to the original table name.
-            // 3. If both renames succeed, drop the "_Old" table.
             foreach (string renameActualTblCmd in cmdsToRenameActualTblAsOld)
             {
                 using SqlCommand cmd = new(renameActualTblCmd, p_connection, transaction);
@@ -575,6 +670,68 @@ class Controller
                 cmd.ExecuteNonQuery();
             }
 
+            new SqlCommand(cmdPostprocess, p_connection, transaction).ExecuteNonQuery();
+
+            transaction.Commit();
+            return null;
+        }
+        catch (Exception ex)
+        {
+            transaction.Rollback(); // roll back to the original database state, if any of the above steps are failed.
+            return $"Failed to rename table {p_tableName}: {ex.Message}";
+        }
+    }
+
+    private static string? DropTable(SqlConnection p_connection, string p_utcDateTimeStr, string p_tableName)
+    {
+        using SqlTransaction transaction = p_connection.BeginTransaction();
+        try
+        {
+            List<string> cmdsToDropOldTbl = new();
+            // After dropping and creating the table, set these, otherwise at SQL INSERT fails with:"The INSERT permission was denied on the object 'PortfolioItem'"
+            string cmdPostprocess = $"GRANT INSERT, DELETE, UPDATE ON [dbo].[{p_tableName}] TO [gyantal], [blukucz], [drcharmat], [lnemeth], [HQDeveloper], [HQServer], [HQServer2];";
+
+            switch (p_tableName)
+            {
+                case "Fund":
+                    cmdsToDropOldTbl.AddRange(
+                    [
+                        $"DROP TABLE [Fund_Old{p_utcDateTimeStr}]"
+                    ]);
+                    break;
+                case "Company":
+                    cmdsToDropOldTbl.AddRange([
+                        $"ALTER TABLE [Company_Old{p_utcDateTimeStr}] DROP CONSTRAINT [FK_Company_Currency_Old{p_utcDateTimeStr}]",
+                        $"DROP TABLE [Company_Old{p_utcDateTimeStr}]"
+                    ]);
+                    break;
+                case "Stock":
+                    cmdsToDropOldTbl.AddRange([
+                        $"ALTER TABLE [Stock_Old{p_utcDateTimeStr}] DROP CONSTRAINT [FK_Stock_StockExchange_Old{p_utcDateTimeStr}]",
+                        $"ALTER TABLE [Stock_Old{p_utcDateTimeStr}] DROP CONSTRAINT [FK_Stock_Company_Old{p_utcDateTimeStr}]",
+                        $"ALTER TABLE [Stock_Old{p_utcDateTimeStr}] DROP CONSTRAINT [FK_Stock_Currency_Old{p_utcDateTimeStr}]",
+                        $"ALTER TABLE [Stock_Old{p_utcDateTimeStr}] DROP CONSTRAINT [DF_Stock_IsAlive_Old{p_utcDateTimeStr}]",
+                        $"DROP TABLE [Stock_Old{p_utcDateTimeStr}]"
+                    ]);
+                    break;
+                case "FileSystemItem":
+                    cmdsToDropOldTbl.AddRange([
+                        $"ALTER TABLE [FileSystemItem_Old{p_utcDateTimeStr}] DROP CONSTRAINT [DF_FileSystemItem_ParentFolderID_Old{p_utcDateTimeStr}]",
+                        $"ALTER TABLE [FileSystemItem_Old{p_utcDateTimeStr}] DROP CONSTRAINT [DF_FileSystemItem_LastWriteTime_Old{p_utcDateTimeStr}]",
+                        $"ALTER TABLE [FileSystemItem_Old{p_utcDateTimeStr}] DROP CONSTRAINT [FK_FileSystemItem_HQUser_Old{p_utcDateTimeStr}]",
+                        $"DROP TABLE [FileSystemItem_Old{p_utcDateTimeStr}]"
+                    ]);
+                    break;
+                case "PortfolioItem":
+                    cmdsToDropOldTbl.AddRange([
+                        $"ALTER TABLE [PortfolioItem_Old{p_utcDateTimeStr}] DROP CONSTRAINT [FK_PortfolioItem_AssetType_Old{p_utcDateTimeStr}]",
+                        $"ALTER TABLE [PortfolioItem_Old{p_utcDateTimeStr}] DROP CONSTRAINT [FK_PortfolioItem_FSPortfolio_Old{p_utcDateTimeStr}]",
+                        $"DROP TABLE [PortfolioItem_Old{p_utcDateTimeStr}]"
+                    ]);
+                    break;
+            }
+            // Table renaming process:
+            // 3. If both renames succeed, drop the "_Old" table.
             foreach (string dropOldTblCmd in cmdsToDropOldTbl)
             {
                 using SqlCommand cmd = new(dropOldTblCmd, p_connection, transaction);
@@ -589,7 +746,58 @@ class Controller
         catch (Exception ex)
         {
             transaction.Rollback(); // roll back to the original database state, if any of the above steps are failed.
-            return $"Failed to rename table {p_tableName}: {ex.Message}";
+            return $"Failed to Drop table {p_tableName}: {ex.Message}";
+        }
+    }
+
+    private static string? AddTriggersToTable(SqlConnection p_connection, string p_tableName)
+    {
+        using SqlTransaction transaction = p_connection.BeginTransaction();
+        try
+        {
+            string triggerSqlStr = "";
+            switch (p_tableName)
+            {
+                case "PortfolioItem":
+                    triggerSqlStr = $@"
+                        CREATE TRIGGER [dbo].[TR_{p_tableName}Change] ON [dbo].[{p_tableName}]
+                        AFTER INSERT, UPDATE, DELETE
+                        AS 
+                        BEGIN
+                            UPDATE dbo.TableID 
+                            SET LastWriteTime = SYSUTCDATETIME()
+                            WHERE Name = '{p_tableName}';
+                        END;
+                        ALTER TABLE [dbo].[{p_tableName}] ENABLE TRIGGER [TR_{p_tableName}Change];";
+                    break;
+                case "FileSystemItem":
+                    triggerSqlStr = $@"
+                        CREATE TRIGGER [dbo].[TR_{p_tableName}Change] ON [dbo].[{p_tableName}]
+                        AFTER INSERT, UPDATE, DELETE
+                        AS 
+                        BEGIN
+                            UPDATE dbo.TableID 
+                            SET LastWriteTime = SYSUTCDATETIME()
+                            WHERE Name = '{p_tableName}';
+                        END;
+                        ALTER TABLE [dbo].[{p_tableName}] ENABLE TRIGGER [TR_{p_tableName}Change];";
+                    break;
+            }
+            using (SqlCommand setCmd = new SqlCommand(@"SET ANSI_NULLS ON; SET QUOTED_IDENTIFIER ON;", p_connection, transaction))
+            {
+                setCmd.ExecuteNonQuery();
+            }
+            using (SqlCommand cmd = new(triggerSqlStr, p_connection, transaction))
+            {
+                cmd.ExecuteNonQuery();
+            }
+            transaction.Commit();
+            return null;
+        }
+        catch (Exception ex)
+        {
+            transaction.Rollback(); // roll back to the original database state, if any of the above steps are failed.
+            return $"Failed to add triggers table {p_tableName}: {ex.Message}";
         }
     }
 
