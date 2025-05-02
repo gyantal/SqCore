@@ -84,16 +84,16 @@
       </div>
     </span>&nbsp;
     <span>Start:&nbsp;
-      <input #startYearInput type="text" class="commonDateInput sqIsoDateInputYYYY" placeholder="YYYY" (change)="onChangeDatePart('year', startYearInput, startMonthInput, startDayInput, startCalendarInput, 'start')"/>
-      <input #startMonthInput type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="MM" (change)="onChangeDatePart('month', startYearInput, startMonthInput, startDayInput, startCalendarInput, 'start')"/>
-      <input #startDayInput type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="DD" (change)="onChangeDatePart('day', startYearInput, startMonthInput, startDayInput, startCalendarInput, 'start')"/>
-      <input #startCalendarInput type="date" class="commonDateInput sqIsoCalendar" [value]="m_startDateStr" (change)="onChangeDateFromCalendarPicker(startCalendarInput, startYearInput, startMonthInput, startDayInput, 'start')"/>
+      <input #startYearInput type="text" class="commonDateInput sqIsoDateInputYYYY" placeholder="YYYY" (change)="onChangeDatePart('year', startYearInput, startMonthInput, startDayInput, startCalendarInput)"/>
+      <input #startMonthInput type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="MM" (change)="onChangeDatePart('month', startYearInput, startMonthInput, startDayInput, startCalendarInput)"/>
+      <input #startDayInput type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="DD" (change)="onChangeDatePart('day', startYearInput, startMonthInput, startDayInput, startCalendarInput)"/>
+      <input #startCalendarInput type="date" class="commonDateInput sqIsoCalendar" [value]="m_startDateObj.dateStr" (change)="onChangeDateFromCalendarPicker(startCalendarInput, startYearInput, startMonthInput, startDayInput, m_startDateObj)"/>
     </span>&nbsp;
     <span>End:&nbsp;
-      <input #endYearInput type="text" class="commonDateInput sqIsoDateInputYYYY" placeholder="YYYY" (change)="onChangeDatePart('year', endYearInput, endMonthInput, endDayInput, endCalendarInput, 'end')"/>
-      <input #endMonthInput type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="MM" (change)="onChangeDatePart('month', endYearInput, endMonthInput, endDayInput, endCalendarInput, 'end')"/>
-      <input #endDayInput type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="DD" (change)="onChangeDatePart('day', endYearInput, endMonthInput, endDayInput, endCalendarInput, 'end')"/>
-      <input #endCalendarInput type="date" class="commonDateInput sqIsoCalendar" [value]="m_endDateStr" (change)="onChangeDateFromCalendarPicker(endCalendarInput, endYearInput, endMonthInput, endDayInput, 'end')"/>
+      <input #endYearInput type="text" class="commonDateInput sqIsoDateInputYYYY" placeholder="YYYY" (change)="onChangeDatePart('year', endYearInput, endMonthInput, endDayInput, endCalendarInput)"/>
+      <input #endMonthInput type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="MM" (change)="onChangeDatePart('month', endYearInput, endMonthInput, endDayInput, endCalendarInput)"/>
+      <input #endDayInput type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="DD" (change)="onChangeDatePart('day', endYearInput, endMonthInput, endDayInput, endCalendarInput)"/>
+      <input #endCalendarInput type="date" class="commonDateInput sqIsoCalendar" [value]="m_endDateObj.dateStr" (change)="onChangeDateFromCalendarPicker(endCalendarInput, endYearInput, endMonthInput, endDayInput, m_endDateObj)"/>
     </span>&nbsp;
     <button class="backtestBtn btnCommon" (click)="onStartBacktestsClicked()">Start Server Backtest</button><br>
   </span><br>
@@ -126,11 +126,11 @@
         </ng-container>
         <tr>
           <td title='Exactly the date set by the user in the input field'>UserSet Start</td>
-          <td [attr.colspan]="m_backtestStatsResults.length">{{m_startDateStr}}</td>
+          <td [attr.colspan]="m_backtestStatsResults.length">{{m_startDateObj.dateStr}}</td>
         </tr>
         <tr>
           <td title='Exactly the date set by the user in the input field'>UserSet End</td>
-          <td [attr.colspan]="m_backtestStatsResults.length">{{m_endDateStr}}</td>
+          <td [attr.colspan]="m_backtestStatsResults.length">{{m_endDateObj.dateStr}}</td>
         </tr>
       </tbody>
     </table>

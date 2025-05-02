@@ -80,8 +80,10 @@ export class AppComponent implements OnInit {
   // Historical range selection
   m_startDate: Date = new Date(); // used to filter the chart Data based on the user input
   m_endDate: Date = new Date(); // used to filter the chart Data based on the user input
-  m_startDateStr: string = '';
-  m_endDateStr: string = '';
+  // Replacing m_startDateStr with m_startDateObj to explicitly pass a reference. Unlike C++, the objects are passed as reference in Javascrip/Typescript.
+  // so modifying the object's properties within a function will reflect in the original object. see. https://grok.com/share/c2hhcmQtMg%3D%3D_d9efcb2e-2361-43c0-8d94-d1f477b7e390
+  m_startDateObj: { dateStr: string } = {dateStr: ''};
+  m_endDateObj: { dateStr: string } = {dateStr: ''};
   m_rangeSelection: string[] = ['YTD', '1M', '1Y', '3Y', '5Y', '10Y', 'ALL'];
   m_histRangeSelected: string = 'ALL';
 
@@ -265,8 +267,8 @@ export class AppComponent implements OnInit {
 
     this.m_startDate = this.m_minStartDate;
     this.m_endDate = this.m_maxEndDate;
-    this.m_startDateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(this.m_startDate);
-    this.m_endDateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(this.m_endDate);
+    this.m_startDateObj.dateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(this.m_startDate);
+    this.m_endDateObj.dateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(this.m_endDate);
     this.initializeSqIsoDateInputs();
     this.m_histRangeSelected = 'ALL';
     this.m_ultimateChrt.Init(lineChrtDiv, lineChrtTooltip, prtfAndBmrkChrtData);
@@ -412,16 +414,16 @@ export class AppComponent implements OnInit {
       this.m_startDate = new Date(SqNgCommonUtilsTime.Date2PaddedIsoStr(new Date(currDateET.setMonth(currDateET.getMonth() - lbMonths))));
     } else if (this.m_histRangeSelected === 'ALL')
       this.m_startDate = this.m_minStartDate;
-    this.m_startDateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(this.m_startDate);
-    this.m_endDateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(this.m_maxEndDate); // Interestingly, when we change this which is bind to the date input html element, then the onChangeStartOrEndDate() is not called.
+    this.m_startDateObj.dateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(this.m_startDate);
+    this.m_endDateObj.dateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(this.m_maxEndDate); // Interestingly, when we change this which is bind to the date input html element, then the onChangeStartOrEndDate() is not called.
     this.m_endDate = this.m_maxEndDate;
     this.initializeSqIsoDateInputs();
     this.onStartOrEndDateChanged();
   }
 
   onUserChangedStartOrEndDateWidgets() { // User entry in the input field
-    this.m_startDate = new Date(this.m_startDateStr);
-    this.m_endDate = new Date(this.m_endDateStr);
+    this.m_startDate = new Date(this.m_startDateObj.dateStr);
+    this.m_endDate = new Date(this.m_endDateObj.dateStr);
     this.onStartOrEndDateChanged();
   }
 
@@ -544,33 +546,30 @@ export class AppComponent implements OnInit {
 
   initializeSqIsoDateInputs(): void {
     // Initialize start date
-    const [startYear, startMonth, startDay] = this.m_startDateStr.split('-');
+    const [startYear, startMonth, startDay] = this.m_startDateObj.dateStr.split('-');
     this.startYearInput.nativeElement.value = startYear;
     this.startMonthInput.nativeElement.value = startMonth;
     this.startDayInput.nativeElement.value = startDay;
-    this.startCalendarInput.nativeElement.value = this.m_startDateStr;
+    this.startCalendarInput.nativeElement.value = this.m_startDateObj.dateStr;
     // Initialize end date
-    const [endYear, endMonth, endDay] = this.m_endDateStr.split('-');
+    const [endYear, endMonth, endDay] = this.m_endDateObj.dateStr.split('-');
     this.endYearInput.nativeElement.value = endYear;
     this.endMonthInput.nativeElement.value = endMonth;
     this.endDayInput.nativeElement.value = endDay;
-    this.endCalendarInput.nativeElement.value = this.m_endDateStr;
+    this.endCalendarInput.nativeElement.value = this.m_endDateObj.dateStr;
   }
 
-  onChangeDateFromCalendarPicker(calendarInput: HTMLInputElement, yearInput: HTMLInputElement, monthInput: HTMLInputElement, dayInput: HTMLInputElement, sqIsoDateInputIdStr: string): void {
+  onChangeDateFromCalendarPicker(calendarInput: HTMLInputElement, yearInput: HTMLInputElement, monthInput: HTMLInputElement, dayInput: HTMLInputElement, dateObj: { dateStr: string }): void {
     const [year, month, day] = calendarInput.value.split('-');
     // Update the year, month, and day inputs based on the date selected by the user from the calendar
     yearInput.value = year;
     monthInput.value = month;
     dayInput.value = day;
-    if (sqIsoDateInputIdStr == 'start')
-      this.m_startDateStr = calendarInput.value;
-    else
-      this.m_endDateStr = calendarInput.value;
+    dateObj.dateStr = calendarInput.value;
     this.onUserChangedStartOrEndDateWidgets();
   }
 
-  onChangeDatePart(type: 'year' | 'month' | 'day', yearInput: HTMLInputElement, monthInput: HTMLInputElement, dayInput: HTMLInputElement, calendarInput: HTMLInputElement, sqIsoDateInputIdStr: string) {
+  onChangeDatePart(type: 'year' | 'month' | 'day', yearInput: HTMLInputElement, monthInput: HTMLInputElement, dayInput: HTMLInputElement, calendarInput: HTMLInputElement) {
     const usedDate: Date = new Date(calendarInput.value);
 
     switch (type) {
@@ -610,10 +609,6 @@ export class AppComponent implements OnInit {
         break;
     }
     calendarInput.value = usedDate.toISOString().substring(0, 10);
-    if (sqIsoDateInputIdStr == 'start')
-      this.m_startDateStr = calendarInput.value;
-    else
-      this.m_endDateStr = calendarInput.value;
     // onUserChangedStartOrEndDateWidgets() call requires that m_startDateStr, m_endDateStr are already updated.
     // So, 2-way data binding [(ngModel)]="m_startDateStr" wouldn't help, because that would change m_startDateStr too late. We have to change them right now, at this point of execution.
     // Also, assigning it in HTML ((change)="m_startDateStr = onChangeDateFromCalendarPicker(...)" wouldn't help, because that is too late.
