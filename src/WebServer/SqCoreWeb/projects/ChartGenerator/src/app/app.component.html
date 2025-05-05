@@ -84,15 +84,15 @@
       </div>
     </span>&nbsp;
     <span>Start:&nbsp;
-      <input #startYearInput type="text" class="commonDateInput sqIsoDateInputYYYY" placeholder="YYYY" (change)="onChangeDatePart('year', startYearInput, startMonthInput, startDayInput, startCalendarInput)"/>
-      <input #startMonthInput type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="MM" (change)="onChangeDatePart('month', startYearInput, startMonthInput, startDayInput, startCalendarInput)"/>
-      <input #startDayInput type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="DD" (change)="onChangeDatePart('day', startYearInput, startMonthInput, startDayInput, startCalendarInput)"/>
+      <input #startYearInput type="text" class="commonDateInput sqIsoDateInputYYYY" placeholder="YYYY" (change)="onChangeDatePart('year', startYearInput, startMonthInput, startDayInput, startCalendarInput, m_startDateObj)"/>
+      <input #startMonthInput type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="MM" (change)="onChangeDatePart('month', startYearInput, startMonthInput, startDayInput, startCalendarInput, m_startDateObj)"/>
+      <input #startDayInput type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="DD" (change)="onChangeDatePart('day', startYearInput, startMonthInput, startDayInput, startCalendarInput, m_startDateObj)"/>
       <input #startCalendarInput type="date" class="commonDateInput sqIsoCalendar" [value]="m_startDateObj.dateStr" (change)="onChangeDateFromCalendarPicker(startCalendarInput, startYearInput, startMonthInput, startDayInput, m_startDateObj)"/>
     </span>&nbsp;
     <span>End:&nbsp;
-      <input #endYearInput type="text" class="commonDateInput sqIsoDateInputYYYY" placeholder="YYYY" (change)="onChangeDatePart('year', endYearInput, endMonthInput, endDayInput, endCalendarInput)"/>
-      <input #endMonthInput type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="MM" (change)="onChangeDatePart('month', endYearInput, endMonthInput, endDayInput, endCalendarInput)"/>
-      <input #endDayInput type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="DD" (change)="onChangeDatePart('day', endYearInput, endMonthInput, endDayInput, endCalendarInput)"/>
+      <input #endYearInput type="text" class="commonDateInput sqIsoDateInputYYYY" placeholder="YYYY" (change)="onChangeDatePart('year', endYearInput, endMonthInput, endDayInput, endCalendarInput, m_endDateObj)"/>
+      <input #endMonthInput type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="MM" (change)="onChangeDatePart('month', endYearInput, endMonthInput, endDayInput, endCalendarInput, m_endDateObj)"/>
+      <input #endDayInput type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="DD" (change)="onChangeDatePart('day', endYearInput, endMonthInput, endDayInput, endCalendarInput, m_endDateObj)"/>
       <input #endCalendarInput type="date" class="commonDateInput sqIsoCalendar" [value]="m_endDateObj.dateStr" (change)="onChangeDateFromCalendarPicker(endCalendarInput, endYearInput, endMonthInput, endDayInput, m_endDateObj)"/>
     </span>&nbsp;
     <button class="backtestBtn btnCommon" (click)="onStartBacktestsClicked()">Start Server Backtest</button><br>

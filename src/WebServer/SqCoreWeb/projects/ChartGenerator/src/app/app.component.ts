@@ -569,7 +569,7 @@ export class AppComponent implements OnInit {
     this.onUserChangedStartOrEndDateWidgets();
   }
 
-  onChangeDatePart(type: 'year' | 'month' | 'day', yearInput: HTMLInputElement, monthInput: HTMLInputElement, dayInput: HTMLInputElement, calendarInput: HTMLInputElement) {
+  onChangeDatePart(type: 'year' | 'month' | 'day', yearInput: HTMLInputElement, monthInput: HTMLInputElement, dayInput: HTMLInputElement, calendarInput: HTMLInputElement, dateObj: { dateStr: string }) {
     const usedDate: Date = new Date(calendarInput.value);
 
     switch (type) {
@@ -609,6 +609,7 @@ export class AppComponent implements OnInit {
         break;
     }
     calendarInput.value = usedDate.toISOString().substring(0, 10);
+    dateObj.dateStr = calendarInput.value;
     // onUserChangedStartOrEndDateWidgets() call requires that m_startDateStr, m_endDateStr are already updated.
     // So, 2-way data binding [(ngModel)]="m_startDateStr" wouldn't help, because that would change m_startDateStr too late. We have to change them right now, at this point of execution.
     // Also, assigning it in HTML ((change)="m_startDateStr = onChangeDateFromCalendarPicker(...)" wouldn't help, because that is too late.
