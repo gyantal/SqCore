@@ -59,6 +59,8 @@ class Controller
 {
     public static Controller g_controller = new();
     static bool g_isUseLiveSqlDb = false; // to switch easily between Live (default) or Test (Developer local SQL)
+    static string g_legacyDbConnStringLocalTest = "Data Source=DAYA-DESKTOP\\MSSQLSERVER1;User ID=sa;Password=11235;TrustServerCertificate=True;Connect Timeout=3600";
+    static string g_legacyDbConnStringWithDbLocalTest = g_legacyDbConnStringLocalTest + ";Initial Catalog=legacyDb";
 
     internal static void Start()
     {
@@ -103,7 +105,7 @@ class Controller
         if (g_isUseLiveSqlDb)
             legacyDbConnString = Program.gConfiguration.GetConnectionString("LegacyMsSqlDefault") ?? throw new SqException("ConnectionString is missing from Config"); // UserID=HQServer
         else
-            legacyDbConnString = "Data Source=DAYA-DESKTOP\\MSSQLSERVER1;Initial Catalog=legacyDbBackup_250407T1121;User ID=sa;Password=11235;TrustServerCertificate=True"; // For testing. (Developer local SQL)
+            legacyDbConnString = g_legacyDbConnStringWithDbLocalTest; // For testing. (Developer local SQL)
         Utils.Logger.Info($"LegacyDbBackup(). ConnStr:{legacyDbConnString}");
         SqlConnection? sqlConnection = new SqlConnection(legacyDbConnString);
         sqlConnection.Open();
@@ -235,7 +237,7 @@ class Controller
             legacyDbConnString = Program.gConfiguration.GetConnectionString("LegacyMsSqlDefault") ?? throw new SqException("ConnectionString is missing from Config"); // UserID=HQServer, error: CREATE TABLE permission denied
             // legacyDbConnString = Program.gConfiguration.GetConnectionString("LegacyMsSqlSa") ?? throw new SqException("ConnectionString is missing from Config"); // UserID=sa
         else
-            legacyDbConnString = "Data Source=DAYA-DESKTOP\\MSSQLSERVER1;Initial Catalog=legacyDbFull;User ID=sa;Password=11235;TrustServerCertificate=True"; // For testing. (Developer local SQL)
+            legacyDbConnString = g_legacyDbConnStringWithDbLocalTest; // For testing. (Developer local SQL)
 
         string bacpacLegacyDbFileName = $"legacyDbBackup_{DateTime.UtcNow.ToYYMMDDTHHMM()}.bacpac";
         string bacpacBackupFilePath = Path.Combine(p_backupPath, bacpacLegacyDbFileName);
@@ -272,14 +274,14 @@ class Controller
     }
 
     // 2025-04-24: LiveDB RestoreTables: 80 min (but in SSMS ExportWizard: PortfolioItem table from DB to DB (both on the server): 55min, 50M rows)
-    public void RestoreLegacyDbTables(string p_backupPathFileOrDir)
+    public string? RestoreLegacyDbTables(string p_backupPathFileOrDir)
     {
         string legacyDbConnString;
         if (g_isUseLiveSqlDb)
             // legacyDbConnString = Program.gConfiguration.GetConnectionString("LegacyMsSqlDefault") ?? throw new SqException("ConnectionString is missing from Config"); // UserID=HQServer, error: CREATE TABLE permission denied
             legacyDbConnString = Program.gConfiguration.GetConnectionString("LegacyMsSqlSa") ?? throw new SqException("ConnectionString is missing from Config"); // UserID=sa
         else
-            legacyDbConnString = "Data Source=DAYA-DESKTOP\\MSSQLSERVER1;Initial Catalog=legacyDbBackup_250407T1121;User ID=sa;Password=11235;TrustServerCertificate=True;Connect Timeout=3600"; // For testing. (Developer local SQL)
+            legacyDbConnString = g_legacyDbConnStringWithDbLocalTest; // For testing. (Developer local SQL)
         SqlConnection? sqlConnection = new SqlConnection(legacyDbConnString);
         sqlConnection.Open();
         string utcDateTimeStr = DateTime.UtcNow.ToYYMMDDTHHMM();
@@ -290,10 +292,7 @@ class Controller
             // Step1: Create New tables
             string? createQueryErrorMsg = CreateTable(sqlConnection, utcDateTimeStr, table);
             if (createQueryErrorMsg != null)
-            {
-                Console.WriteLine(createQueryErrorMsg);
-                return;
-            }
+                return  $"Error: CreateTable - {createQueryErrorMsg}";
         }
 
         string zipFileFullPath;
@@ -304,20 +303,14 @@ class Controller
             backupDir = Path.GetDirectoryName(p_backupPathFileOrDir) ?? throw new SqException("Invalid path: Directory doesn't exist");
         }
         else
-        {
-            Console.WriteLine($"Error: {p_backupPathFileOrDir} is not a .7z file.");
-            return;
-        }
+            return $"Error: {p_backupPathFileOrDir} is not a .7z file.";
 
         // Extract the contents of the ZIP file
         string zipExePath = @"C:\Program Files\7-Zip\7z.exe";
         string zipProcessArgs = $"x \"{zipFileFullPath}\" -o\"{backupDir}\" -y";
         (string zipOutputMsg, string zipErrorMsg) = ProcessCommandHelper(zipExePath, zipProcessArgs);
         if (!string.IsNullOrWhiteSpace(zipErrorMsg))
-        {
-            Console.WriteLine(zipOutputMsg);
-            return;
-        }
+            return $"Error: ProcessCommandHelper - {zipErrorMsg}";
 
         int timeStampStartInd = p_backupPathFileOrDir.LastIndexOf('_') + 1;
         int timeStampEndInd = p_backupPathFileOrDir.LastIndexOf('.');
@@ -331,10 +324,8 @@ class Controller
             string csvFullPath = $"{backupDir}\\{char.ToLower(tableName[0]) + tableName.Substring(1)}Backup{zipFileTimeStampStr}.csv";
             string? insertDataErrMsg = InsertCsvFileToLegacyDbTable(sqlConnection, csvFullPath, $"{tableName}_New{utcDateTimeStr}");
             if (insertDataErrMsg != null) // if there is an error, stop processing and propagate error higher
-            {
-                Console.WriteLine(insertDataErrMsg);
-                return;
-            }
+                return $"Error: InsertCsvFileToLegacyDbTable - {insertDataErrMsg}";
+
             if (File.Exists(csvFullPath))
                 File.Delete(csvFullPath); // Delete the csv file after inserting
         }
@@ -343,10 +334,7 @@ class Controller
         {
             string? renameTableErrMsg = RenameTable(sqlConnection, utcDateTimeStr, tableName);
             if (renameTableErrMsg != null)
-            {
-                Console.WriteLine(renameTableErrMsg);
-                return;
-            }
+                return $"Error: RenameTable - {renameTableErrMsg}";
         }
 
         // Step4: Drop Table
@@ -354,10 +342,7 @@ class Controller
         {
             string? dropTableErrMsg = DropTable(sqlConnection, utcDateTimeStr, legacyDbTables[i]);
             if (dropTableErrMsg != null)
-            {
-                Console.WriteLine(dropTableErrMsg);
-                return;
-            }
+                return $"Error: DropTable - {dropTableErrMsg}";
         }
 
         // Step5: Add Triggers
@@ -367,13 +352,10 @@ class Controller
                 continue;
             string? addTriggerErrMsg = AddTriggersToTable(sqlConnection, tableName);
             if (addTriggerErrMsg != null)
-            {
-                Console.WriteLine(addTriggerErrMsg);
-                return;
-            }
+                return $"Error: AddTriggersToTable -{addTriggerErrMsg}";
         }
-        Console.WriteLine("Success - Restored legacyDb tables");
         sqlConnection.Close();
+        return null;
     }
 
     // PK or FK Constraint names like "CONSTRAINT [PK_MyConstraintName] PRIMARY KEY CLUSTERED", must be unique across the entire database.
@@ -802,14 +784,8 @@ class Controller
     }
 
     // 2025-04-24: LiveDB RestoreFull from *.bacpac time (from UK): ~720 minutes = 12h
-    public void RestoreLegacyDbFull(string p_backupPathFileOrDir)
+    public string? RestoreLegacyDbFull(string p_backupPathFileOrDir)
     {
-        (string? sqlPackageExePath, string? errorMsg) = GetSqlPackageExePath();
-        if (errorMsg != null)
-        {
-            Console.WriteLine($"{errorMsg}");
-            return;
-        }
         string legacyDbConnString;
         string legacyDbDatabaseName;
         if (g_isUseLiveSqlDb)
@@ -820,42 +796,43 @@ class Controller
         }
         else
         {
-            legacyDbConnString = "Data Source=DAYA-DESKTOP\\MSSQLSERVER1;Initial Catalog=master;User ID=sa;Password=11235;TrustServerCertificate=True"; // For testing. (Developer local SQL)
-            legacyDbDatabaseName = "legacyDbBackup_250314T0731"; // Provide your local Database name
+            legacyDbConnString = g_legacyDbConnStringLocalTest + ";Initial Catalog=master;"; // For testing. (Developer local SQL)
+            legacyDbDatabaseName = "legacyDbBackup_250430T0730"; // Provide your local Database name
         }
-        // Step3: Delete the database
+        string utcDateTimeStr = DateTime.UtcNow.ToYYMMDDTHHMM();
+        // Step2: Backup the Database
+        string backupDbName = $"{legacyDbDatabaseName}_old{utcDateTimeStr}";
         SqlConnection? sqlConnection = new SqlConnection(legacyDbConnString);
         sqlConnection.Open();
-        using (SqlCommand sqlCmd = new SqlCommand($"DROP DATABASE {legacyDbDatabaseName}", sqlConnection)) // replace "legacyDbBackup_250314T0731" with actual database to be deleted.
+        string? backupDbErrMsg = BackupExistingDatabase(sqlConnection, legacyDbDatabaseName, backupDbName);
+        if (backupDbErrMsg != null)
+            return $"Error: BackupExistingDatabase - {backupDbErrMsg}";
+        // Step3: import the bacpac file
+        string bacpacFileFullPath;
+        if (p_backupPathFileOrDir.EndsWith(".bacpac")) // If it ends with .bacpac assume the file was given as parameter
+            bacpacFileFullPath = p_backupPathFileOrDir;
+        else
+            return $"Error: {p_backupPathFileOrDir} is not a .bacpac file.";
+        string targetDbName = Path.GetFileNameWithoutExtension(bacpacFileFullPath); // This will be used as the database name
+        string targetDbConnString = g_legacyDbConnStringLocalTest + $";Initial Catalog={targetDbName};";
+        string bacpacImportArgs = $"/Action:Import /TargetConnectionString:\"{targetDbConnString}\" /SourceFile:\"{bacpacFileFullPath}\"";
+        (string? sqlPackageExePath, string? errorMsg) = GetSqlPackageExePath();
+        if (errorMsg != null)
+            return $"Error: {errorMsg}";
+        (string importOutputMsg, string importErrorMsg) = ProcessCommandHelper(sqlPackageExePath!, bacpacImportArgs);
+        if (importErrorMsg == null)
+            Console.WriteLine("Successfully imported the bacpac file");
+        else
+            return $"Error: importing bacpac file - {importErrorMsg}";
+        // Step4: Delete the database
+        using (SqlCommand sqlCmd = new SqlCommand($"DROP DATABASE {backupDbName}", sqlConnection)) // Delete "legacyDbBackup" with actual database to be deleted.
         {
             sqlCmd.CommandTimeout = 300;
             sqlCmd.ExecuteNonQuery();
         }
         Console.WriteLine($"Deleted existing database: {legacyDbDatabaseName}");
-
-        // Step4: import the bacpac file
-        string bacpacFileFullPath;
-        if (p_backupPathFileOrDir.EndsWith(".bacpac")) // If it ends with .bacpac assume the file was given as parameter
-            bacpacFileFullPath = p_backupPathFileOrDir;
-        else
-        {
-            FileInfo? latestBacpacFile = new DirectoryInfo(p_backupPathFileOrDir).GetFiles("*.bacpac").OrderByDescending(f => f.LastWriteTime).FirstOrDefault();
-            if (latestBacpacFile == null)
-            {
-                Console.WriteLine("No .bacpac files found in the specified directory.");
-                return;
-            }
-            bacpacFileFullPath = latestBacpacFile.FullName;
-        }
-        string targetDbName = Path.GetFileNameWithoutExtension(bacpacFileFullPath); // This will be used as the database name
-        string targetDbConnString = $"Data Source=DAYA-DESKTOP\\MSSQLSERVER1;Initial Catalog={targetDbName};User ID=sa;Password=11235;TrustServerCertificate=True";
-        string bacpacImportArgs = $"/Action:Import /TargetConnectionString:\"{targetDbConnString}\" /SourceFile:\"{bacpacFileFullPath}\"";
-        (string importOutputMsg, string importErrorMsg) = ProcessCommandHelper(sqlPackageExePath!, bacpacImportArgs);
-        if (importErrorMsg == null)
-            Console.WriteLine("Successfully imported the bacpac file");
-        else
-            Console.WriteLine($"importErrorMsg: {importErrorMsg}");
         sqlConnection.Close();
+        return null;
     }
 
     static (string? sqlPackageExePath, string? errorMsg) GetSqlPackageExePath()
@@ -882,6 +859,36 @@ class Controller
         return (sqlPackageExePath, null);
     }
 
+    private static string? BackupExistingDatabase(SqlConnection p_connection, string p_targetDbName, string p_backupDbName)
+    {
+        try
+        {
+            // Set the database to SINGLE_USER mode to detach it safely
+            using (SqlCommand setSingleUserCmd = new SqlCommand($"ALTER DATABASE [{p_targetDbName}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE", p_connection))
+            {
+                setSingleUserCmd.ExecuteNonQuery();
+            }
+
+            // Rename the database
+            using (SqlCommand renameCmd = new SqlCommand($"ALTER DATABASE [{p_targetDbName}] MODIFY NAME = [{p_backupDbName}]", p_connection))
+            {
+                renameCmd.ExecuteNonQuery();
+            }
+
+            // Set the renamed database back to MULTI_USER mode
+            using (SqlCommand setMultiUserCmd = new SqlCommand($"ALTER DATABASE [{p_backupDbName}] SET MULTI_USER", p_connection))
+            {
+                setMultiUserCmd.ExecuteNonQuery();
+            }
+            
+            Console.WriteLine($"Backed up the existing database by renaming it to: {p_backupDbName}");
+            return null;
+        }
+        catch (Exception ex)
+        {
+            return $"Error: BackupExistingDatabase - {ex.Message}";
+        }
+    }
     // ** The below method was developed without creating the temporary tables **
     // public void RestoreLegacyDbTables_Old(string p_backupPathFileOrDir)
     // {

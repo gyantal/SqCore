@@ -50,13 +50,21 @@ class Program
                     Controller.g_controller.BackupLegacyDbTables(gWorkModes[key]);
                     break;
                 case WorkMode.LegacyDbTablesRestore:
-                    Controller.g_controller.RestoreLegacyDbTables(gWorkModes[key]);
+                    string? restoreTablesErrMsg = Controller.g_controller.RestoreLegacyDbTables(gWorkModes[key]);
+                    if (restoreTablesErrMsg != null)
+                        Console.WriteLine($"Failed to restore {restoreTablesErrMsg}");
+                    else
+                        Console.WriteLine($"Success - Restored legacyDb tables");
                     break;
                 case WorkMode.LegacyDbFullBackup:
                     Controller.g_controller.BackupLegacyDbFull(gWorkModes[key]);
                     break;
                 case WorkMode.LegacyDbFullRestore:
-                    Controller.g_controller.RestoreLegacyDbFull(gWorkModes[key]);
+                    string? restoreFullDbErrMsg = Controller.g_controller.RestoreLegacyDbFull(gWorkModes[key]);
+                    if (restoreFullDbErrMsg != null)
+                        Console.WriteLine($"Failed to restore {restoreFullDbErrMsg}");
+                    else
+                        Console.WriteLine($"Success - Restored Full legacyDb");
                     break;
             }
         }
@@ -137,7 +145,13 @@ class Program
             case "4":
                 string? restoreFilePath = GetDirOrFullPathFromUser(false); // For restore isInputFolder = false, because we need the full file path
                 if (!string.IsNullOrEmpty(restoreFilePath) && restoreFilePath != "ConsoleIsForcedToShutDown")
-                    Controller.g_controller.RestoreLegacyDbTables(restoreFilePath);
+                {
+                    string? restoreTablesErrMsg = Controller.g_controller.RestoreLegacyDbTables(restoreFilePath);
+                    if (restoreTablesErrMsg != null)
+                        Console.WriteLine($"Failed to restore {restoreTablesErrMsg}");
+                    else
+                        Console.WriteLine($"Success - Restored legacyDb tables");
+                }
                 break;
             case "5":
                 string? fullBackupDirPath = GetDirOrFullPathFromUser(true); // For backup isInputFolder = true
@@ -147,7 +161,13 @@ class Program
             case "6":
                 string? fullRestoreFilePath = GetDirOrFullPathFromUser(false); // For restore isInputFolder = false, because we need the full file path
                 if (!string.IsNullOrEmpty(fullRestoreFilePath) && fullRestoreFilePath != "ConsoleIsForcedToShutDown")
-                    Controller.g_controller.RestoreLegacyDbFull(fullRestoreFilePath);
+                {
+                    string? restoreFullDbErrMsg = Controller.g_controller.RestoreLegacyDbFull(fullRestoreFilePath);
+                    if (restoreFullDbErrMsg != null)
+                        Console.WriteLine($"Failed to restore {restoreFullDbErrMsg}");
+                    else
+                        Console.WriteLine($"Success - Restored Full legacyDb");
+                }
                 break;
             case "9":
                 return "UserChosenExit";
@@ -184,9 +204,9 @@ class Program
                     return string.Empty;
                 }
 
-                if (!userInputSecondStr.EndsWith(".7z", StringComparison.OrdinalIgnoreCase))
+                if (!userInputSecondStr.EndsWith(".7z", StringComparison.OrdinalIgnoreCase) && !userInputSecondStr.EndsWith(".bacpac", StringComparison.OrdinalIgnoreCase))
                 {
-                    Console.WriteLine("The file must have a .7z extension.");
+                    Console.WriteLine("The file must have a .7z or .bacpac extension.");
                     return string.Empty;
                 }
             }
