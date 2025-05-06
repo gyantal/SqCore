@@ -1,5 +1,5 @@
 import { Component, ElementRef, ViewChild } from '@angular/core';
-import { PortfolioJs, PrtfRunResultJs, UiPrtfRunResult, prtfsParseHelper, statsParseHelper, updateUiWithPrtfRunResult, TradeAction, AssetType, CurrencyId, ExchangeId, fundamentalDataParseHelper, TickerClosePrice, SeasonalityData, getSeasonalityData, UiSeasonalityChartPoint, getDetailedStats, ChartResolution, updateUiWithPrtfRunResultUntilDate } from '../../../../TsLib/sq-common/backtestCommon';
+import { PortfolioJs, PrtfRunResultJs, UiPrtfRunResult, prtfsParseHelper, statsParseHelper, updateUiWithPrtfRunResult, TradeAction, AssetType, CurrencyId, ExchangeId, fundamentalDataParseHelper, TickerClosePrice, SeasonalityData, getSeasonalityData, UiSeasonalityChartPoint, getDetailedStats, ChartResolution, updateUiWithPrtfRunResultUntilDate, SqLogLevel } from '../../../../TsLib/sq-common/backtestCommon';
 import { minDate, SqNgCommonUtilsTime } from '../../../sq-ng-common/src/lib/sq-ng-common.utils_time';
 import { drawBarChartFromSeasonalityData } from '../../../../TsLib/sq-common/chartSimple';
 import { BacktestDetailedStatistics } from '../../../../TsLib/sq-common/backtestStatistics';
@@ -113,11 +113,12 @@ export class AppComponent {
   m_userWarning: string | null = null;
 
   // Positions tabpage:
-  m_histPosEndDateStr: string = new Date().toISOString().substring(0, 10);
+  m_histPosEndDateObj: { dateStr: string } = {dateStr: new Date().toISOString().substring(0, 10)};
   m_positionsTabSortColumn: string = 'plPctTotal';
   m_isPositionsTabSortDirAscend: boolean = false;
   m_histPrtfRunResultUntilDate: PrtfRunResultJs | null = null;
   m_uiHistPrtfRunResultUntilDate: UiPrtfRunResult = new UiPrtfRunResult();
+  m_hasSqLogErrOrWarn = false;
 
   // PortfolioReport tabpage:
   m_seasonalityData: SeasonalityData = new SeasonalityData();
@@ -244,7 +245,7 @@ export class AppComponent {
     this.m_histPrtfRunResultUntilDate = JSON.parse(msgObjStr);
     if (this.m_histPrtfRunResultUntilDate?.chrtData.chartResolution == ChartResolution.Minute || this.m_histPrtfRunResultUntilDate?.chrtData.chartResolution == ChartResolution.Minute5) // Check if the portfolio is of per minute resolution
       this.m_userWarning = 'PerMinute strategies not fully supported';
-    updateUiWithPrtfRunResultUntilDate(this.m_histPrtfRunResultUntilDate, this.m_uiHistPrtfRunResultUntilDate, this.m_histPosEndDateStr);
+    updateUiWithPrtfRunResultUntilDate(this.m_histPrtfRunResultUntilDate, this.m_uiHistPrtfRunResultUntilDate, this.m_histPosEndDateObj.dateStr);
     this.getFundamentalData(this.m_histPrtfRunResultUntilDate);
   }
 
@@ -263,7 +264,12 @@ export class AppComponent {
     if (this.m_prtfRunResult?.chrtData.chartResolution == ChartResolution.Minute || this.m_prtfRunResult?.chrtData.chartResolution == ChartResolution.Minute5) // Check if the portfolio is of per minute resolution
       this.m_userWarning = 'PerMinute strategies not fully supported';
     updateUiWithPrtfRunResult(this.m_prtfRunResult, this.m_uiPrtfRunResult, this.m_chrtWidth, this.m_chrtHeight);
-    updateUiWithPrtfRunResultUntilDate(this.m_prtfRunResult, this.m_uiHistPrtfRunResultUntilDate, this.m_histPosEndDateStr);
+    this.m_hasSqLogErrOrWarn = false; // reset the hasSqLoErrOrWarn
+    for (const log of this.m_uiPrtfRunResult.sqLogs) {
+      if (!this.m_hasSqLogErrOrWarn && log.sqLogLevel == SqLogLevel.Error || log.sqLogLevel == SqLogLevel.Warn) // check if there are any logLevels with error or warn state
+        this.m_hasSqLogErrOrWarn = true;
+    }
+    updateUiWithPrtfRunResultUntilDate(this.m_prtfRunResult, this.m_uiHistPrtfRunResultUntilDate, this.m_histPosEndDateObj.dateStr);
     this.onSortingPositionsClicked(this.m_positionsTabSortColumn);
     this.getFundamentalData(this.m_prtfRunResult);
     this.m_seasonalityData = getSeasonalityData(this.m_prtfRunResult!.chrtData);
@@ -285,7 +291,7 @@ export class AppComponent {
       tickers.push(item.sqTicker.split('/')[1]);
 
     if (this.m_socket != null && this.m_socket.readyState == this.m_socket.OPEN)
-      this.m_socket.send('GetFundamentalData:' + '?tickers=' + tickers + '&Date=' + this.m_histPosEndDateStr);
+      this.m_socket.send('GetFundamentalData:' + '?tickers=' + tickers + '&Date=' + this.m_histPosEndDateObj.dateStr);
   }
 
   public processFundamentalData(msgObjStr: string) {
@@ -324,7 +330,7 @@ export class AppComponent {
 
   onHistPeriodChangeClicked() { // send this when user changes the historicalPosDates
     if (this.m_socket != null && this.m_socket.readyState == this.m_socket.OPEN)
-      this.m_socket.send('RunBacktestUntilDate:' + '?pid=' + this.m_portfolioId + '&endDate=' + this.m_histPosEndDateStr);
+      this.m_socket.send('RunBacktestUntilDate:' + '?pid=' + this.m_portfolioId + '&endDate=' + this.m_histPosEndDateObj.dateStr);
   }
 
   getTradesHistory() { // send this when user clicks on Trades tab
@@ -816,25 +822,25 @@ export class AppComponent {
   }
 
   initializeSqIsoDateInput(): void {
-    const [year, month, day] = this.m_histPosEndDateStr.split('-');
+    const [year, month, day] = this.m_histPosEndDateObj.dateStr.split('-');
     // Set the values of year, month, day, and calendar inputs using histPosEndDateStr
     this.yearInput.nativeElement.value = year;
     this.monthInput.nativeElement.value = month;
     this.dayInput.nativeElement.value = day;
-    this.calendarInput.nativeElement.value = this.m_histPosEndDateStr;
+    this.calendarInput.nativeElement.value = this.m_histPosEndDateObj.dateStr;
   }
 
-  onChangeDateFromCalendarPicker(calendarInput: HTMLInputElement, yearInput: HTMLInputElement, monthInput: HTMLInputElement, dayInput: HTMLInputElement): void {
+  onChangeDateFromCalendarPicker(calendarInput: HTMLInputElement, yearInput: HTMLInputElement, monthInput: HTMLInputElement, dayInput: HTMLInputElement, dateObj: { dateStr: string }): void {
     const [year, month, day] = calendarInput.value.split('-');
     // Update the year, month, and day inputs based on the date selected by the user from the calendar
     yearInput.value = year;
     monthInput.value = month;
     dayInput.value = day;
-    this.m_histPosEndDateStr = calendarInput.value;
+    dateObj.dateStr = calendarInput.value;
     this.onHistPeriodChangeClicked();
   }
 
-  onChangeDatePart(type: 'year' | 'month' | 'day', inputElement: HTMLInputElement, calendarInput: HTMLInputElement): void {
+  onChangeDatePart(type: 'year' | 'month' | 'day', inputElement: HTMLInputElement, calendarInput: HTMLInputElement, dateObj: { dateStr: string }): void {
     let calPartNewValue: string = inputElement.value.trim(); // it can be the year or month or day part of the SqCalendar widget.
     const usedDate: Date = new Date(calendarInput.value);
 
@@ -863,12 +869,12 @@ export class AppComponent {
         break;
     }
     calendarInput.value = usedDate.toISOString().substring(0, 10);
-    this.m_histPosEndDateStr = calendarInput.value;
+    dateObj.dateStr = calendarInput.value;
     this.onHistPeriodChangeClicked();
   }
 
   onClickPosNextOrPrevDate(nextOrPrev: string): void {
-    const histPosEndDate: Date = new Date(this.m_histPosEndDateStr);
+    const histPosEndDate: Date = new Date(this.m_histPosEndDateObj.dateStr);
     const dateAdjustment = nextOrPrev == 'next' ? 1 : -1;
     let newDate: Date = new Date(histPosEndDate.setDate(histPosEndDate.getDate() + dateAdjustment));
     const dayOfWeek = newDate.getDay();
@@ -879,7 +885,7 @@ export class AppComponent {
     else if (dayOfWeek == 0) // Sunday
       newDate = new Date(newDate.setDate(newDate.getDate() + (nextOrPrev == 'next' ? 1 : -2)));
 
-    this.m_histPosEndDateStr = newDate.toISOString().substring(0, 10);
+    this.m_histPosEndDateObj.dateStr = newDate.toISOString().substring(0, 10);
     this.initializeSqIsoDateInput();
     this.onHistPeriodChangeClicked();
   }

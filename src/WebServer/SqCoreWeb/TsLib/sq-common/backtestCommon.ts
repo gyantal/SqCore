@@ -49,7 +49,7 @@ export interface ChartJs { // PfRunResults Chart Data
 export class ChrtGenBacktestResult {
   public pfRunResults!: ChrtGenPfRunResult[];
   public bmrkHistories!: any[];
-  public logs!: any[];
+  public logs: SqLog[] = [];
   public serverBacktestTimeMs!: number;
 }
 
