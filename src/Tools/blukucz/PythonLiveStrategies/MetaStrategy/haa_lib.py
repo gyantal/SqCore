@@ -39,7 +39,7 @@ def haa(ticker_list_canary, ticker_list_defensive, ticker_list_offensive,rebalan
     # ticker_list_all = ticker_list_canary + ticker_list_defensive + ticker_list_offensive
     ticker_list_all = list(set(ticker_list_canary + ticker_list_defensive + ticker_list_offensive))
     ticker_list_played = list(set(ticker_list_defensive + ticker_list_offensive))
-    adj_close_price = yf.download(ticker_list_all,start = pd.to_datetime(start_date) + pd.DateOffset(years= -2),end = pd.to_datetime(end_date) + pd.DateOffset(days= 1) )['Adj Close']
+    adj_close_price = yf.download(ticker_list_all,start = pd.to_datetime(start_date) + pd.DateOffset(years= -2),end = pd.to_datetime(end_date) + pd.DateOffset(days= 1), auto_adjust=False )['Adj Close'] # 2025-02-27: yf API changed. The default auto_adjust=True gives only adjusted OHLC, not giving AdjClose, so impossible to reverse engineer the splits, dividindends and rawPrices. The auto_adjust=false gives OHLC (raw) + 'Adj Close'.
     adj_close_price2 = adj_close_price[ticker_list_played]
 
     df = adj_close_price.copy()

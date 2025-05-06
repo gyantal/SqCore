@@ -48,7 +48,7 @@ def scores(acp_p, lb_p, l_th_p, u_th_p):
 
 def taa(ticker_list, perc_ch_lb_list, vol_lb, perc_ch_up_thres, perc_ch_low_thres, rebalance_unit, rebalance_freq, rebalance_shift, start_date, end_date):
 
-    adj_close_price = yf.download(ticker_list,start = pd.to_datetime(start_date) + pd.DateOffset(years= -2),end = pd.to_datetime(end_date) + pd.DateOffset(days= 1) )['Adj Close']
+    adj_close_price = yf.download(ticker_list,start = pd.to_datetime(start_date) + pd.DateOffset(years= -2),end = pd.to_datetime(end_date) + pd.DateOffset(days= 1), auto_adjust=False )['Adj Close'] # 2025-02-27: yf API changed. The default auto_adjust=True gives only adjusted OHLC, not giving AdjClose, so impossible to reverse engineer the splits, dividindends and rawPrices. The auto_adjust=false gives OHLC (raw) + 'Adj Close'.
 
     df = adj_close_price.copy()
     df['Year'], df['Month'], df['Week'] = df.index.year, df.index.month, df.index.isocalendar().week

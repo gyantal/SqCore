@@ -19,7 +19,7 @@ if not os.path.exists(output_directory):
 
 # Function to download stock data from Yahoo Finance
 def get_stock_data(ticker, start_date, end_date):
-    stock_data = yf.download(ticker, start=start_date, end=end_date)
+    stock_data = yf.download(ticker, start=start_date, end=end_date, auto_adjust=False) # 2025-02-27: yf API changed. The default auto_adjust=True gives only adjusted OHLC, not giving AdjClose, so impossible to reverse engineer the splits, dividindends and rawPrices. The auto_adjust=false gives OHLC (raw) + 'Adj Close'.
     stock_data['Return'] = stock_data['Adj Close'].pct_change()  # Calculate daily returns
     stock_data = stock_data.dropna()  # Remove NaN values
     return stock_data

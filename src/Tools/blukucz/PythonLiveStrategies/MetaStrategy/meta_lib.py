@@ -182,7 +182,7 @@ def meta(meta_parameters, taa_parameters, bold_parameters, dual_mom_parameters, 
     haa_weights = haa_weights.groupby(haa_weights.columns, axis = 1).sum()
 
     list_total = list(set(taa_ticker_list + baa_ticker_list_aggressive + baa_ticker_list_balanced + baa_ticker_list_defensive + dm_tickers_list + protmom_tickers_list + tactbond_tickers_list + haa_ticker_list_canary + haa_ticker_list_defensive + haa_ticker_list_offensive))
-    adj_close_price = yf.download(list_total,start = pd.to_datetime(meta_start_date) + pd.DateOffset(years= -2),end = pd.to_datetime(meta_end_date) + pd.DateOffset(days= 1) )['Adj Close']
+    adj_close_price = yf.download(list_total,start = pd.to_datetime(meta_start_date) + pd.DateOffset(years= -2),end = pd.to_datetime(meta_end_date) + pd.DateOffset(days= 1), auto_adjust=False )['Adj Close'] # 2025-02-27: yf API changed. The default auto_adjust=True gives only adjusted OHLC, not giving AdjClose, so impossible to reverse engineer the splits, dividindends and rawPrices. The auto_adjust=false gives OHLC (raw) + 'Adj Close'.
 
     # get the last 63 rows of the dataframe and check for NaN values - last 3 months
     last_63_rows = adj_close_price.tail(63)
