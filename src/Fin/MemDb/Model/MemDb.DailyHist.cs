@@ -368,7 +368,7 @@ public partial class MemDb
         var histResult = await HistPrice.g_HistPrice.GetHistAsync(yfTicker, HpDataNeed.AdjClose | HpDataNeed.Split, asset.ExpectedHistoryStartDateLoc);
         if (histResult.ErrorStr != null)
         {
-            Utils.Logger.Error($"g_HistPrice.GetHistorical() error. Cannot get YF data ({asset.SqTicker})");
+            Utils.Logger.Error($"g_HistPrice.GetHistorical() error: '{histResult.ErrorStr}'. Cannot get YF data ({asset.SqTicker})");
             return (dates, adjCloses, false);
         }
 

@@ -230,11 +230,17 @@ public static partial class Utils
         }
         else if (p_url.StartsWith("https://query2.finance.yahoo.com/v8/finance/chart")) // https://query2.finance.yahoo.com/v8/finance/chart/AAPL?period1=0&period2=1729692470&interval=1d&events=history,split
         {
+            // 2024-06:
             // curl -v --insecure "https://query2.finance.yahoo.com/v8/finance/chart/AAPL?period1=0&period2=1729692470&interval=1d&events=history,split" // surprisingly it works, because cURL sends default User-Agent and Accept headers, even though it is not specified (always inspect with the "-v" verbose parameter what is happening)
             // curl -v --insecure "https://query2.finance.yahoo.com/v8/finance/chart/AAPL?period1=0&period2=1729692470&interval=1d&events=history,split" -H "User-Agent: curl/8.7.1" -H "Accept: */*"   // with default cUrl headers, it works
             // curl -v --insecure "https://query2.finance.yahoo.com/v8/finance/chart/AAPL?period1=0&period2=1729692470&interval=1d&events=history,split" -H "User-Agent: " -H "Accept: "   // with empty headers, it returns "429 Too Many Requests". So, if the User-Agent is empty, then it fails. Otherwise, it is OK.
             //
             // curl -v --insecure "https://query2.finance.yahoo.com/v8/finance/chart/AAPL?period1=0&period2=1729692470&interval=1d&events=history,split" -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36" -H "Accept: " // implement this version in this C# code.
+            // 2025-05-06: previous long "User-Agent" started to give "429 Too Many Requests" (although the same works in the browser).
+            // https://github.com/ranaroussi/yfinance/issues/2422 Python YF library bug discussion 'YFRateLimitError('Too Many Requests)'
+            // Their solution was to impersonate 'Chrome' browser that exactly imitates the TSL and HTML2 handshake communication of Chrome. But by accident I figured out that this is not yet necessary.
+            // This works now both local and server console:
+            // curl -v -k --insecure --http2 "https://query2.finance.yahoo.com/v8/finance/chart/AAPL?period1=0&period2=1729692470&interval=1d&events=history,split" -H "User-Agent: Mozilla/5.0"
             return new HttpRequestMessage
             {
                 RequestUri = new Uri(p_url),
@@ -242,7 +248,8 @@ public static partial class Utils
                 Version = HttpVersion.Version20,
                 Headers =
                 {
-                    { "User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36" }
+                    // { "User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36" } // 2025-05-06: stopped working, giving "429 Too Many Requests"
+                    { "User-Agent", "Mozilla/5.0" }
                 }
             };
         }

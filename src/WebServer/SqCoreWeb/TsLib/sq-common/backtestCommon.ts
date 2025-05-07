@@ -98,7 +98,19 @@ export class UiPrtfRunResult extends UiPrtfRunResultCommon { // PrtfRun Results 
   public chrtValues: UiChartPoint[] = []; // used in PrtfRunResults in portfolioManager app
   public prtfPosValues: UiPrtfPositions[] = [];
 
-  public onDateTwrPv: number = 0;
+  /* Intent explanation:
+- The whole reason to track $PV vs. $PreviousDatePV is to analyze the historical performance of a portfolio
+and find out on which day the portfolio lost money and on which position.
+- However, note that there is a fundamental reason why it cannot be 'perfect'.
+IF there are losing trades intraday, e.g. at 11:00 we bought 100 TSLA,
+then at 11:30 we sold 100 TSLA with a huge loss, but at the end of the day we have no TSLA positions,
+then it is impossible to find this losing position IF we only look at the End of the day stock positions.
+(TSLA quantity will be 0, both previous and next day.)
+- To mitigate this, we show TwrPV an PreviousDateTwrPV, so the user can spot that losing date
+(although from this data he will not be able to find the reason why. For that he has to analyze the historical trades on that day.)
+- TwrPV% and PreviousDateTwrPV% are simply taken from the Twr performance chart sent by the backtester at the beginning. By looking at the difference, user can spot if there was a big intraday Buy + Sell loss.
+- PosPv$ and PreviousDatePosPv$ is calculated using the stock positions at the end of the given day. By looking at the difference, user can see which position (that existed at the EoD) had a big loss. */
+  public onDateTwrPv: number = 0; // TwrPv is interpreted as %
   public prevDateTwrPv: number = 0;
   public onDatePosPv: number = 0; // Positions-$PV = $PV on Date (ClosePr or RT)
   public prevDatePosPv: number = 0; // Positions-$PV on PrevDate (ClosePr)

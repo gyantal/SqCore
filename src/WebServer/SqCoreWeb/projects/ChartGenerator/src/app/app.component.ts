@@ -80,8 +80,9 @@ export class AppComponent implements OnInit {
   // Historical range selection
   m_startDate: Date = new Date(); // used to filter the chart Data based on the user input
   m_endDate: Date = new Date(); // used to filter the chart Data based on the user input
-  // Replacing m_startDateStr with m_startDateObj to explicitly pass a reference. Unlike C++, the objects are passed as reference in Javascrip/Typescript.
-  // so modifying the object's properties within a function will reflect in the original object. see. https://grok.com/share/c2hhcmQtMg%3D%3D_d9efcb2e-2361-43c0-8d94-d1f477b7e390
+  // Replacing m_startDateStr with m_startDateObj wrapper ojbect to be able to explicitly pass it as reference to onchange() callbacks.
+  // JavaScript/TypeScript passes primitive values (like strings) by value, not by reference. If onchange() callback receives it as a string parameter (by value), we cannot change it inside the function.
+  // Wrapping the dateStr into an object allows modifying the date within the object. see. https://grok.com/share/c2hhcmQtMg%3D%3D_d9efcb2e-2361-43c0-8d94-d1f477b7e390
   m_startDateObj: { dateStr: string } = {dateStr: ''};
   m_endDateObj: { dateStr: string } = {dateStr: ''};
   m_rangeSelection: string[] = ['YTD', '1M', '1Y', '3Y', '5Y', '10Y', 'ALL'];

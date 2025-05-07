@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Flurl.Http;
+using SqCommon;
 
 namespace YahooFinanceApi;
 
@@ -19,7 +20,8 @@ internal static class YahooSession
 
     public const string UserAgentKey = "User-Agent";
 
-    public const string UserAgentValue = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 Edg/122.0.0.0";
+    // public const string UserAgentValue = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 Edg/122.0.0.0";  // 2025-05-06: stopped working, giving "429 Too Many Requests"
+    public const string UserAgentValue = "Mozilla/5.0";
 
     public static string? Crumb
     {
@@ -63,10 +65,11 @@ internal static class YahooSession
                 _cookie = response.Cookies.FirstOrDefault(c => c.Name == "A3");
                 if (_cookie == null)
                 {
-                    Console.WriteLine("Failed to obtain Yahoo auth cookie.");
+                    Utils.Logger.Error($"YahooSession: Failed to obtain Yahoo auth cookie.");
                 }
                 else
                 {
+                    Utils.Logger.Info($"YF. A3 Cookie is obtained.");
                     _crumb = await "https://query1.finance.yahoo.com/v1/test/getcrumb"
                         .AllowHttpStatus("401") // YF returns status code 401 (Unauthorized) sporadically. Exception is annoying, so allow it, but retry.
                         .WithCookie(_cookie.Name, _cookie.Value)
@@ -76,12 +79,13 @@ internal static class YahooSession
 
                     if (!string.IsNullOrEmpty(_crumb) && _crumb.IndexOf("Unauthorized") == -1) // getcrumb returns sometimes: "{\"finance\":{\"result\":null,\"error\":{\"code\":\"Unauthorized\",\"description\":\"Invalid Cookie\"}}}"
                     {
-                        Console.WriteLine("Retrieved Yahoo crumb.");
+                        Console.WriteLine($"Retrieved Yahoo crumb: {_crumb}");
+                        Utils.Logger.Info($"Retrieved Yahoo crumb: {_crumb}");
                         break; // we have the crumb and it is not "Unauthorized". Good. Exit the loop
                     }
                     else
                     {
-                        Console.WriteLine("Failed to retrieve Yahoo crumb. Try again.");
+                        Utils.Logger.Error($"YahooSession. Failed to retrieve Yahoo crumb. Try again.");
                         Thread.Sleep(200);
                     }
                 }
