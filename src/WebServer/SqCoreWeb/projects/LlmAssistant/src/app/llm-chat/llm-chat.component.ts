@@ -32,7 +32,7 @@ export class LlmChatComponent implements OnInit {
       this.m_chatHistory.push('- Assistant: ' + result.Response.replace('\n', '<br/>'));
     }, (error) => console.error(error));
 
-    this.m_httpClient.post<ChatResponse>(this.m_controllerBaseUrl + 'getchatresponsegrok', body).subscribe((result) => {
+    this.m_httpClient.post<ChatResponse>(this.m_controllerBaseUrl + 'getchatresponsellm', body).subscribe((result) => {
       const content = result.choices?.[0]?.message?.content ?? 'No response';
       this.m_chatHistory.push('- Assistant: ' + content.replace(/\n/g, '<br/>'));
     }, (error) => console.error(error));

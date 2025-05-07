@@ -497,7 +497,7 @@ public class LlmAssistantController : Microsoft.AspNetCore.Mvc.Controller
                 LlmModelName = p_inMsg.LlmModelName,
                 Msg = p_inMsg.LlmQuestion + newsStr
             };
-            responseStr = await GenerateChatResponseScan(p_userInp);
+            responseStr = await GenerateChatResponseLlm(p_userInp);
         }
         string responseJson = JsonSerializer.Serialize(responseStr); // JsonSerializer handles that a proper JSON cannot contain "\n" Control characters inside the string. We need double escaping ("\n" => "\\n"). Otherwise, the JS:JSON.parse() will fail.
         return Ok(responseJson);
@@ -766,30 +766,41 @@ public class LlmAssistantController : Microsoft.AspNetCore.Mvc.Controller
     }
 
     [Route("[action]")] // By using the "[action]" string as a parameter here, we state that the URI must contain this action’s name in addition to the controller’s name: http[s]://[domain]/[controller]/[action]
-    [HttpPost("getchatresponsegrok")] // Complex string cannot be in the Url. Use Post instead of Get. Test with Chrome extension 'Talend API Tester'
-    public IActionResult GetChatResponseGrok([FromBody] LlmUserInput p_inMsg)
+    [HttpPost("getchatresponsellm")] // Complex string cannot be in the Url. Use Post instead of Get. Test with Chrome extension 'Talend API Tester'
+    public IActionResult GetChatResponseLlm([FromBody] LlmUserInput p_inMsg)
     {
         if (p_inMsg == null)
             return BadRequest("Invalid data");
         Console.WriteLine(p_inMsg.Msg);
         string responseStr;
-        responseStr = GenerateChatResponseUsingGrok(p_inMsg).Result;
+        responseStr = GenerateChatResponseLlm(p_inMsg).Result;
         return Ok(responseStr);
     }
 
-    public async Task<string> GenerateChatResponseUsingGrok(LlmUserInput p_inMsg)
+    public async Task<string> GenerateChatResponseLlm(LlmUserInput p_inMsg)
     {
-        string grokAIApiKey = Utils.Configuration["ConnectionStrings:GrokAIApiKey"] ?? throw new SqException("GrokApiKeyIsMissing is missing from Config");
-        string apiUrl = "https://api.x.ai/v1/chat/completions";
+        string apiKey = string.Empty;
+        string apiUrl = string.Empty;
         string llmModelName = p_inMsg.LlmModelName;
         if (llmModelName == "grok")
         {
             llmModelName = "grok-2-latest";
+            apiUrl = "https://api.x.ai/v1/chat/completions";
+            apiKey = Utils.Configuration["ConnectionStrings:GrokAIApiKey"] ?? throw new SqException("GrokApiKey is missing from Config");
         }
+        else if (llmModelName == "deepseek")
+        {
+            llmModelName = "deepseek-chat";
+            apiUrl = "https://api.deepseek.com/v1/chat/completions";
+            apiKey = Utils.Configuration["ConnectionStrings:DeepseekAIApiKey"] ?? throw new SqException("DeepseekAIApiKey is missing from Config");
+        }
+
+        if (string.IsNullOrWhiteSpace(apiKey) || string.IsNullOrWhiteSpace(apiUrl))
+            return "API key or URL is not configured.";
 
         using (HttpClient client = new HttpClient())
         {
-            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {grokAIApiKey}");
+            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
             var requestBody = new
             {
                 model = llmModelName,
@@ -802,7 +813,10 @@ public class LlmAssistantController : Microsoft.AspNetCore.Mvc.Controller
             StringContent content = new StringContent(json, Encoding.UTF8, "application/json");
             HttpResponseMessage response = await client.PostAsync(apiUrl, content);
             string result = await response.Content.ReadAsStringAsync();
-            return result;
+            // Extract the response
+            using JsonDocument jsonDoc = JsonDocument.Parse(result);
+            string? responseStr = jsonDoc.RootElement.GetProperty("choices")[0].GetProperty("message").GetProperty("content").GetString();
+            return responseStr ?? "Failed to get Llm response";
         }
     }
 }

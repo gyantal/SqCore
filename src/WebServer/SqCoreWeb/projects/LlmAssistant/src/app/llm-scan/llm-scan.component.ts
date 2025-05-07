@@ -60,7 +60,7 @@ export class LlmScanComponent implements OnInit {
   }; // Nasdaq100 list from Wikipedia. 100 stocks. GOOGL is removed, because YF news result for GOOG is exactly the same
   m_httpClient: HttpClient;
   m_controllerBaseUrl: string;
-  m_selectedLlmModel: string = 'auto';
+  m_selectedLlmModel: string = 'grok';
   m_selectedTickers: string = '';
   m_possibleTickers: string[] = ['AMZN', 'AMZN,TSLA', 'GameChanger10...', 'GameChanger20...', 'Nasdaq100...'];
   m_tickerNewss: TickerNews[] = [];
