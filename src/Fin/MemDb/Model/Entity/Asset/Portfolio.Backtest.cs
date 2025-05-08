@@ -73,7 +73,9 @@ public class PortfolioPosition
     public float Quantity { get; set; } = float.NaN; // int quantity is not good because fractional Crypto tokens or fractional AAPL shares can be traded
     public float AvgPrice { get; set; } = 0.0f;
     public float BacktestLastPrice { get; set; } = 0.0f;  // the last price of the asset at the end of the backtest (not real-time price)
-    public float EstPrice { get; set; } = 0.0f;  // MktValue can be calculated (real-time price)
+
+    [JsonConverter(typeof(FloatJsonConverterToNumber4D))]
+    public float EstPrice { get; set; } = 0.0f;  // MktValue can be calculated (real-time price). If there is no known price it can be NaN
 }
 
 public class PriceHistoryJs // To save bandwidth, we send Dates, and Prices just as a List, instead of a List of <Date,Price> objects that would add property names thousands of times into JSON

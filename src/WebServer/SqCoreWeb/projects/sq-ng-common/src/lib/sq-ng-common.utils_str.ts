@@ -29,7 +29,7 @@ export class NanToDashPipe implements PipeTransform {
     if (isNaN(value))
       return '-'; // Dash ('-') is a common convention to indicate a missing or invalid value. Nicer than writing the default 'NaN'.
 
-    return value;
+    return value.toFixed(2); // Formatting the number to 2 decimal places, so we don't need to use Angular's number pipe (e.g., number:'1.2-2') in the HTML. Example: 54.65555 becomes '54.65'.
   }
 }
 

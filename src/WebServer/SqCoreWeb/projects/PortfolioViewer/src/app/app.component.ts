@@ -259,6 +259,9 @@ export class AppComponent {
       if (isRemoveOriginal)
         return; // if return undefined, original property will be removed
 
+      if (key === 'estPrice') // If no known price is available, the value comes as the string 'NaN'. So converting string 'NaN' to actual NaN , otherwise parsing the value to float.
+        return value === 'NaN' ? NaN : parseFloat(value);
+
       return value; // the original property will not be removed if we return the original value, not undefined
     });
     if (this.m_prtfRunResult?.chrtData.chartResolution == ChartResolution.Minute || this.m_prtfRunResult?.chrtData.chartResolution == ChartResolution.Minute5) // Check if the portfolio is of per minute resolution
