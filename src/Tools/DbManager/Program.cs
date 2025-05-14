@@ -47,22 +47,30 @@ class Program
             switch (key)
             {
                 case WorkMode.LegacyDbTablesBackup:
-                    Controller.g_controller.BackupLegacyDbTables(gWorkModes[key]);
+                    string? backupTablesErrMsg = Controller.g_controller.BackupLegacyDbTables(gWorkModes[key]);
+                    if (backupTablesErrMsg != null)
+                        Console.WriteLine($"Error - Failed to backup legacyDb tables {backupTablesErrMsg}");
+                    else
+                        Console.WriteLine($"Success - Backup legacyDb tables");
                     break;
                 case WorkMode.LegacyDbTablesRestore:
                     string? restoreTablesErrMsg = Controller.g_controller.RestoreLegacyDbTables(gWorkModes[key]);
                     if (restoreTablesErrMsg != null)
-                        Console.WriteLine($"Failed to restore {restoreTablesErrMsg}");
+                        Console.WriteLine($"Error - Failed to restore {restoreTablesErrMsg}");
                     else
                         Console.WriteLine($"Success - Restored legacyDb tables");
                     break;
                 case WorkMode.LegacyDbFullBackup:
-                    Controller.g_controller.BackupLegacyDbFull(gWorkModes[key]);
+                    string? backupFullErrMsg = Controller.g_controller.BackupLegacyDbFull(gWorkModes[key]);
+                    if (backupFullErrMsg != null)
+                        Console.WriteLine($"Error - Failed to backup legacyDb full {backupFullErrMsg}");
+                    else
+                        Console.WriteLine($"Success - Backup legacyDb full");
                     break;
                 case WorkMode.LegacyDbFullRestore:
                     string? restoreFullDbErrMsg = Controller.g_controller.RestoreLegacyDbFull(gWorkModes[key]);
                     if (restoreFullDbErrMsg != null)
-                        Console.WriteLine($"Failed to restore {restoreFullDbErrMsg}");
+                        Console.WriteLine($"Error - Failed to restore {restoreFullDbErrMsg}");
                     else
                         Console.WriteLine($"Success - Restored Full legacyDb");
                     break;
@@ -115,7 +123,6 @@ class Program
         Console.WriteLine("4. Restore LegacyDb (important tables)");
         Console.WriteLine("5. Backup LegacyDb (all, into *.bacpac)");
         Console.WriteLine("6. Restore LegacyDb (all, from *.bacpac)"); // warning SQL server should be configured as: EXEC sp_configure 'contained database authentication', 1; RECONFIGURE;
-        Console.WriteLine("7. Restore LegacyDb Safe (important tables)");
         Console.WriteLine("9. Exit gracefully (Avoid Ctrl-^C).");
         string userInput;
         try
@@ -140,7 +147,13 @@ class Program
             case "3":
                 string? backupDirPath = GetDirOrFullPathFromUser(true); // For backup isInputFolder = true
                 if (!string.IsNullOrEmpty(backupDirPath) && backupDirPath != "ConsoleIsForcedToShutDown")
-                    Controller.g_controller.BackupLegacyDbTables(backupDirPath);
+                {
+                    string? backupTablesErrMsg = Controller.g_controller.BackupLegacyDbTables(backupDirPath);
+                    if (backupTablesErrMsg != null)
+                        Console.WriteLine($"Error - Failed to backup legacyDb tables {backupTablesErrMsg}");
+                    else
+                        Console.WriteLine($"Success - Backup legacyDb tables");
+                }
                 break;
             case "4":
                 string? restoreFilePath = GetDirOrFullPathFromUser(false); // For restore isInputFolder = false, because we need the full file path
@@ -148,7 +161,7 @@ class Program
                 {
                     string? restoreTablesErrMsg = Controller.g_controller.RestoreLegacyDbTables(restoreFilePath);
                     if (restoreTablesErrMsg != null)
-                        Console.WriteLine($"Failed to restore {restoreTablesErrMsg}");
+                        Console.WriteLine($"Error - Failed to restore {restoreTablesErrMsg}");
                     else
                         Console.WriteLine($"Success - Restored legacyDb tables");
                 }
@@ -156,7 +169,13 @@ class Program
             case "5":
                 string? fullBackupDirPath = GetDirOrFullPathFromUser(true); // For backup isInputFolder = true
                 if (!string.IsNullOrEmpty(fullBackupDirPath) && fullBackupDirPath != "ConsoleIsForcedToShutDown")
-                    Controller.g_controller.BackupLegacyDbFull(fullBackupDirPath);
+                {
+                    string? backupFullErrMsg = Controller.g_controller.BackupLegacyDbFull(fullBackupDirPath);
+                    if (backupFullErrMsg != null)
+                        Console.WriteLine($"Error - Failed to backup legacyDb full {backupFullErrMsg}");
+                    else
+                        Console.WriteLine($"Success - Backup legacyDb full");
+                }
                 break;
             case "6":
                 string? fullRestoreFilePath = GetDirOrFullPathFromUser(false); // For restore isInputFolder = false, because we need the full file path
@@ -164,7 +183,7 @@ class Program
                 {
                     string? restoreFullDbErrMsg = Controller.g_controller.RestoreLegacyDbFull(fullRestoreFilePath);
                     if (restoreFullDbErrMsg != null)
-                        Console.WriteLine($"Failed to restore {restoreFullDbErrMsg}");
+                        Console.WriteLine($"Error - Failed to restore {restoreFullDbErrMsg}");
                     else
                         Console.WriteLine($"Success - Restored Full legacyDb");
                 }

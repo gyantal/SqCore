@@ -50,7 +50,9 @@ WHERE p.[Date] > '2025-04-22 00:00:00' ORDER BY p.[Date] DESC
 DbManager.exe -legacytablesbackup "g:\work\_archive\SqlServer_SqDesktop\ImportantTablesOnly"   // specify a folder without forward slash (/)
 DbManager.exe -legacytablesrestore "g:\work\_archive\SqlServer_SqDesktop\ImportantTablesOnly\legacyDbBackup_250425T1349.7z" // specify the zip file
 
-
+Hierarcy of Tables:
+Create, Insert : FileSystemItem -> PortfolioItem -> Stock -> (Company, Fund)
+Delete : Fund -> Company -> Stock -> PortfolioItem -> FileSystemItem
 **************************************************************************/
 
 namespace DbManager;
@@ -60,7 +62,8 @@ class Controller
     public static Controller g_controller = new();
     static bool g_isUseLiveSqlDb = false; // to switch easily between Live (default) or Test (Developer local SQL)
     static string g_legacyDbConnStringLocalTest = "Data Source=DAYA-DESKTOP\\MSSQLSERVER1;User ID=sa;Password=11235;TrustServerCertificate=True;Connect Timeout=3600";
-    static string g_legacyDbConnStringWithDbLocalTest = g_legacyDbConnStringLocalTest + ";Initial Catalog=legacyDb";
+    static string g_legacyDbLocalDbName = "legacyDbBackup_250513T0832"; // Provide your local Database name
+    static string g_legacyDbConnStringWithDbLocalTest = $"{g_legacyDbConnStringLocalTest};Initial Catalog={g_legacyDbLocalDbName};";
 
     internal static void Start()
     {
@@ -99,7 +102,7 @@ class Controller
         sqlConnection.Close();
     }
 
-    public void BackupLegacyDbTables(string p_backupPath) // e.g, backupPath:"C:/SqCoreWeb_LegacyDb"
+    public string? BackupLegacyDbTables(string p_backupPath) // e.g, backupPath:"C:/SqCoreWeb_LegacyDb"
     {
         string legacyDbConnString;
         if (g_isUseLiveSqlDb)
@@ -111,11 +114,9 @@ class Controller
         sqlConnection.Open();
 
         if (sqlConnection?.State != System.Data.ConnectionState.Open)
-        {
-            Utils.Logger.Error("LegacyDbBackup Error. Connection to SQL Server has not established successfully.");
-            return;
-        }
-        Console.WriteLine($"Backup process started. SqlConnection is Open. Expected backup time: 5min. (3.8GB CSV)");
+            return "Error: LegacyDbBackup - Connection to SQL Server has not established successfully.";
+
+        Console.WriteLine("Backup process started. SqlConnection is Open. Expected backup time: ~1min. (~5mb CSV)");
 
         // step1: check if the backupPath exists
         if (!Directory.Exists(p_backupPath))
@@ -128,25 +129,28 @@ class Controller
         try
         {
             string utcDateTimeStr = DateTime.UtcNow.ToYYMMDDTHHMM();
-            // List<(string TableName, string FileName)> legacyDbTablesAndFileNames = [ ("PortfolioItem", $"portfolioItemBackup{utcDateTimeStr}.csv"), ("FileSystemItem", $"fileSystemItemBackup{utcDateTimeStr}.csv"), ("Stock", $"stockBackup{utcDateTimeStr}.csv"), ("Fund", $"fundBackup{utcDateTimeStr}.csv"), ("Company", $"companyBackup{utcDateTimeStr}.csv") ];
-            List<(string TableName, string FileName)> legacyDbTablesAndFileNames = [ ("FileSystemItem", $"fileSystemItemBackup{utcDateTimeStr}.csv"), ("PortfolioItem", $"portfolioItemBackup{utcDateTimeStr}.csv"), ("Fund", $"fundBackup{utcDateTimeStr}.csv") ]; // Testing purpose
+            List<(string TableName, string FileName)> legacyDbTablesAndFileNames = [ ("PortfolioItem", $"portfolioItemBackup{utcDateTimeStr}.csv"), ("FileSystemItem", $"fileSystemItemBackup{utcDateTimeStr}.csv"), ("Stock", $"stockBackup{utcDateTimeStr}.csv"), ("Fund", $"fundBackup{utcDateTimeStr}.csv"), ("Company", $"companyBackup{utcDateTimeStr}.csv") ];
             // step2: export legacyDb selected tables to csv file
             foreach ((string TableName, string FileName) item in legacyDbTablesAndFileNames)
                 ExportLegacyDbTableToCsv(sqlConnection, p_backupPath, item.TableName, item.FileName);
             // step3: compress all csv files using 7z tool
-            CompressLegacyDbBackupFiles(p_backupPath, legacyDbTablesAndFileNames.Select(r => r.FileName).ToList(), utcDateTimeStr);
-            Console.WriteLine($"Success - Backup process completed");
+            string compressLegacyDbTablesMsg = CompressLegacyDbBackupFiles(p_backupPath, legacyDbTablesAndFileNames.Select(r => r.FileName).ToList(), utcDateTimeStr);
+            if (compressLegacyDbTablesMsg.StartsWith("Error"))
+                return compressLegacyDbTablesMsg;
+            else
+                Console.WriteLine($"Backup process completed. {compressLegacyDbTablesMsg}");
+
+            sqlConnection.Close();
+            return null;
         }
         catch (Exception e)
         {
-            Utils.Logger.Error($"An error occurred: {e.Message}");
+            return $"Error: LegacyDbBackup {e.Message}";
         }
-        sqlConnection.Close();
     }
 
     static void ExportLegacyDbTableToCsv(SqlConnection p_connection, string p_backupPath, string p_tableName, string p_fileName)
     {
-        // string queryStr = $"SELECT TOP 100 * FROM {p_tableName}"; // Limit to 100 rows for testing
         string queryStr = $"SELECT * FROM {p_tableName}";
         using SqlCommand sqlCmd = new(queryStr, p_connection);
         using SqlDataReader sqlReader = sqlCmd.ExecuteReader();
@@ -176,17 +180,15 @@ class Controller
         Console.WriteLine($"CSV file created successfully for {p_tableName} at: {exportFilePath}");
     }
 
-    static void CompressLegacyDbBackupFiles(string p_backupPath, List<string> p_fileNames, string p_utcDateTimeStr)
+    static string CompressLegacyDbBackupFiles(string p_backupPath, List<string> p_fileNames, string p_utcDateTimeStr)
     {
         // step1: Define File Paths and Check for 7-Zip
         string compressedLegacyDbFileName = $"legacyDbBackup_{p_utcDateTimeStr}.7z";
         string compressedBackupFilePath = Path.Combine(p_backupPath, compressedLegacyDbFileName);
         string compressionToolPath = @"C:\Program Files\7-Zip\7z.exe"; // Path to 7z.exe
         if (!File.Exists(compressionToolPath))
-        {
-            Console.WriteLine("7z.exe not found. Please install 7-Zip and update the path.");
-            return;
-        }
+            return "Error: 7z.exe not found. Please install 7-Zip and update the path.";
+
         // step2: Prepare File List for Compression
         StringBuilder sbFilesToCompress = new StringBuilder();
         foreach (string fileName in p_fileNames)
@@ -196,22 +198,11 @@ class Controller
             sbFilesToCompress.Append($"\"{Path.Combine(p_backupPath, fileName)}\"");
         }
         // step3: Configure ProcessStartInfo(PSI) to execute 7-Zip
-        ProcessStartInfo psi = new()
-        {
-            FileName = compressionToolPath,
-            Arguments = $"a \"{compressedBackupFilePath}\" {sbFilesToCompress}",
-            RedirectStandardOutput = true,
-            CreateNoWindow = true
-        };
+        string backupFilesArgs = $"a \"{compressedBackupFilePath}\" {sbFilesToCompress}";
+        (string backupFilesOutputMsg, string backupFilesErrorMsg) = ProcessCommandHelper(compressionToolPath, backupFilesArgs);
+        if (!string.IsNullOrWhiteSpace(backupFilesErrorMsg))
+            return $"Error: {backupFilesErrorMsg}";
 
-        Process? process = Process.Start(psi);
-        if (process == null)
-        {
-            Console.WriteLine("Failed to start the 7-Zip process.");
-            return;
-        }
-        process.WaitForExit();
-        Console.WriteLine($"zip file created successfully: {compressedBackupFilePath}");
         // step4: Delete the csv files after zipping
         foreach (string fileName in p_fileNames)
         {
@@ -219,17 +210,15 @@ class Controller
             if (File.Exists(filePath))
                 File.Delete(filePath);
         }
+        return $"compressedLegacyDbFileName: {compressedLegacyDbFileName}, " + backupFilesOutputMsg.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault(l => l.StartsWith("Archive size:"));
     }
 
     // 2025-04-09: LiveDB BackupFull to *.bacpac time (from India or from UK): ~20 minutes, filesize: 2,062,797 bytes.
-    public void BackupLegacyDbFull(string p_backupPath)
+    public string? BackupLegacyDbFull(string p_backupPath) // e.g, backupPath:"C:/SqCoreWeb_LegacyDb"
     {
         (string? sqlPackageExePath, string? errorMsg) = GetSqlPackageExePath();
         if (errorMsg != null)
-        {
-            Console.WriteLine($"{errorMsg}");
-            return;
-        }
+            return $"Error: {errorMsg}";
 
         // Step1: Export Legacy Database to BACPAC. The SqlUser should have the 'VIEW DEFINITION' permission on the database. UserID=HQServer has that permission.
         string legacyDbConnString;
@@ -238,43 +227,20 @@ class Controller
             // legacyDbConnString = Program.gConfiguration.GetConnectionString("LegacyMsSqlSa") ?? throw new SqException("ConnectionString is missing from Config"); // UserID=sa
         else
             legacyDbConnString = g_legacyDbConnStringWithDbLocalTest; // For testing. (Developer local SQL)
-
+        Console.WriteLine("Backup process started. sqlPackageExe is exporting. Expected backup time: 20min. (1.5GB bacpac)");
         string bacpacLegacyDbFileName = $"legacyDbBackup_{DateTime.UtcNow.ToYYMMDDTHHMM()}.bacpac";
         string bacpacBackupFilePath = Path.Combine(p_backupPath, bacpacLegacyDbFileName);
         string bacpacExportArgs = $"/Action:Export /SourceConnectionString:\"{legacyDbConnString}\" /TargetFile:\"{bacpacBackupFilePath}\"";
         (string bacpacOutputMsg, string bacpacErrorMsg) = ProcessCommandHelper(sqlPackageExePath!, bacpacExportArgs);
         if (!string.IsNullOrWhiteSpace(bacpacErrorMsg))
-            Console.WriteLine("Error: " + bacpacErrorMsg);
+            return "Error: " + bacpacErrorMsg;
         else
-            Console.WriteLine("BACPAC exported successfully: " + bacpacOutputMsg);
+            Console.WriteLine($"Backup process completed. Database exported as {bacpacLegacyDbFileName}");
+        return null;
     }
 
-    private static (string Output, string Error) ProcessCommandHelper(string p_exePath, string p_arguments)
-    {
-        try
-        {
-            Process process = new Process();
-            process.StartInfo.FileName = p_exePath;
-            process.StartInfo.Arguments = p_arguments;
-            process.StartInfo.RedirectStandardOutput = true;
-            process.StartInfo.RedirectStandardError = true;
-            process.StartInfo.CreateNoWindow = true;
-
-            process.Start();
-            string output = process.StandardOutput.ReadToEnd().Trim();
-            string error = process.StandardError.ReadToEnd().Trim();
-            process.WaitForExit();
-            return (output, error);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine("Error while executing command: " + ex.Message);
-            return (string.Empty, $"Exception: {ex.Message}");
-        }
-    }
-
-    // 2025-04-24: LiveDB RestoreTables: 80 min (but in SSMS ExportWizard: PortfolioItem table from DB to DB (both on the server): 55min, 50M rows)
-    public string? RestoreLegacyDbTables(string p_backupPathFileOrDir)
+    // 2025-04-24: LiveDB RestoreTables: 80 min (but in SSMS ExportWizard: PortfolioItem table from DB to DB (both on the server): 55min, 50M rows) - need to update
+    public string? RestoreLegacyDbTables(string p_backupPathFileOrDir) // e.g, backupPath:"C:/SqCoreWeb_LegacyDb/legacyDbBackup_250512T0845.7z"
     {
         string legacyDbConnString;
         if (g_isUseLiveSqlDb)
@@ -284,9 +250,9 @@ class Controller
             legacyDbConnString = g_legacyDbConnStringWithDbLocalTest; // For testing. (Developer local SQL)
         SqlConnection? sqlConnection = new SqlConnection(legacyDbConnString);
         sqlConnection.Open();
+        Console.WriteLine("Restore process started. SqlConnection is Open. Expected restore time: ~5min. (~5mb CSV)");
         string utcDateTimeStr = DateTime.UtcNow.ToYYMMDDTHHMM();
-        // List<string> legacyDbTables = [ "FileSystemItem", "PortfolioItem", "Company", "Stock", "Fund" ];
-        List<string> legacyDbTables = [ "FileSystemItem", "PortfolioItem", "Fund" ]; // Testing purpose
+        List<string> legacyDbTables = [ "FileSystemItem", "PortfolioItem", "Company", "Stock", "Fund" ];
         foreach (string table in legacyDbTables)
         {
             // Step1: Create New tables
@@ -348,13 +314,14 @@ class Controller
         // Step5: Add Triggers
         foreach (string tableName in legacyDbTables) // tableName = "PortfolioItem"
         {
-            if (tableName == "Fund" || tableName == "Company" || tableName == "Stock") // Skipping Fund, Company, and Stock tables as we're currently testing only FileSystemItem and PortfolioItem, and Fund has no triggers
+            if (tableName == "Fund") // Skipping Fund as it has no triggers
                 continue;
             string? addTriggerErrMsg = AddTriggersToTable(sqlConnection, tableName);
             if (addTriggerErrMsg != null)
                 return $"Error: AddTriggersToTable -{addTriggerErrMsg}";
         }
         sqlConnection.Close();
+        Console.WriteLine("Restore process completed. SqlConnection is Closed.");
         return null;
     }
 
@@ -426,7 +393,7 @@ class Controller
                     ALTER TABLE [dbo].[Stock_New{p_utcDateTimeStr}]
                         ADD CONSTRAINT [DF_Stock_IsAlive_New{p_utcDateTimeStr}] DEFAULT ((1)) FOR [IsAlive];
                     ALTER TABLE [dbo].[Stock_New{p_utcDateTimeStr}] WITH NOCHECK
-                        ADD CONSTRAINT [FK_Stock_Company_New{p_utcDateTimeStr}] FOREIGN KEY([CompanyID]) REFERENCES [dbo].[Company] ([ID]);
+                        ADD CONSTRAINT [FK_Stock_Company_New{p_utcDateTimeStr}] FOREIGN KEY([CompanyID]) REFERENCES [dbo].[Company_New{p_utcDateTimeStr}] ([ID]);
                     ALTER TABLE [dbo].[Stock_New{p_utcDateTimeStr}] NOCHECK CONSTRAINT [FK_Stock_Company_New{p_utcDateTimeStr}];
                     ALTER TABLE [dbo].[Stock_New{p_utcDateTimeStr}] WITH NOCHECK
                         ADD CONSTRAINT [FK_Stock_Currency_New{p_utcDateTimeStr}] FOREIGN KEY([CurrencyID]) REFERENCES [dbo].[Currency] ([ID]);
@@ -536,6 +503,9 @@ class Controller
         }
     }
 
+    // When we rename a table (e.g., Stock => Stock_Old), all references to that table in foreign key constraints are also updated to the new name (Stock_Old).
+    // This causes issues when attempting to drop the renamed table, as it is still referenced by other tables.
+    // Refer to the comments in the DropTable method for more details.
     private static string? RenameTable(SqlConnection p_connection, string p_utcDateTimeStr, string p_tableName)
     {
         using SqlTransaction transaction = p_connection.BeginTransaction();
@@ -664,12 +634,17 @@ class Controller
         }
     }
 
+    // Before dropping the table, ensure that all constraints referencing this table from other tables are removed.
+    // This step is crucial to avoid errors due to foreign key dependencies.
+    // Next, drop the foreign key constraints defined within the table itself and then drop the actual table.
+    // After the table is dropped, re-create the foreign key constraints to restore the original state.
     private static string? DropTable(SqlConnection p_connection, string p_utcDateTimeStr, string p_tableName)
     {
         using SqlTransaction transaction = p_connection.BeginTransaction();
         try
         {
             List<string> cmdsToDropOldTbl = new();
+            List<string> cmdsToDefineForeignKeyConstraints = new();
             // After dropping and creating the table, set these, otherwise at SQL INSERT fails with:"The INSERT permission was denied on the object 'PortfolioItem'"
             string cmdPostprocess = $"GRANT INSERT, DELETE, UPDATE ON [dbo].[{p_tableName}] TO [gyantal], [blukucz], [drcharmat], [lnemeth], [HQDeveloper], [HQServer], [HQServer2];";
 
@@ -683,25 +658,91 @@ class Controller
                     break;
                 case "Company":
                     cmdsToDropOldTbl.AddRange([
+                        "ALTER TABLE [dbo].[Tag_Company_Relation] DROP CONSTRAINT [FK_Tag_Company_Relation_Company]",
+                        "ALTER TABLE [dbo].[Company_Sector_Relation] DROP CONSTRAINT [FK_Company_Sector_Relation_Company]",
+                        "ALTER TABLE [dbo].[FinancialData] DROP CONSTRAINT [FK_FinancialData_Company]",
                         $"ALTER TABLE [Company_Old{p_utcDateTimeStr}] DROP CONSTRAINT [FK_Company_Currency_Old{p_utcDateTimeStr}]",
                         $"DROP TABLE [Company_Old{p_utcDateTimeStr}]"
+                    ]);
+                    cmdsToDefineForeignKeyConstraints.AddRange([
+                        "ALTER TABLE [dbo].[Tag_Company_Relation] WITH NOCHECK ADD CONSTRAINT [FK_Tag_Company_Relation_Company] FOREIGN KEY([CompanyID]) REFERENCES [dbo].[Company] ([ID])",
+                        "ALTER TABLE [dbo].[Tag_Company_Relation] NOCHECK CONSTRAINT [FK_Tag_Company_Relation_Company]",
+                        "ALTER TABLE [dbo].[Company_Sector_Relation] WITH NOCHECK ADD CONSTRAINT [FK_Company_Sector_Relation_Company] FOREIGN KEY([CompanyID]) REFERENCES [dbo].[Company] ([ID])",
+                        "ALTER TABLE [dbo].[Company_Sector_Relation] NOCHECK CONSTRAINT [FK_Company_Sector_Relation_Company]",
+                        "ALTER TABLE [dbo].[FinancialData] WITH NOCHECK ADD  CONSTRAINT [FK_FinancialData_Company] FOREIGN KEY([CompanyID]) REFERENCES [dbo].[Company] ([ID])",
+                        "ALTER TABLE [dbo].[FinancialData] NOCHECK CONSTRAINT [FK_FinancialData_Company]"
                     ]);
                     break;
                 case "Stock":
                     cmdsToDropOldTbl.AddRange([
+                        "ALTER TABLE [dbo].[ChinaAnalystGrade] DROP CONSTRAINT [FK_ChinaAnalystGrade_Stock]",
+                        "ALTER TABLE [dbo].[EarningsEstimate] DROP CONSTRAINT [FK_EarningsEstimate_Stock]",
+                        "ALTER TABLE [dbo].[EarningsEventCalculatedIndicators] DROP CONSTRAINT [FK_EarningsEventCalculatedIndicators_Stock]",
+                        "ALTER TABLE [dbo].[FoolSecurityRate] DROP CONSTRAINT [FK_FoolSecurityRate_Stock]",
+                        "ALTER TABLE [dbo].[GeoInvestingGrade] DROP CONSTRAINT [FK_GeoInvestingGrade_Stock]",
+                        "ALTER TABLE [dbo].[IbdGrade] DROP CONSTRAINT [FK_IbdGrade_Stock]",
+                        "ALTER TABLE [dbo].[Ipo] DROP CONSTRAINT [FK_Ipo_Stock]",
+                        "ALTER TABLE [dbo].[NavellierStockGrade] DROP CONSTRAINT [FK_NavellierStockGrade_Stock]",
+                        "ALTER TABLE [dbo].[StockQuotePending] DROP CONSTRAINT [FK_StockQuotePending_Stock]",
+                        "ALTER TABLE [dbo].[StockSplitDividendPending] DROP CONSTRAINT [FK_StockSplitDividendPending_Stock]",
+                        "ALTER TABLE [dbo].[SeasonalEdge] DROP CONSTRAINT [FK_SeasonalEdge_Stock]",
+                        "ALTER TABLE [dbo].[StockQuote] DROP CONSTRAINT [FK_StockQuote_Stock]",
+                        "ALTER TABLE [dbo].[StockScouterGrade] DROP CONSTRAINT [FK_StockScouterGrade_Stock]",
+                        "ALTER TABLE [dbo].[StockSplitDividend] DROP CONSTRAINT [FK_StockSplit_Stock]",
+                        "ALTER TABLE [dbo].[ZacksGrade] DROP CONSTRAINT [FK_ZacksGrade_Stock]",
                         $"ALTER TABLE [Stock_Old{p_utcDateTimeStr}] DROP CONSTRAINT [FK_Stock_StockExchange_Old{p_utcDateTimeStr}]",
                         $"ALTER TABLE [Stock_Old{p_utcDateTimeStr}] DROP CONSTRAINT [FK_Stock_Company_Old{p_utcDateTimeStr}]",
                         $"ALTER TABLE [Stock_Old{p_utcDateTimeStr}] DROP CONSTRAINT [FK_Stock_Currency_Old{p_utcDateTimeStr}]",
                         $"ALTER TABLE [Stock_Old{p_utcDateTimeStr}] DROP CONSTRAINT [DF_Stock_IsAlive_Old{p_utcDateTimeStr}]",
                         $"DROP TABLE [Stock_Old{p_utcDateTimeStr}]"
                     ]);
+                    cmdsToDefineForeignKeyConstraints.AddRange([
+                        "ALTER TABLE [dbo].[ChinaAnalystGrade] WITH NOCHECK ADD CONSTRAINT [FK_ChinaAnalystGrade_Stock] FOREIGN KEY([StockID]) REFERENCES [dbo].[Stock] ([ID])",
+                        "ALTER TABLE [dbo].[ChinaAnalystGrade] CHECK CONSTRAINT [FK_ChinaAnalystGrade_Stock]",
+                        "ALTER TABLE [dbo].[EarningsEstimate] WITH NOCHECK ADD CONSTRAINT [FK_EarningsEstimate_Stock] FOREIGN KEY([StockID]) REFERENCES [dbo].[Stock] ([ID])",
+                        "ALTER TABLE [dbo].[EarningsEstimate] CHECK CONSTRAINT [FK_EarningsEstimate_Stock]",
+                        "ALTER TABLE [dbo].[EarningsEventCalculatedIndicators] WITH CHECK ADD  CONSTRAINT [FK_EarningsEventCalculatedIndicators_Stock] FOREIGN KEY([StockID]) REFERENCES [dbo].[Stock] ([ID])",
+                        "ALTER TABLE [dbo].[EarningsEventCalculatedIndicators] CHECK CONSTRAINT [FK_EarningsEventCalculatedIndicators_Stock]",
+                        "ALTER TABLE [dbo].[FoolSecurityRate] WITH NOCHECK ADD CONSTRAINT [FK_FoolSecurityRate_Stock] FOREIGN KEY([StockID]) REFERENCES [dbo].[Stock] ([ID])",
+                        "ALTER TABLE [dbo].[FoolSecurityRate] CHECK CONSTRAINT [FK_FoolSecurityRate_Stock]",
+                        "ALTER TABLE [dbo].[GeoInvestingGrade] WITH NOCHECK ADD CONSTRAINT [FK_GeoInvestingGrade_Stock] FOREIGN KEY([StockID]) REFERENCES [dbo].[Stock] ([ID])",
+                        "ALTER TABLE [dbo].[GeoInvestingGrade] CHECK CONSTRAINT [FK_GeoInvestingGrade_Stock]",
+                        "ALTER TABLE [dbo].[IbdGrade] WITH NOCHECK ADD CONSTRAINT [FK_IbdGrade_Stock] FOREIGN KEY([StockID]) REFERENCES [dbo].[Stock] ([ID])",
+                        "ALTER TABLE [dbo].[IbdGrade] CHECK CONSTRAINT [FK_IbdGrade_Stock]",
+                        "ALTER TABLE [dbo].[Ipo] WITH CHECK ADD CONSTRAINT [FK_Ipo_Stock] FOREIGN KEY([StockID]) REFERENCES [dbo].[Stock] ([ID])",
+                        "ALTER TABLE [dbo].[Ipo] CHECK CONSTRAINT [FK_Ipo_Stock]",
+                        "ALTER TABLE [dbo].[NavellierStockGrade] WITH NOCHECK ADD CONSTRAINT [FK_NavellierStockGrade_Stock] FOREIGN KEY([StockID]) REFERENCES [dbo].[Stock] ([ID])",
+                        "ALTER TABLE [dbo].[NavellierStockGrade] CHECK CONSTRAINT [FK_NavellierStockGrade_Stock]",
+                        "ALTER TABLE [dbo].[StockQuotePending] WITH CHECK ADD CONSTRAINT [FK_StockQuotePending_Stock] FOREIGN KEY([StockID]) REFERENCES [dbo].[Stock] ([ID])",
+                        "ALTER TABLE [dbo].[StockQuotePending] CHECK CONSTRAINT [FK_StockQuotePending_Stock]",
+                        "ALTER TABLE [dbo].[StockSplitDividendPending] WITH CHECK ADD CONSTRAINT [FK_StockSplitDividendPending_Stock] FOREIGN KEY([StockID]) REFERENCES [dbo].[Stock] ([ID])",
+                        "ALTER TABLE [dbo].[StockSplitDividendPending] CHECK CONSTRAINT [FK_StockSplitDividendPending_Stock]",
+                        "ALTER TABLE [dbo].[SeasonalEdge] WITH NOCHECK ADD CONSTRAINT [FK_SeasonalEdge_Stock] FOREIGN KEY([StockID]) REFERENCES [dbo].[Stock] ([ID])",
+                        "ALTER TABLE [dbo].[SeasonalEdge] CHECK CONSTRAINT [FK_SeasonalEdge_Stock]",
+                        "ALTER TABLE [dbo].[StockQuote] WITH NOCHECK ADD CONSTRAINT [FK_StockQuote_Stock] FOREIGN KEY([StockID]) REFERENCES [dbo].[Stock] ([ID])",
+                        "ALTER TABLE [dbo].[StockQuote] CHECK CONSTRAINT [FK_StockQuote_Stock]",
+                        "ALTER TABLE [dbo].[StockScouterGrade] WITH NOCHECK ADD CONSTRAINT [FK_StockScouterGrade_Stock] FOREIGN KEY([StockID]) REFERENCES [dbo].[Stock] ([ID])",
+                        "ALTER TABLE [dbo].[StockScouterGrade] CHECK CONSTRAINT [FK_StockScouterGrade_Stock]",
+                        "ALTER TABLE [dbo].[StockSplitDividend] WITH NOCHECK ADD CONSTRAINT [FK_StockSplit_Stock] FOREIGN KEY([StockID]) REFERENCES [dbo].[Stock] ([ID])",
+                        "ALTER TABLE [dbo].[StockSplitDividend] CHECK CONSTRAINT [FK_StockSplit_Stock]",
+                        "ALTER TABLE [dbo].[ZacksGrade] WITH NOCHECK ADD CONSTRAINT [FK_ZacksGrade_Stock] FOREIGN KEY([StockID]) REFERENCES [dbo].[Stock] ([ID])",
+                        "ALTER TABLE [dbo].[ZacksGrade] CHECK CONSTRAINT [FK_ZacksGrade_Stock]",
+                    ]);
                     break;
                 case "FileSystemItem":
                     cmdsToDropOldTbl.AddRange([
+                        "ALTER TABLE [dbo].[QuickfolioItem] DROP CONSTRAINT [FK_QuickfolioItem_FileSystemItem]",
+                        "ALTER TABLE [dbo].[FSPortfolio] DROP CONSTRAINT [FK_FSPortfolio_FileSystemItem_Cascade]",
                         $"ALTER TABLE [FileSystemItem_Old{p_utcDateTimeStr}] DROP CONSTRAINT [DF_FileSystemItem_ParentFolderID_Old{p_utcDateTimeStr}]",
                         $"ALTER TABLE [FileSystemItem_Old{p_utcDateTimeStr}] DROP CONSTRAINT [DF_FileSystemItem_LastWriteTime_Old{p_utcDateTimeStr}]",
                         $"ALTER TABLE [FileSystemItem_Old{p_utcDateTimeStr}] DROP CONSTRAINT [FK_FileSystemItem_HQUser_Old{p_utcDateTimeStr}]",
                         $"DROP TABLE [FileSystemItem_Old{p_utcDateTimeStr}]"
+                    ]);
+                    cmdsToDefineForeignKeyConstraints.AddRange([
+                        "ALTER TABLE [dbo].[QuickfolioItem] WITH NOCHECK ADD CONSTRAINT [FK_QuickfolioItem_FileSystemItem] FOREIGN KEY([QuickfolioID]) REFERENCES [dbo].[FileSystemItem] ([ID])",
+                        "ALTER TABLE [dbo].[QuickfolioItem] NOCHECK CONSTRAINT [FK_QuickfolioItem_FileSystemItem]",
+                        "ALTER TABLE [dbo].[FSPortfolio] WITH NOCHECK ADD CONSTRAINT [FK_FSPortfolio_FileSystemItem_Cascade] FOREIGN KEY([FileSystemItemID]) REFERENCES [dbo].[FileSystemItem] ([ID]) ON UPDATE CASCADE ON DELETE CASCADE",
+                        "ALTER TABLE [dbo].[FSPortfolio] NOCHECK CONSTRAINT [FK_FSPortfolio_FileSystemItem_Cascade]"
                     ]);
                     break;
                 case "PortfolioItem":
@@ -719,7 +760,16 @@ class Controller
                 using SqlCommand cmd = new(dropOldTblCmd, p_connection, transaction);
                 cmd.ExecuteNonQuery();
             }
-
+            // We process only these tables because they have foreign key constraints referencing them from other tables.
+            if (p_tableName == "Stock" || p_tableName == "Company" || p_tableName == "FileSystemItem")
+            {
+                foreach (string fkConstriantTblCmd in cmdsToDefineForeignKeyConstraints)
+                {
+                    using SqlCommand cmd = new(fkConstriantTblCmd, p_connection, transaction);
+                    cmd.ExecuteNonQuery();
+                }
+            }
+            
             new SqlCommand(cmdPostprocess, p_connection, transaction).ExecuteNonQuery();
 
             transaction.Commit();
@@ -732,6 +782,9 @@ class Controller
         }
     }
 
+    // Why it is important to add triggers?
+    // 1. If the triggers are not added the number of rows affected will give 1(row) less count and it will throw error. Error: Failed to insert trades for portfolio.
+    // 2. we need to set the table to its orginal state
     private static string? AddTriggersToTable(SqlConnection p_connection, string p_tableName)
     {
         using SqlTransaction transaction = p_connection.BeginTransaction();
@@ -764,6 +817,21 @@ class Controller
                         END;
                         ALTER TABLE [dbo].[{p_tableName}] ENABLE TRIGGER [TR_{p_tableName}Change];";
                     break;
+                case "Company":
+                    triggerSqlStr = $@"
+                        CREATE TRIGGER [dbo].[TR_{p_tableName}Change] ON [dbo].[{p_tableName}]
+                        AFTER INSERT, UPDATE, DELETE
+                        AS UPDATE dbo.TableID SET LastWriteTime = SYSUTCDATETIME()
+                        ALTER TABLE [dbo].[{p_tableName}] DISABLE TRIGGER [TR_{p_tableName}Change];";
+                    break;
+                case "Stock":
+                    triggerSqlStr = $@"
+                        CREATE TRIGGER [dbo].[TR_{p_tableName}Change] ON [dbo].[{p_tableName}]
+                        AFTER INSERT, UPDATE, DELETE
+                        AS UPDATE dbo.TableID SET LastWriteTime = SYSUTCDATETIME()
+                        WHERE Name='{p_tableName}';
+                        ALTER TABLE [dbo].[{p_tableName}] DISABLE TRIGGER [TR_{p_tableName}Change]";
+                    break;
             }
             using (SqlCommand setCmd = new SqlCommand(@"SET ANSI_NULLS ON; SET QUOTED_IDENTIFIER ON;", p_connection, transaction))
             {
@@ -784,7 +852,7 @@ class Controller
     }
 
     // 2025-04-24: LiveDB RestoreFull from *.bacpac time (from UK): ~720 minutes = 12h
-    public string? RestoreLegacyDbFull(string p_backupPathFileOrDir)
+    public string? RestoreLegacyDbFull(string p_backupPathFileOrDir) // e.g, backupPath:"C:/SqCoreWeb_LegacyDb/legacyDbBackup_250512T0845.bacpac"
     {
         string legacyDbConnString;
         string legacyDbDatabaseName;
@@ -797,13 +865,17 @@ class Controller
         else
         {
             legacyDbConnString = g_legacyDbConnStringLocalTest + ";Initial Catalog=master;"; // For testing. (Developer local SQL)
-            legacyDbDatabaseName = "legacyDbBackup_250430T0730"; // Provide your local Database name
+            legacyDbDatabaseName = g_legacyDbLocalDbName;
         }
         string utcDateTimeStr = DateTime.UtcNow.ToYYMMDDTHHMM();
         // Step2: Backup the Database
         string backupDbName = $"{legacyDbDatabaseName}_old{utcDateTimeStr}";
         SqlConnection? sqlConnection = new SqlConnection(legacyDbConnString);
         sqlConnection.Open();
+        if (sqlConnection?.State != System.Data.ConnectionState.Open)
+            return "Error: RestoreLegacyDbFull - Connection to SQL Server has not established successfully.";
+
+        Console.WriteLine("Restore process started. SqlConnection is Open. Expected restore time: ~15min.");
         string? backupDbErrMsg = BackupExistingDatabase(sqlConnection, legacyDbDatabaseName, backupDbName);
         if (backupDbErrMsg != null)
             return $"Error: BackupExistingDatabase - {backupDbErrMsg}";
@@ -820,10 +892,10 @@ class Controller
         if (errorMsg != null)
             return $"Error: {errorMsg}";
         (string importOutputMsg, string importErrorMsg) = ProcessCommandHelper(sqlPackageExePath!, bacpacImportArgs);
-        if (importErrorMsg == null)
+        if (importErrorMsg == "")
             Console.WriteLine("Successfully imported the bacpac file");
         else
-            return $"Error: importing bacpac file - {importErrorMsg}";
+            return $"{importErrorMsg}";
         // Step4: Delete the database
         using (SqlCommand sqlCmd = new SqlCommand($"DROP DATABASE {backupDbName}", sqlConnection)) // Delete "legacyDbBackup" with actual database to be deleted.
         {
@@ -832,10 +904,35 @@ class Controller
         }
         Console.WriteLine($"Deleted existing database: {legacyDbDatabaseName}");
         sqlConnection.Close();
+        Console.WriteLine("Restore process completed. SqlConnection is Closed.");
         return null;
     }
 
-    static (string? sqlPackageExePath, string? errorMsg) GetSqlPackageExePath()
+    private static (string Output, string Error) ProcessCommandHelper(string p_exePath, string p_arguments)
+    {
+        try
+        {
+            Process process = new Process();
+            process.StartInfo.FileName = p_exePath;
+            process.StartInfo.Arguments = p_arguments;
+            process.StartInfo.RedirectStandardOutput = true;
+            process.StartInfo.RedirectStandardError = true;
+            process.StartInfo.CreateNoWindow = true;
+
+            process.Start();
+            string output = process.StandardOutput.ReadToEnd().Trim();
+            string error = process.StandardError.ReadToEnd().Trim();
+            process.WaitForExit();
+            return (output, error);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error while executing command: " + ex.Message);
+            return (string.Empty, $"Exception: {ex.Message}");
+        }
+    }
+
+    private static (string? sqlPackageExePath, string? errorMsg) GetSqlPackageExePath()
     {
         string cmdExePath = "cmd.exe";
         string sqlPackageVersionArgs = "/c SqlPackage /Version";
@@ -843,7 +940,6 @@ class Controller
         (string sqlPackageVersion, string sqlPackageErr) = ProcessCommandHelper(cmdExePath, sqlPackageVersionArgs);
         if (!string.IsNullOrWhiteSpace(sqlPackageErr))
             return (null, $"SqlPackage Version Error: {sqlPackageErr}");
-        Console.WriteLine($"SqlPackage Version: {sqlPackageVersion}");
 
         // Step 2: Locate SqlPackage.exe Path
         string sqlPackageLocateArgs = "/c where SqlPackage";
