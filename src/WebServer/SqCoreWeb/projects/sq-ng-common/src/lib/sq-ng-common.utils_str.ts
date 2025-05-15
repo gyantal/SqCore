@@ -25,11 +25,11 @@ export class SqNgCommonUtilsStr implements OnInit {
 
 @Pipe({ name: 'nanToDash'}) // In Angular data to UI is transformed via Pipes
 export class NanToDashPipe implements PipeTransform {
-  transform(value: any): any {
+  transform(value: any, decimalPlaces: number = 2): any {
     if (isNaN(value))
       return '-'; // Dash ('-') is a common convention to indicate a missing or invalid value. Nicer than writing the default 'NaN'.
 
-    return value.toFixed(2); // Formatting the number to 2 decimal places, so we don't need to use Angular's number pipe (e.g., number:'1.2-2') in the HTML. Example: 54.65555 becomes '54.65'.
+    return value.toFixed(decimalPlaces); // Now we can use nanToDash similar to Angular's number pipe (e.g., number:'1.2-2') in the HTML, with a default of 2 decimal places. Users can modify this by specifying the number of decimal places (e.g., nanToDash:3 for 3 decimal places).
   }
 }
 
