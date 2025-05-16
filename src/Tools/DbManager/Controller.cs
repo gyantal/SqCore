@@ -137,10 +137,8 @@ class Controller
             string compressLegacyDbTablesMsg = CompressLegacyDbBackupFiles(p_backupPath, legacyDbTablesAndFileNames.Select(r => r.FileName).ToList(), utcDateTimeStr);
             if (compressLegacyDbTablesMsg.StartsWith("Error"))
                 return compressLegacyDbTablesMsg;
-            else
-                Console.WriteLine($"Backup process completed. {compressLegacyDbTablesMsg}");
-
             sqlConnection.Close();
+            Console.WriteLine($"Backup process completed. SqlConnection is Closed. {compressLegacyDbTablesMsg}");
             return null;
         }
         catch (Exception e)
@@ -234,12 +232,11 @@ class Controller
         (string bacpacOutputMsg, string bacpacErrorMsg) = ProcessCommandHelper(sqlPackageExePath!, bacpacExportArgs);
         if (!string.IsNullOrWhiteSpace(bacpacErrorMsg))
             return "Error: " + bacpacErrorMsg;
-        else
-            Console.WriteLine($"Backup process completed. Database exported as {bacpacLegacyDbFileName}");
+        Console.WriteLine($"Backup process completed. Database exported as {bacpacLegacyDbFileName}");
         return null;
     }
 
-    // 2025-04-24: LiveDB RestoreTables: 80 min (but in SSMS ExportWizard: PortfolioItem table from DB to DB (both on the server): 55min, 50M rows) - need to update
+    // 2025-05-14: LiveDB RestoreTables: ~5min (but in SSMS ExportWizard: PortfolioItem table from DB to DB (both on the server): ~5min, 0.10056M rows)
     public string? RestoreLegacyDbTables(string p_backupPathFileOrDir) // e.g, backupPath:"C:/SqCoreWeb_LegacyDb/legacyDbBackup_250512T0845.7z"
     {
         string legacyDbConnString;
@@ -258,7 +255,7 @@ class Controller
             // Step1: Create New tables
             string? createQueryErrorMsg = CreateTable(sqlConnection, utcDateTimeStr, table);
             if (createQueryErrorMsg != null)
-                return  $"Error: CreateTable - {createQueryErrorMsg}";
+                return $"Error: CreateTable - {createQueryErrorMsg}";
         }
 
         string zipFileFullPath;
@@ -790,57 +787,21 @@ class Controller
         using SqlTransaction transaction = p_connection.BeginTransaction();
         try
         {
-            string triggerSqlStr = "";
-            switch (p_tableName)
-            {
-                case "PortfolioItem":
-                    triggerSqlStr = $@"
-                        CREATE TRIGGER [dbo].[TR_{p_tableName}Change] ON [dbo].[{p_tableName}]
-                        AFTER INSERT, UPDATE, DELETE
-                        AS 
-                        BEGIN
-                            UPDATE dbo.TableID 
-                            SET LastWriteTime = SYSUTCDATETIME()
-                            WHERE Name = '{p_tableName}';
-                        END;
-                        ALTER TABLE [dbo].[{p_tableName}] ENABLE TRIGGER [TR_{p_tableName}Change];";
-                    break;
-                case "FileSystemItem":
-                    triggerSqlStr = $@"
-                        CREATE TRIGGER [dbo].[TR_{p_tableName}Change] ON [dbo].[{p_tableName}]
-                        AFTER INSERT, UPDATE, DELETE
-                        AS 
-                        BEGIN
-                            UPDATE dbo.TableID 
-                            SET LastWriteTime = SYSUTCDATETIME()
-                            WHERE Name = '{p_tableName}';
-                        END;
-                        ALTER TABLE [dbo].[{p_tableName}] ENABLE TRIGGER [TR_{p_tableName}Change];";
-                    break;
-                case "Company":
-                    triggerSqlStr = $@"
-                        CREATE TRIGGER [dbo].[TR_{p_tableName}Change] ON [dbo].[{p_tableName}]
-                        AFTER INSERT, UPDATE, DELETE
-                        AS UPDATE dbo.TableID SET LastWriteTime = SYSUTCDATETIME()
-                        ALTER TABLE [dbo].[{p_tableName}] DISABLE TRIGGER [TR_{p_tableName}Change];";
-                    break;
-                case "Stock":
-                    triggerSqlStr = $@"
-                        CREATE TRIGGER [dbo].[TR_{p_tableName}Change] ON [dbo].[{p_tableName}]
-                        AFTER INSERT, UPDATE, DELETE
-                        AS UPDATE dbo.TableID SET LastWriteTime = SYSUTCDATETIME()
-                        WHERE Name='{p_tableName}';
-                        ALTER TABLE [dbo].[{p_tableName}] DISABLE TRIGGER [TR_{p_tableName}Change]";
-                    break;
-            }
             using (SqlCommand setCmd = new SqlCommand(@"SET ANSI_NULLS ON; SET QUOTED_IDENTIFIER ON;", p_connection, transaction))
             {
                 setCmd.ExecuteNonQuery();
             }
+            string triggerSqlStr = $@"CREATE TRIGGER [dbo].[TR_{p_tableName}Change] ON [dbo].[{p_tableName}]
+            AFTER INSERT, UPDATE, DELETE
+            AS UPDATE dbo.TableID SET LastWriteTime = SYSUTCDATETIME()
+                WHERE Name = '{p_tableName}';";
             using (SqlCommand cmd = new(triggerSqlStr, p_connection, transaction))
             {
                 cmd.ExecuteNonQuery();
             }
+            // After the creation of the Trigger enable the trigger in separate command
+            string cmdEnableTriggerStr = $"ALTER TABLE [dbo].[{p_tableName}] ENABLE TRIGGER [TR_{p_tableName}Change];";
+            new SqlCommand(cmdEnableTriggerStr, p_connection, transaction).ExecuteNonQuery();
             transaction.Commit();
             return null;
         }
@@ -876,15 +837,14 @@ class Controller
             return "Error: RestoreLegacyDbFull - Connection to SQL Server has not established successfully.";
 
         Console.WriteLine("Restore process started. SqlConnection is Open. Expected restore time: ~15min.");
-        string? backupDbErrMsg = BackupExistingDatabase(sqlConnection, legacyDbDatabaseName, backupDbName);
+        string? backupDbErrMsg = RenameExistingDatabase(sqlConnection, legacyDbDatabaseName, backupDbName);
         if (backupDbErrMsg != null)
-            return $"Error: BackupExistingDatabase - {backupDbErrMsg}";
+            return $"Error: RenameExistingDatabase - {backupDbErrMsg}";
         // Step3: import the bacpac file
         string bacpacFileFullPath;
-        if (p_backupPathFileOrDir.EndsWith(".bacpac")) // If it ends with .bacpac assume the file was given as parameter
-            bacpacFileFullPath = p_backupPathFileOrDir;
-        else
+        if (!p_backupPathFileOrDir.EndsWith(".bacpac")) // If it ends with .bacpac assume the file was given as parameter
             return $"Error: {p_backupPathFileOrDir} is not a .bacpac file.";
+        bacpacFileFullPath = p_backupPathFileOrDir;
         string targetDbName = Path.GetFileNameWithoutExtension(bacpacFileFullPath); // This will be used as the database name
         string targetDbConnString = g_legacyDbConnStringLocalTest + $";Initial Catalog={targetDbName};";
         string bacpacImportArgs = $"/Action:Import /TargetConnectionString:\"{targetDbConnString}\" /SourceFile:\"{bacpacFileFullPath}\"";
@@ -892,10 +852,10 @@ class Controller
         if (errorMsg != null)
             return $"Error: {errorMsg}";
         (string importOutputMsg, string importErrorMsg) = ProcessCommandHelper(sqlPackageExePath!, bacpacImportArgs);
-        if (importErrorMsg == "")
-            Console.WriteLine("Successfully imported the bacpac file");
-        else
+        if (importErrorMsg != "")
             return $"{importErrorMsg}";
+        Console.WriteLine("Successfully imported the bacpac file");
+
         // Step4: Delete the database
         using (SqlCommand sqlCmd = new SqlCommand($"DROP DATABASE {backupDbName}", sqlConnection)) // Delete "legacyDbBackup" with actual database to be deleted.
         {
@@ -955,7 +915,7 @@ class Controller
         return (sqlPackageExePath, null);
     }
 
-    private static string? BackupExistingDatabase(SqlConnection p_connection, string p_targetDbName, string p_backupDbName)
+    private static string? RenameExistingDatabase(SqlConnection p_connection, string p_targetDbName, string p_backupDbName)
     {
         try
         {
