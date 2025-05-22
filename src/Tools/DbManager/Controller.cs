@@ -53,6 +53,10 @@ DbManager.exe -legacytablesrestore "g:\work\_archive\SqlServer_SqDesktop\Importa
 Hierarcy of Tables:
 Create, Insert : FileSystemItem -> PortfolioItem -> Stock -> (Company, Fund)
 Delete : Fund -> Company -> Stock -> PortfolioItem -> FileSystemItem
+
+// Clustered/Non-Clustered Index:
+A clustered index determines the physical order of the data in the table. whereas non-clustered index is like a lookup table, it stores a copy of the indexed columns and a pointer to the actual data row.
+Non-clustered indexes doesnt affect the physical order in the data and there can be multiple non-clustered indexes on a single table.
 **************************************************************************/
 
 namespace DbManager;
@@ -316,6 +320,16 @@ class Controller
             string? addTriggerErrMsg = AddTriggersToTable(sqlConnection, tableName);
             if (addTriggerErrMsg != null)
                 return $"Error: AddTriggersToTable -{addTriggerErrMsg}";
+        }
+
+        // Step6: Add Indexes
+        foreach (string tableName in legacyDbTables) // tableName = "PortfolioItem"
+        {
+            if (tableName == "Fund" || tableName == "Company" || tableName == "PortfolioItem") // Skipping Fund, Comapny, PortfolioItem as they has no indexes
+                continue;
+            string? addIndexErrMsg = AddIndexToTable(sqlConnection, tableName);
+            if (addIndexErrMsg != null)
+                return $"Error: AddIndexToTable -{addIndexErrMsg}";
         }
         sqlConnection.Close();
         Console.WriteLine("Restore process completed. SqlConnection is Closed.");
@@ -809,6 +823,41 @@ class Controller
         {
             transaction.Rollback(); // roll back to the original database state, if any of the above steps are failed.
             return $"Failed to add triggers table {p_tableName}: {ex.Message}";
+        }
+    }
+
+    // We have to define the indexes for the table as they are not automatically restored.
+    private static string? AddIndexToTable(SqlConnection p_connection, string p_tableName)
+    {
+        using SqlTransaction transaction = p_connection.BeginTransaction();
+        try
+        {
+            List<string> indexCmds = new();
+            switch (p_tableName)
+            {
+                case "FileSystemItem":
+                    indexCmds.Add(@$"CREATE NONCLUSTERED INDEX [IX_ParentFolderID] ON [dbo].[{p_tableName}]
+                    ( [ParentFolderID] ASC )WITH (STATISTICS_NORECOMPUTE = OFF, DROP_EXISTING = OFF, ONLINE = OFF, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]");
+                    break;
+                case "Stock":
+                    indexCmds.Add(@$"CREATE UNIQUE NONCLUSTERED INDEX [IX_ID] ON [dbo].[{p_tableName}]
+                    ( [ID] ASC )WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]");
+                    indexCmds.Add(@$"SET ANSI_PADDING ON; CREATE NONCLUSTERED INDEX [IX_Ticker] ON [dbo].[{p_tableName}]
+                    ([Ticker] ASC)WITH (STATISTICS_NORECOMPUTE = OFF, DROP_EXISTING = OFF, ONLINE = OFF, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]");
+                    break;
+            }
+            foreach (string idxCmd in indexCmds)
+            {
+                using SqlCommand cmd = new(idxCmd, p_connection, transaction);
+                cmd.ExecuteNonQuery();
+            }
+            transaction.Commit();
+            return null;
+        }
+        catch (Exception ex)
+        {
+            transaction.Rollback(); // roll back to the original database state, if any of the above steps are failed.
+            return $"Failed to add Index for table {p_tableName}: {ex.Message}";
         }
     }
 
