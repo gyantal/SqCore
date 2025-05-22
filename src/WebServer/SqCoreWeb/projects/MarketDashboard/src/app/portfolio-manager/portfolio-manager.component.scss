@@ -270,8 +270,12 @@ tr:nth-child(even) {
   background-color: #9dcef8;
 }
 
-.sqLogContainer {
+.sqErrOrWarnLog {
   color: #FF0000;
+}
+
+.sqInfoLog {
+  color: rgb(6, 8, 153);
 }
 
 .sqLogTooltipText {
@@ -288,6 +292,6 @@ tr:nth-child(even) {
   margin-right: 0.5rem;
 }
 
-.sqLogContainer:hover .sqLogTooltipText {
+.sqErrOrWarnLog:hover .sqLogTooltipText, .sqInfoLog:hover .sqLogTooltipText {
   display: block;
 }

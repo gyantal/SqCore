@@ -1,6 +1,6 @@
 import { Component, OnInit, AfterViewInit, Input, ViewChild } from '@angular/core';
 import { SqTreeViewComponent } from '../../../../sq-ng-common/src/lib/sq-tree-view/sq-tree-view.component';
-import { PrtfRunResultJs, UiPrtfRunResult, PrtfItemType, FolderJs, PortfolioJs, TreeViewItem, TreeViewState, createTreeViewData, prtfsParseHelper, fldrsParseHelper, statsParseHelper, updateUiWithPrtfRunResult } from '../../../../../TsLib/sq-common/backtestCommon';
+import { PrtfRunResultJs, UiPrtfRunResult, PrtfItemType, FolderJs, PortfolioJs, TreeViewItem, TreeViewState, createTreeViewData, prtfsParseHelper, fldrsParseHelper, statsParseHelper, updateUiWithPrtfRunResult, SqLogLevel } from '../../../../../TsLib/sq-common/backtestCommon';
 import { SqNgCommonUtils } from '../../../../sq-ng-common/src/lib/sq-ng-common.utils';
 import { onFirstVisibleEventListener, urlEncodeChars } from '../../../../../TsLib/sq-common/utils-common';
 import { UserJs } from '../../../../../TsLib/sq-common/sq-globals';
@@ -36,6 +36,7 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
   parentfolderName: string | null = ''; // displaying next to the selected parent folder id on Ui
   editedPortfolio: PortfolioJs = new PortfolioJs(); // create or edit portfolio
   isViewedPortfolioSaveAllowed: boolean = false;
+  hasSqLogErrOrWarn: boolean = false;
   loggedInUser: string = '';
   currencyType: string[] = ['USD', 'EUR', 'GBP', 'GBX', 'HUF', 'JPY', 'CAD', 'CNY', 'CHF'];
   portfolioType: string[] = ['Trades', 'Simulation', 'LegacyDbTrades'];
@@ -236,6 +237,11 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
 
     console.log('processPortfolioRunResult(), panelPrtfChrtWidth', this.panelPrtfChrtWidth);
     updateUiWithPrtfRunResult(this.prtfRunResult, this.uiPrtfRunResult, this.panelPrtfChrtWidth, this.panelPrtfChrtHeight);
+    this.hasSqLogErrOrWarn = false; // reset the hasSqLogErrOrWarn
+    for (const log of this.prtfRunResult!.logs) {
+      if (!this.hasSqLogErrOrWarn && log.sqLogLevel == SqLogLevel.Error || log.sqLogLevel == SqLogLevel.Warn) // check if there are any logLevels with error or warn state
+        this.hasSqLogErrOrWarn = true;
+    }
   }
 
   onPortfoliosRefreshClicked() {
