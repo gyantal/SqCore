@@ -250,14 +250,19 @@ export class AppComponent implements OnInit {
     }
 
     this.getAnnualReturnYears(this.m_detailedStatistics.backtestDetailedStatistics, this.m_detailedStatistics.annualReturnYears); // Populate the annualReturnYears after the backtestDetailedStatistics for all portfolios and benchmarks have been received.
-    this.m_hasSqLogErrOrWarn = false; // reset the hasSqLoErrOrWarn
     for (const log of chrtGenBacktestRes.logs) {
-      if (!this.m_hasSqLogErrOrWarn && log.sqLogLevel == SqLogLevel.Error || log.sqLogLevel == SqLogLevel.Warn) // check if there are any logLevels with error or warn state
-        this.m_hasSqLogErrOrWarn = true;
       const logItem = new SqLog();
       logItem.sqLogLevel = log.sqLogLevel;
       logItem.message = log.message;
       uiPrtfResItem.sqLogs.push(logItem);
+    }
+
+    this.m_hasSqLogErrOrWarn = false; // reset the hasSqLoErrOrWarn
+    for (const log of chrtGenBacktestRes.logs) {
+      if (!this.m_hasSqLogErrOrWarn && (log.sqLogLevel == SqLogLevel.Error || log.sqLogLevel == SqLogLevel.Warn)) { // check if there are any logLevels with error or warn state
+        this.m_hasSqLogErrOrWarn = true;
+        break;
+      }
     }
 
     uiChrtGenPrtfRunResults.push(uiPrtfResItem);

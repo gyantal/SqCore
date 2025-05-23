@@ -267,10 +267,12 @@ export class AppComponent {
     if (this.m_prtfRunResult?.chrtData.chartResolution == ChartResolution.Minute || this.m_prtfRunResult?.chrtData.chartResolution == ChartResolution.Minute5) // Check if the portfolio is of per minute resolution
       this.m_userWarning = 'PerMinute strategies not fully supported';
     updateUiWithPrtfRunResult(this.m_prtfRunResult, this.m_uiPrtfRunResult, this.m_chrtWidth, this.m_chrtHeight);
-    this.m_hasSqLogErrOrWarn = false; // reset the hasSqLoErrOrWarn
+    this.m_hasSqLogErrOrWarn = false; // reset the hasSqLogErrOrWarn
     for (const log of this.m_uiPrtfRunResult.sqLogs) {
-      if (!this.m_hasSqLogErrOrWarn && log.sqLogLevel == SqLogLevel.Error || log.sqLogLevel == SqLogLevel.Warn) // check if there are any logLevels with error or warn state
+      if (!this.m_hasSqLogErrOrWarn && (log.sqLogLevel == SqLogLevel.Error || log.sqLogLevel == SqLogLevel.Warn)) { // check if there are any logLevels with error or warn state
         this.m_hasSqLogErrOrWarn = true;
+        break;
+      }
     }
     updateUiWithPrtfRunResultUntilDate(this.m_prtfRunResult, this.m_uiHistPrtfRunResultUntilDate, this.m_histPosEndDateObj.dateStr);
     this.onSortingPositionsClicked(this.m_positionsTabSortColumn);
