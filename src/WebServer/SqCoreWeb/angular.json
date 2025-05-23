@@ -714,12 +714,7 @@
             "polyfills": "projects/LlmAssistant/src/polyfills.ts",
             "tsConfig": "projects/LlmAssistant/tsconfig.app.json",
             "assets": [
-              "projects/LlmAssistant/src/assets", // Creating common assets, see: https://stackoverflow.com/questions/61343113/angular-shared-assets-within-multiple-applications
-              {
-                "glob": "**/*",
-                "input": "assets",
-                "output": "/assets"
-              }
+              "projects/LlmAssistant/src/assets" // Include only LlmAssistant-specific assets; exclude global assets
             ],
             "styles": [
               "projects/LlmAssistant/src/styles.scss"
