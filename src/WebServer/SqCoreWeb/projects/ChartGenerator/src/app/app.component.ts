@@ -259,7 +259,7 @@ export class AppComponent implements OnInit {
 
     this.m_hasSqLogErrOrWarn = false; // reset the hasSqLoErrOrWarn
     for (const log of chrtGenBacktestRes.logs) {
-      if (!this.m_hasSqLogErrOrWarn && (log.sqLogLevel == SqLogLevel.Error || log.sqLogLevel == SqLogLevel.Warn)) { // check if there are any logLevels with error or warn state
+      if (log.sqLogLevel == SqLogLevel.Error || log.sqLogLevel == SqLogLevel.Warn) { // check if there are any logLevels with error or warn state
         this.m_hasSqLogErrOrWarn = true;
         break;
       }

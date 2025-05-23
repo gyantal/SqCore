@@ -239,7 +239,7 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
     updateUiWithPrtfRunResult(this.prtfRunResult, this.uiPrtfRunResult, this.panelPrtfChrtWidth, this.panelPrtfChrtHeight);
     this.hasSqLogErrOrWarn = false; // reset the hasSqLogErrOrWarn
     for (const log of this.prtfRunResult!.logs) {
-      if (!this.hasSqLogErrOrWarn && (log.sqLogLevel == SqLogLevel.Error || log.sqLogLevel == SqLogLevel.Warn)) { // check if there are any logLevels with error or warn state
+      if (log.sqLogLevel == SqLogLevel.Error || log.sqLogLevel == SqLogLevel.Warn) { // check if there are any logLevels with error or warn state
         this.hasSqLogErrOrWarn = true;
         break;
       }
