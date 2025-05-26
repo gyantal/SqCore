@@ -714,7 +714,16 @@
             "polyfills": "projects/LlmAssistant/src/polyfills.ts",
             "tsConfig": "projects/LlmAssistant/tsconfig.app.json",
             "assets": [
-              "projects/LlmAssistant/src/assets" // Include only LlmAssistant-specific assets; exclude global assets
+                {
+                    "glob": "**/*",
+                    "input": "projects/LlmAssistant/src/assets", // Include only LlmAssistant-specific assets; exclude global assets
+                    "output": "assets"
+                },
+                {
+                    "glob": "yf_vslow_30pct.avif", // Include specific file from global assets
+                    "input": "assets",
+                    "output": "assets"
+                }
             ],
             "styles": [
               "projects/LlmAssistant/src/styles.scss"
