@@ -772,9 +772,8 @@ public class LlmAssistantController : Microsoft.AspNetCore.Mvc.Controller
         if (p_inMsg == null)
             return BadRequest("Invalid data");
         Console.WriteLine(p_inMsg.Msg);
-        string responseStr;
-        responseStr = GenerateChatResponseLlm(p_inMsg).Result;
-        return Ok(responseStr);
+        string responseStr = GenerateChatResponseLlm(p_inMsg).Result;
+        return Ok(JsonSerializer.Serialize(responseStr));
     }
 
     public async Task<string> GenerateChatResponseLlm(LlmUserInput p_inMsg)
@@ -784,7 +783,7 @@ public class LlmAssistantController : Microsoft.AspNetCore.Mvc.Controller
         string llmModelName = p_inMsg.LlmModelName;
         if (llmModelName == "grok")
         {
-            llmModelName = "grok-2-latest";
+            llmModelName = "grok-3-mini-latest";
             apiUrl = "https://api.x.ai/v1/chat/completions";
             apiKey = Utils.Configuration["ConnectionStrings:GrokAIApiKey"] ?? throw new SqException("GrokApiKey is missing from Config");
         }
