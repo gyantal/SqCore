@@ -1,9 +1,12 @@
 <div id="llmContainer">
     <p>LlmAssistant</p>
     <div class="llmBtnCommon">
-      <button [ngClass]="{'activeTab':m_activeTab == 'LlmChat'}" (click)="onClickActiveTab('LlmChat')">LlmChat</button>
-      <button [ngClass]="{'activeTab':m_activeTab == 'LlmScan'}" (click)="onClickActiveTab('LlmScan')">LlmScan</button>
+      <button [ngClass]="{'activeTab':m_activeTab == 'Chat'}" (click)="onClickActiveTab('Chat')">Chat</button>
+      <button [ngClass]="{'activeTab':m_activeTab == 'BasicChat'}" (click)="onClickActiveTab('BasicChat')">BasicChat</button>
+      <button [ngClass]="{'activeTab':m_activeTab == 'PromptAssistant'}" (click)="onClickActiveTab('PromptAssistant')">PromptAssistant</button>
+      <button [ngClass]="{'activeTab':m_activeTab == 'Scan'}" (click)="onClickActiveTab('Scan')">Scan</button>
     </div>
 </div>
-<app-llm-chat [hidden]="(m_activeTab != 'LlmChat')"></app-llm-chat>
-<app-llm-scan [hidden]="(m_activeTab != 'LlmScan')"></app-llm-scan>
+<app-llm-chat [hidden]="(m_activeTab != 'Chat')"></app-llm-chat>
+<app-llm-scan [hidden]="(m_activeTab != 'Scan')"></app-llm-scan>
+<app-llm-prompt [hidden]="(m_activeTab != 'PromptAssistant')"></app-llm-prompt>

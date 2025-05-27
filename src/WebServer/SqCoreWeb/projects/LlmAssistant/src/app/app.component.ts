@@ -9,7 +9,7 @@ import { HttpClient } from '@angular/common/http';
 export class AppComponent {
   m_httpClient: HttpClient;
   m_controllerBaseUrl: string;
-  m_activeTab: string = 'LlmChat';
+  m_activeTab: string = 'Chat';
 
   constructor(http: HttpClient) {
     this.m_httpClient = http;

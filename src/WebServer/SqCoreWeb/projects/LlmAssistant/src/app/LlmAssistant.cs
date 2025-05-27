@@ -101,6 +101,13 @@ public class LlmInput
     public string LlmQuestion { get; set; } = string.Empty;
 }
 
+public class LlmPromptCategory
+{
+    public string Category { get; set; } = string.Empty;
+    public string PromptName { get; set; } = string.Empty;
+    public string Prompt { get; set; } = string.Empty;
+}
+
 [Route("[controller]")]
 public class LlmAssistantController : Microsoft.AspNetCore.Mvc.Controller
 {
@@ -817,5 +824,51 @@ public class LlmAssistantController : Microsoft.AspNetCore.Mvc.Controller
             string? responseStr = jsonDoc.RootElement.GetProperty("choices")[0].GetProperty("message").GetProperty("content").GetString();
             return responseStr ?? "Failed to get Llm response";
         }
+    }
+
+    [Route("[action]")] // By using the "[action]" string as a parameter here, we state that the URI must contain this action’s name in addition to the controller’s name: http[s]://[domain]/[controller]/[action]
+    [HttpPost("getllmpromptresponse")] // Complex string cannot be in the Url. Use Post instead of Get. Test with Chrome extension 'Talend API Tester'
+    public IActionResult GetPromptCategoriesFromGSheet()
+    {
+        List<LlmPromptCategory> llmPromptCategories = new List<LlmPromptCategory>();
+        if (String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyName"]) || String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyKey"]))
+        {
+            Debug.WriteLine("Missing Google API key.");
+            return Ok(llmPromptCategories);
+        }
+        string? valuesFromGSheetStr = Utils.DownloadStringWithRetryAsync("https://sheets.googleapis.com/v4/spreadsheets/1wOY4OeoLbaYSfutiSc0elv26SVwLtBXqXnaNZ4YtggU/values/A1:Z2000?key=" + Utils.Configuration["Google:GoogleApiKeyKey"]).TurnAsyncToSyncTask();
+        if (valuesFromGSheetStr == null)
+        {
+            Debug.WriteLine("Failed to retrieve data from Google Sheet.");
+            return Ok(llmPromptCategories);
+        }
+        Debug.WriteLine($"The length of data from gSheet for LlmPromptCategory is {valuesFromGSheetStr.Length}");
+
+        string[] rows = valuesFromGSheetStr.Split(new string[] { "],\n" }, StringSplitOptions.RemoveEmptyEntries);
+        for (int i = 1; i < rows.Length; i++)
+        {
+            string[] cells = rows[i].Split(new string[] { "\",\n" }, StringSplitOptions.RemoveEmptyEntries);
+            if (cells.Length != 3) // skip the row if it doesn't contain 3 cells (Category, PromptName, Prompt)
+                continue;
+            string cellFirst = cells[0];
+            int categoryStartIdx = cellFirst.IndexOf('\"');
+            if (categoryStartIdx == -1)
+                continue;
+            string category = cellFirst[(categoryStartIdx + 1)..];
+            string cellSecond = cells[1];
+            int promptNameStartIdx = cellSecond.IndexOf('\"');
+            if (promptNameStartIdx == -1)
+                continue;
+            string promptName = cellSecond[(promptNameStartIdx + 1)..];
+            string cellThird = cells[2];
+            int promptStartIdx = cellThird.IndexOf('\"');
+            if (promptStartIdx == -1)
+                continue;
+            string prompt = cellThird[(promptStartIdx + 1)..];
+            llmPromptCategories.Add(new LlmPromptCategory() { Category = category, PromptName = promptName, Prompt = prompt });
+        }
+
+        string responseJson = JsonSerializer.Serialize(llmPromptCategories); // JsonSerializer handles that a proper JSON cannot contain "\n" Control characters inside the string. We need double escaping ("\n" => "\\n"). Otherwise, the JS:JSON.parse() will fail.
+        return Ok(responseJson);
     }
 }
