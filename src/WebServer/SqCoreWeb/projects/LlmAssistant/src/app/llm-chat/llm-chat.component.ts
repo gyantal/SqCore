@@ -3,6 +3,11 @@ import { HttpClient } from '@angular/common/http';
 import { UserInput } from '../lib/gpt-common';
 // import { ServerResponse, UserInput } from '../lib/gpt-common'; // commentting this as we need this for chatgpt
 
+class HandshakeMessage {
+  public email = '';
+  public userId = -1;
+}
+
 @Component({
   selector: 'app-llm-chat',
   templateUrl: './llm-chat.component.html',
@@ -14,29 +19,39 @@ export class LlmChatComponent implements OnInit {
   m_controllerBaseUrl: string;
   m_selectedLlmModel: string = 'grok';
   m_chatHistory: string[] = [];
+  m_socket: WebSocket;
 
   constructor(http: HttpClient) {
     this.m_httpClient = http;
     this.m_controllerBaseUrl = window.location.origin + '/LlmAssistant/';
+    this.m_socket = new WebSocket('wss://' + document.location.hostname + '/ws/llmassist');
   }
 
   sendUserInputToBackEnd(userInput: string): void {
     this.m_chatHistory.push('- User: ' + userInput.replace('\n', '<br/>')); // Show user input it chatHistory
+    const usrInp : UserInput = { LlmModelName: this.m_selectedLlmModel, Msg: userInput };
+    console.log(usrInp);
 
-    // HttpPost if input is complex with NewLines and ? characters, so it cannot be placed in the Url, but has to go in the Body
-    const body : UserInput = { LlmModelName: this.m_selectedLlmModel, Msg: userInput };
-    console.log(body);
-
-    // responseType: 'text' // instead of JSON, because return text can contain NewLines, \n and JSON.Parse() will fail with "SyntaxError: Bad control character in string literal in JSON"
-    // this._httpClient.post(this._chatGptUrl, body, { responseType: 'text'}).subscribe(resultText => { // if message comes not as a properly formatted JSON string
-    // this.m_httpClient.post<ServerResponse>(this.m_controllerBaseUrl + 'getchatresponse', body).subscribe((result) => { // if message comes as a properly formatted JSON string ("\n" => "\\n")
-    //   this.m_chatHistory.push('- Assistant: ' + result.Response.replace('\n', '<br/>'));
-    // }, (error) => console.error(error));
-
-    this.m_httpClient.post<string>(this.m_controllerBaseUrl + 'getchatresponsellm', body).subscribe((result) => {
-      this.m_chatHistory.push('- Assistant: ' + result);
-    }, (error) => console.error('Error getting response:', error));
+    if (this.m_socket != null && this.m_socket.readyState == this.m_socket.OPEN)
+      this.m_socket.send('GetChatResponseLlm:' + JSON.stringify(usrInp));
   }
 
-  ngOnInit(): void {}
+  ngOnInit(): void {
+    this.m_socket.onmessage = async (event) => {
+      const semicolonInd = event.data.indexOf(':');
+      const msgCode = event.data.slice(0, semicolonInd);
+      const msgObjStr = event.data.substring(semicolonInd + 1);
+      switch (msgCode) {
+        case 'OnConnected':
+          const handshakeMsg: HandshakeMessage = JSON.parse(msgObjStr);
+          console.log('ws: OnConnected HandshakeMsg', handshakeMsg);
+          break;
+        case 'LlmResponse':
+          this.m_chatHistory.push('- Assistant: ' + msgObjStr);
+          break;
+        default:
+          return false;
+      }
+    };
+  }
 }
