@@ -1,7 +1,6 @@
-import { Component, OnInit } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { Component, Input, OnInit } from '@angular/core';
 
-class LlmPromptCategoryJs {
+class LlmPromptJs {
   Category: string = '';
   PromptName: string = '';
   Prompt: string = '';
@@ -14,21 +13,22 @@ class LlmPromptCategoryJs {
 })
 
 export class LlmPromptComponent implements OnInit {
-  m_httpClient: HttpClient;
-  m_controllerBaseUrl: string;
-  m_llmPromptCategory: LlmPromptCategoryJs[] = [];
+  @Input() m_parentWsConnection?: WebSocket | null = null; // this property will be input from above parent container
 
-  constructor(http: HttpClient) {
-    this.m_httpClient = http;
-    this.m_controllerBaseUrl = window.location.origin + '/LlmAssistant/';
-  }
+  m_llmPrompts: LlmPromptJs[] = [];
 
-  ngOnInit(): void {
-    // responseType: 'text' // instead of JSON, because return text can contain NewLines, \n and JSON.Parse() will fail with "SyntaxError: Bad control character in string literal in JSON"
-    // this._httpClient.post(this._chatGptUrl, body, { responseType: 'text'}).subscribe(resultText => { // if message comes not as a properly formatted JSON string
-    this.m_httpClient.post<LlmPromptCategoryJs[]>(this.m_controllerBaseUrl + 'getllmpromptresponse', { responseType: 'text'}).subscribe((llmPromptsResponse) => {
-      this.m_llmPromptCategory = llmPromptsResponse;
-      console.log(`length: ${this.m_llmPromptCategory.length}`);
-    }, (error) => console.error(error));
+  constructor() {}
+
+  ngOnInit(): void {}
+
+  public webSocketOnMessage(msgCode: string, msgObjStr: string): boolean {
+    switch (msgCode) {
+      case 'LlmPromptsData':
+        console.log('webSocketOnMessage() - LlmPromptsData :', msgObjStr);
+        this.m_llmPrompts = JSON.parse(msgObjStr);
+        return true;
+      default:
+        return false;
+    }
   }
 }

@@ -1,5 +1,11 @@
-import { Component } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { Component, ViewChild } from '@angular/core';
+import { LlmChatComponent } from './llm-chat/llm-chat.component';
+import { LlmPromptComponent } from './llm-prompt/llm-prompt.component';
+
+class HandshakeMessage {
+  public email = '';
+  public userId = -1;
+}
 
 @Component({
   selector: 'app-root',
@@ -7,20 +13,38 @@ import { HttpClient } from '@angular/common/http';
   styleUrls: ['./app.component.scss']
 })
 export class AppComponent {
-  m_httpClient: HttpClient;
-  m_controllerBaseUrl: string;
+  @ViewChild(LlmChatComponent) private childLlmChatComponent!: LlmChatComponent;
+  @ViewChild(LlmPromptComponent) private childLlmPromptComponent!: LlmPromptComponent;
+
   m_activeTab: string = 'Chat';
+  m_socket: WebSocket;
 
-  constructor(http: HttpClient) {
-    this.m_httpClient = http;
-
-    // Angular ctor @Inject('BASE_URL') contains the full path: 'https://sqcore.net/webapps/LlmAssistant', but we have to call our API as 'https://sqcore.net/LlmAssistant/MyApiFunction', so we need the URL without the '/webapps/TechnicalAnalyzer' Path.
-    // And anyway, better to go non-Angular for less complexity. And 'window.location' is the fastest, native JS option for getting the URL.
-    this.m_controllerBaseUrl = window.location.origin + '/LlmAssistant/'; // window.location.origin (URL without the path) = Local: "https://127.0.0.1:4207", Server: https://sqcore.net"
-    console.log('window.location.origin', window.location.origin);
+  constructor() {
+    this.m_socket = new WebSocket('wss://' + document.location.hostname + '/ws/llmassist');
   }
 
-  ngOnInit(): void {}
+  ngOnInit(): void {
+    this.m_socket.onmessage = async (event) => {
+      const semicolonInd = event.data.indexOf(':');
+      const msgCode = event.data.slice(0, semicolonInd);
+      const msgObjStr = event.data.substring(semicolonInd + 1);
+      switch (msgCode) {
+        case 'OnConnected':
+          const handshakeMsg: HandshakeMessage = JSON.parse(msgObjStr);
+          console.log('ws: OnConnected HandshakeMsg', handshakeMsg);
+          break;
+        default:
+          let isHandled = this.childLlmChatComponent.webSocketOnMessage(msgCode, msgObjStr);
+          if (!isHandled)
+            isHandled = this.childLlmPromptComponent.webSocketOnMessage(msgCode, msgObjStr);
+
+          if (!isHandled)
+            console.log('ws: Warning! OnConnected Message arrived, but msgCode is not recognized.Code:' + msgCode + ', Obj: ' + msgObjStr);
+
+          break;
+      }
+    };
+  }
 
   onClickActiveTab(activeTab: string) {
     this.m_activeTab = activeTab;

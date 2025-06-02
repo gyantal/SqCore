@@ -7,6 +7,6 @@
       <button [ngClass]="{'activeTab':m_activeTab == 'Scan'}" (click)="onClickActiveTab('Scan')">Scan</button>
     </div>
 </div>
-<app-llm-chat [hidden]="(m_activeTab != 'Chat')"></app-llm-chat>
-<app-llm-scan [hidden]="(m_activeTab != 'Scan')"></app-llm-scan>
-<app-llm-prompt [hidden]="(m_activeTab != 'PromptAssistant')"></app-llm-prompt>
+<app-llm-chat [hidden]="(m_activeTab != 'Chat')" [m_parentWsConnection]="m_socket"></app-llm-chat>
+<app-llm-scan [hidden]="(m_activeTab != 'Scan')" [m_parentWsConnection]="m_socket"></app-llm-scan>
+<app-llm-prompt [hidden]="(m_activeTab != 'PromptAssistant')" [m_parentWsConnection]="m_socket"></app-llm-prompt>

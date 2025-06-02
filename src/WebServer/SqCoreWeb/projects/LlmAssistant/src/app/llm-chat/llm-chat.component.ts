@@ -1,12 +1,6 @@
-import { Component, OnInit } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { Component, Input, OnInit } from '@angular/core';
 import { UserInput } from '../lib/gpt-common';
 // import { ServerResponse, UserInput } from '../lib/gpt-common'; // commentting this as we need this for chatgpt
-
-class HandshakeMessage {
-  public email = '';
-  public userId = -1;
-}
 
 @Component({
   selector: 'app-llm-chat',
@@ -15,43 +9,31 @@ class HandshakeMessage {
 })
 
 export class LlmChatComponent implements OnInit {
-  m_httpClient: HttpClient;
-  m_controllerBaseUrl: string;
+  @Input() m_parentWsConnection?: WebSocket | null = null; // this property will be input from above parent container
+
   m_selectedLlmModel: string = 'grok';
   m_chatHistory: string[] = [];
-  m_socket: WebSocket;
 
-  constructor(http: HttpClient) {
-    this.m_httpClient = http;
-    this.m_controllerBaseUrl = window.location.origin + '/LlmAssistant/';
-    this.m_socket = new WebSocket('wss://' + document.location.hostname + '/ws/llmassist');
-  }
+  constructor() {}
 
   sendUserInputToBackEnd(userInput: string): void {
     this.m_chatHistory.push('- User: ' + userInput.replace('\n', '<br/>')); // Show user input it chatHistory
     const usrInp : UserInput = { LlmModelName: this.m_selectedLlmModel, Msg: userInput };
     console.log(usrInp);
 
-    if (this.m_socket != null && this.m_socket.readyState == this.m_socket.OPEN)
-      this.m_socket.send('GetChatResponseLlm:' + JSON.stringify(usrInp));
+    if (this.m_parentWsConnection != null && this.m_parentWsConnection.readyState == this.m_parentWsConnection.OPEN)
+      this.m_parentWsConnection.send('GetChatResponseLlm:' + JSON.stringify(usrInp));
   }
 
-  ngOnInit(): void {
-    this.m_socket.onmessage = async (event) => {
-      const semicolonInd = event.data.indexOf(':');
-      const msgCode = event.data.slice(0, semicolonInd);
-      const msgObjStr = event.data.substring(semicolonInd + 1);
-      switch (msgCode) {
-        case 'OnConnected':
-          const handshakeMsg: HandshakeMessage = JSON.parse(msgObjStr);
-          console.log('ws: OnConnected HandshakeMsg', handshakeMsg);
-          break;
-        case 'LlmResponse':
-          this.m_chatHistory.push('- Assistant: ' + msgObjStr);
-          break;
-        default:
-          return false;
-      }
-    };
+  ngOnInit(): void {}
+
+  public webSocketOnMessage(msgCode: string, msgObjStr: string): boolean {
+    switch (msgCode) {
+      case 'LlmResponse':
+        this.m_chatHistory.push('- Assistant: ' + msgObjStr);
+        return true;
+      default:
+        return false;
+    }
   }
 }

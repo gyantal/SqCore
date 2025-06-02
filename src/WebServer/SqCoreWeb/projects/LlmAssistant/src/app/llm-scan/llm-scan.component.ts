@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, Input, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { UserInput } from '../lib/gpt-common';
 import { sleep } from '../../../../../../SqCoreWeb/TsLib/sq-common/utils-common';
@@ -53,6 +53,8 @@ interface LlmInput {
 })
 
 export class LlmScanComponent implements OnInit {
+  @Input() m_parentWsConnection?: WebSocket | null = null; // this property will be input from above parent container
+
   m_gTickerUniverses: { [key: string]: string } = {
     'GameChanger10...': 'ADBE,AMZN,ANET,CRM,GOOG,LLY,MSFT,NOW,NVDA,TSLA',
     'GameChanger20...': 'AAPL,ADBE,AMZN,ANET,CDNS,CRM,CRWD,DE,ELF,GOOGL,LLY,MELI,META,MSFT,NOW,NVDA,SHOP,TSLA,UBER,V',
