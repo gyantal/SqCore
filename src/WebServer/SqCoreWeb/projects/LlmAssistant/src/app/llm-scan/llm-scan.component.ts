@@ -1,18 +1,15 @@
 import { Component, Input, OnInit } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { UserInput } from '../lib/gpt-common';
-import { sleep } from '../../../../../../SqCoreWeb/TsLib/sq-common/utils-common';
 
-interface NewsItem {
-  Title: string;
-  Description: string;
-  Link: string;
-  Guid: string;
-  PubDate: string;
-  NewsSummary: string;
-  IsGptSummaryLikely: string;
-  ShortDescriptionSentiment: number;
-  FutureOrGrowth: string;
+class NewsItem {
+  Title: string = '';
+  Description: string = '';
+  Link: string = '';
+  Guid: string = '';
+  PubDate: string = '';
+  NewsSummary: string = '';
+  IsGptSummaryLikely: string = '';
+  ShortDescriptionSentiment: number = 0;
+  FutureOrGrowth: string = '';
 }
 
 interface TickerNews {
@@ -35,15 +32,15 @@ interface ServerStockPriceDataResponse {
   StocksPriceResponse: StockItem[];
 }
 
-interface ServerNewsResponse {
-  Logs: string[];
-  Response: TickerNews[];
-}
-
 interface LlmInput {
   LlmModelName: string;
   NewsUrl: string;
   LlmQuestion: string;
+}
+
+class TickerEarningsDate {
+  Ticker = '';
+  EarningsDateStr = '';
 }
 
 @Component({
@@ -60,8 +57,7 @@ export class LlmScanComponent implements OnInit {
     'GameChanger20...': 'AAPL,ADBE,AMZN,ANET,CDNS,CRM,CRWD,DE,ELF,GOOGL,LLY,MELI,META,MSFT,NOW,NVDA,SHOP,TSLA,UBER,V',
     'Nasdaq100...': 'ADBE,ADP,ABNB,ALGN,GOOG,AMZN,AMD,AEP,AMGN,ADI,ANSS,AAPL,AMAT,ASML,AZN,TEAM,ADSK,BKR,BIIB,BKNG,AVGO,CDNS,CHTR,CTAS,CSCO,CTSH,CMCSA,CEG,CPRT,CSGP,COST,CRWD,CSX,DDOG,DXCM,FANG,DLTR,EBAY,EA,ENPH,EXC,FAST,FTNT,GEHC,GILD,GFS,HON,IDXX,ILMN,INTC,INTU,ISRG,JD,KDP,KLAC,KHC,LRCX,LCID,LULU,MAR,MRVL,MELI,META,MCHP,MU,MSFT,MRNA,MDLZ,MNST,NFLX,NVDA,NXPI,ORLY,ODFL,ON,PCAR,PANW,PAYX,PYPL,PDD,PEP,QCOM,REGN,ROST,SGEN,SIRI,SBUX,SNPS,TMUS,TSLA,TXN,TTD,VRSK,VRTX,WBA,WBD,WDAY,XEL,ZM,ZS',
   }; // Nasdaq100 list from Wikipedia. 100 stocks. GOOGL is removed, because YF news result for GOOG is exactly the same
-  m_httpClient: HttpClient;
-  m_controllerBaseUrl: string;
+
   m_selectedLlmModel: string = 'grok';
   m_selectedTickers: string = '';
   m_possibleTickers: string[] = ['AMZN', 'AMZN,TSLA', 'GameChanger10...', 'GameChanger20...', 'Nasdaq100...'];
@@ -70,17 +66,57 @@ export class LlmScanComponent implements OnInit {
   m_sortColumn: string = 'PercentChange'; // default sortColumn field, pricedata is sorted initial based on the 'PercentChange'.
   m_isSortingDirectionAscending: boolean = false;
   m_isSpinnerVisible: boolean = false;
+  m_selectedNewsItem: NewsItem = new NewsItem();
+  m_countInvalidEarningsDates: number = 0;
 
-  constructor(http: HttpClient) {
-    this.m_httpClient = http;
-    this.m_controllerBaseUrl = window.location.origin + '/LlmAssistant/';
-    console.log('window.location.origin', window.location.origin);
-  }
+  constructor() { }
 
-  ngOnInit(): void {
-    setTimeout(() => {
-      this.countInvalidEarningsDates();
-    }, 3000);
+  ngOnInit(): void { }
+
+  public webSocketOnMessage(msgCode: string, msgObjStr: string): boolean {
+    switch (msgCode) {
+      case 'StockPrice':
+        console.log('StockPrice', msgObjStr);
+        const stocksPriceData: ServerStockPriceDataResponse = JSON.parse(msgObjStr);
+        this.m_stocks = stocksPriceData.StocksPriceResponse;
+        console.log(this.m_stocks);
+        this.onSortingClicked(this.m_sortColumn);
+        return true;
+      case 'EarningsDate':
+        console.log('EarningsDate', msgObjStr);
+        const tickerEarningsDate: TickerEarningsDate[] = JSON.parse(msgObjStr);
+        this.processEarningsDate(tickerEarningsDate);
+        this.m_countInvalidEarningsDates = this.countInvalidEarningsDates();
+        this.m_isSpinnerVisible = false;
+        return true;
+      case 'TickersNews':
+        console.log('TickersNews', msgObjStr);
+        this.m_tickerNewss = JSON.parse(msgObjStr);
+        this.m_isSpinnerVisible = false;
+        return true;
+      case 'LlmSummary':
+        console.log('LlmSummary', msgObjStr);
+        for (const tickerNews of this.m_tickerNewss) {
+          for (const newsItem of tickerNews.NewsItems) {
+            if (newsItem.Guid == this.m_selectedNewsItem.Guid)
+              newsItem.NewsSummary = msgObjStr;
+          }
+        }
+        this.m_isSpinnerVisible = false;
+        return true;
+      case 'LlmFutureOrGrowth':
+        console.log('LlmFutureOrGrowth', msgObjStr);
+        for (const tickerNews of this.m_tickerNewss) {
+          for (const newsItem of tickerNews.NewsItems) {
+            if (newsItem.Guid == this.m_selectedNewsItem.Guid)
+              newsItem.FutureOrGrowth = msgObjStr;
+          }
+        }
+        this.m_isSpinnerVisible = false;
+        return true;
+      default:
+        return false;
+    }
   }
 
   sendUserInputToBackEnd(tickersStr: string): void {
@@ -93,24 +129,9 @@ export class LlmScanComponent implements OnInit {
     if (tickers == null)
       tickers = tickersStr;
 
-    // // HttpGet if input is simple and can be placed in the Url
-    // // this._httpClient.get<ServerResponse>(this._baseUrl + 'chatgpt/sendString').subscribe(result => {
-    // //   alert(result.Response);
-    // // }, error => console.error(error));
-
-    // HttpPost if input is complex with NewLines and ? characters, so it cannot be placed in the Url, but has to go in the Body
-    const body: UserInput = { LlmModelName: this.m_selectedLlmModel, Msg: tickers };
-    console.log(body);
     this.m_isSpinnerVisible = true;
-
-    this.m_httpClient.post<ServerStockPriceDataResponse>(this.m_controllerBaseUrl + 'getstockprice', body).subscribe((result) => { // if message comes as a properly formatted JSON string ("\n" => "\\n")
-      this.m_stocks = result.StocksPriceResponse;
-      console.log(this.m_stocks);
-      this.onSortingClicked(this.m_sortColumn);
-      if (this.m_stocks.length > 0) // making the spinner invisible once we recieve the data.
-        this.m_isSpinnerVisible = false;
-      this.getEarningsDate(tickers); // method to get earnings date.
-    }, (error) => console.error(error));
+    if (this.m_parentWsConnection != null && this.m_parentWsConnection.readyState == this.m_parentWsConnection.OPEN)
+      this.m_parentWsConnection.send('GetStockPrice:' + tickers);
   }
 
   onSortingClicked(sortColumn: string) { // sort the stockprices data table
@@ -125,82 +146,49 @@ export class LlmScanComponent implements OnInit {
   }
 
   onClickGetNews(selectedNewsTicker: string) {
-    // HttpPost if input is complex with NewLines and ? characters, so it cannot be placed in the Url, but has to go in the Body
-    const body: UserInput = { LlmModelName: this.m_selectedLlmModel, Msg: selectedNewsTicker };
-    console.log(body);
-    this.m_httpClient.post<ServerNewsResponse>(this.m_controllerBaseUrl + 'getnews', body).subscribe(async (result) => { // if message comes as a properly formatted JSON string ("\n" => "\\n")
-      this.m_tickerNewss = result.Response;
-
-      let i = 0;
-      for (const tickerNews of this.m_tickerNewss) {
-        for (const newsItem of tickerNews.NewsItems) {
-          const body: UserInput = { LlmModelName: this.m_selectedLlmModel, Msg: newsItem.Link };
-          this.m_httpClient.post<string>(this.m_controllerBaseUrl + 'getisllmsummarylikely', body).subscribe((result) => {
-            newsItem.IsGptSummaryLikely = result;
-          }, (error) => console.error(error));
-
-          i++;
-          if (i % 5 == 0) // to not overwhelm the C# server, we only ask 5 downloads at once, then wait a little. The top 5 is the most important for the user at first.
-            await sleep(2000);
-        }
-      }
-      console.log(this.m_tickerNewss);
-    }, (error) => console.error(error));
+    this.m_isSpinnerVisible = true;
+    if (this.m_parentWsConnection != null && this.m_parentWsConnection.readyState == this.m_parentWsConnection.OPEN)
+      this.m_parentWsConnection.send('GetTickerNews:' + selectedNewsTicker);
   }
 
   getNewsAndSummarize(newsItem: NewsItem) {
+    this.m_selectedNewsItem = newsItem;
     console.log('link for summarizing the news', newsItem.Link);
     const questionStr = 'summarize this:\n';
-    // HttpPost if input is complex with NewLines and ? characters, so it cannot be placed in the Url, but has to go in the Body
-    const body: LlmInput = { LlmModelName: this.m_selectedLlmModel, NewsUrl: newsItem.Link, LlmQuestion: questionStr };
-    console.log(body);
-    this.m_isSpinnerVisible = true;
+    const usrInp: LlmInput = { LlmModelName: this.m_selectedLlmModel, NewsUrl: newsItem.Link, LlmQuestion: questionStr };
 
-    this.m_httpClient.post<string>(this.m_controllerBaseUrl + 'getllmAnswer', body).subscribe((result) => {
-      newsItem.NewsSummary = result;
-      this.m_isSpinnerVisible = false;
-    }, (error) => console.error(error));
+    this.m_isSpinnerVisible = true;
+    if (this.m_parentWsConnection != null && this.m_parentWsConnection.readyState == this.m_parentWsConnection.OPEN)
+      this.m_parentWsConnection.send('GetLlmAnswer:' + JSON.stringify(usrInp));
   }
 
   getFutureOrGrowthInfo(newsItem: NewsItem) {
+    this.m_selectedNewsItem = newsItem;
     const questionStr = 'Is there future growth or upgrade in the next text:\n';
-    // HttpPost if input is complex with NewLines and ? characters, so it cannot be placed in the Url, but has to go in the Body
-    const body: LlmInput = { LlmModelName: this.m_selectedLlmModel, NewsUrl: newsItem.Link, LlmQuestion: questionStr};
-    console.log(body);
-    this.m_isSpinnerVisible = true;
+    const usrInp: LlmInput = { LlmModelName: this.m_selectedLlmModel, NewsUrl: newsItem.Link, LlmQuestion: questionStr};
 
-    this.m_httpClient.post<string>(this.m_controllerBaseUrl + 'getllmAnswer', body).subscribe((result) => {
-      newsItem.FutureOrGrowth = result;
-      this.m_isSpinnerVisible = false;
-    }, (error) => console.error(error));
+    this.m_isSpinnerVisible = true;
+    if (this.m_parentWsConnection != null && this.m_parentWsConnection.readyState == this.m_parentWsConnection.OPEN)
+      this.m_parentWsConnection.send('GetLlmAnswer:' + JSON.stringify(usrInp));
   }
 
-  getEarningsDate(tickersStr: string) {
-    const tickers: string[] = tickersStr.split(',');
-    let i = 0;
+  processEarningsDate(tickersEarningsDate: TickerEarningsDate[]) {
     const today: Date = new Date();
-    for (const ticker of tickers) {
-      // HttpPost if input is complex with NewLines and ? characters, so it cannot be placed in the Url, but has to go in the Body
-      const body: UserInput = { LlmModelName: this.m_selectedLlmModel, Msg: ticker };
-      this.m_httpClient.post<string>(this.m_controllerBaseUrl + 'earningsdate', body).subscribe(async (result) => {
-        const stckItem = this.m_stocks!.find((item) => item.Ticker == ticker);
-        if (stckItem != null) {
-          stckItem.EarningsDate = result;
-          // Calculate the number of days to subtract based on the current day of the week
-          // If today is Monday (where getDay() returns 1), subtract 3 days to skip the weekend (Saturday and Sunday)
-          // Otherwise, subtract 1 day to account for the previous trading day
-          // Please be aware that the provided code is effective only when the earningsDate is in the format "Apr 25, 2024". It does not handle formats like "Apr 25, 2024 - Apr 29, 2024".
-          // The Earnings Date of Format "Apr 25, 2024 - Apr 29, 2024" is basically a future date, the actual earning date will fall in between them when the specified month arrives
-          // Testing Date - const earningsdate: Date = new Date('2024-01-30') and const today: Date = new Date('2024-01-30');
-          const earningsdate: Date = new Date(stckItem.EarningsDate);
-          const previousTradingDay: Date = new Date(today);
-          previousTradingDay.setDate(previousTradingDay.getDate() - (previousTradingDay.getDay() == 1 ? 3 : 1));
-          stckItem.IsPriceChangeEarningsRelated = earningsdate.toDateString() == today.toDateString() || earningsdate.toDateString() == previousTradingDay.toDateString(); // today == earningsDate or earingsDate equals to previous day
-        }
-        i++;
-        if (i % 5 == 0) // to not overwhelm the C# server, we only ask 5 downloads at once, then wait a little.
-          await sleep(2000);
-      }, (error) => console.error(error));
+    for (const tickerErnDt of tickersEarningsDate) {
+      const stckItem = this.m_stocks!.find((item) => item.Ticker == tickerErnDt.Ticker);
+      if (stckItem != null) {
+        stckItem.EarningsDate = tickerErnDt.EarningsDateStr;
+        // Calculate the number of days to subtract based on the current day of the week
+        // If today is Monday (where getDay() returns 1), subtract 3 days to skip the weekend (Saturday and Sunday)
+        // Otherwise, subtract 1 day to account for the previous trading day
+        // Please be aware that the provided code is effective only when the earningsDate is in the format "Apr 25, 2024". It does not handle formats like "Apr 25, 2024 - Apr 29, 2024".
+        // The Earnings Date of Format "Apr 25, 2024 - Apr 29, 2024" is basically a future date, the actual earning date will fall in between them when the specified month arrives
+        // Testing Date - const earningsdate: Date = new Date('2024-01-30') and const today: Date = new Date('2024-01-30');
+        const earningsdate: Date = new Date(stckItem.EarningsDate);
+        const previousTradingDay: Date = new Date(today);
+        previousTradingDay.setDate(previousTradingDay.getDate() - (previousTradingDay.getDay() == 1 ? 3 : 1));
+        stckItem.IsPriceChangeEarningsRelated = earningsdate.toDateString() == today.toDateString() || earningsdate.toDateString() == previousTradingDay.toDateString(); // today == earningsDate or earingsDate equals to previous day
+      }
     }
   }
 

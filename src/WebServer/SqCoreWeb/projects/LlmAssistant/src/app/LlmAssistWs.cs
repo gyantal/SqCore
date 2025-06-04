@@ -48,6 +48,18 @@ public class LlmAssistWs
                 Utils.Logger.Info($"LlmAssistWs.OnWsReceiveAsync(): GetChatResponseLlm: '{msgObjStr}'");
                 LlmChat.GetChatResponseLlm(msgObjStr, webSocket);
                 break;
+            case "GetStockPrice":
+                Utils.Logger.Info($"LlmAssistWs.OnWsReceiveAsync(): GetStockPrice: '{msgObjStr}'");
+                LlmScan.GetStockPrice(msgObjStr, webSocket);
+                break;
+            case "GetTickerNews":
+                Utils.Logger.Info($"LlmAssistWs.OnWsReceiveAsync(): GetTickerNews: '{msgObjStr}'");
+                LlmScan.GetTickerNews(msgObjStr, webSocket);
+                break;
+            case "GetLlmAnswer":
+                Utils.Logger.Info($"LlmAssistWs.OnWsReceiveAsync(): GetLlmAnswer: '{msgObjStr}'");
+                LlmScan.GetLlmAnswer(msgObjStr, webSocket);
+                break;
             default:
                 Utils.Logger.Info($"LlmAssistWs.OnWsReceiveAsync(): Unrecognized message from client, {msgCode},{msgObjStr}");
                 break;
