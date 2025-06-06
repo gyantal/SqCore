@@ -15,7 +15,7 @@ public class LlmPromptJs // sent to browser clients
     public string PromptName { get; set; } = string.Empty;
     public string Prompt { get; set; } = string.Empty;
 }
-public class LlmPrompt
+public class LlmPromptAssistant
 {
     public static void GetPromptsDataFromGSheet(WebSocket webSocket)
     {

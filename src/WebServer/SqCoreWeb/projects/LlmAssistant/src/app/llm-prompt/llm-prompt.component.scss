@@ -1,18 +1,4 @@
-table {
-  width: 100%;
-  border-collapse: collapse;
-  align-items: stretch;
-}
-
-thead {
-  font-weight: bold;
-  cursor: pointer;
-}
-
-.tableCommon td, th {
-  padding: 0rem;
-  border-style: ridge;
-  border-width: 0.05rem;
-  border-color: black;
-  text-align: center;
+#promptText {
+  width: 30rem;
+  height: 5rem;
 }

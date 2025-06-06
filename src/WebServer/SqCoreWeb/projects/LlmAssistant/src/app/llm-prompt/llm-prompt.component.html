@@ -1,20 +1,23 @@
-LlmPrompt works
-<h3>Demo: Just Displaying the PromptCategories</h3>
-<div>
-    <table class="tableCommon">
-        <thead>
-            <tr>
-                <th>Category</th>
-                <th>PromptName</th>
-                <th>Prompt</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr *ngFor="let item of m_llmPrompts">
-                <td>{{item.Category}}</td>
-                <td>{{item.PromptName}}</td>
-                <td>{{item.Prompt}}</td>
-            </tr>
-        </tbody>
-    </table>
+<!-- Category Dropdown -->
+<strong>PromptCategory:</strong>
+<span class="selectionDropDown">
+  <input class="highlightInputDropDown" type="text" [value]="m_selectedCategory">
+  <span class="listDropDown">
+    <option class="optionDropDown" *ngFor="let category of m_uniquePromptCategories" (click)="onClickPromptCategory(category)">{{category}}</option>
+  </span>
+</span>&nbsp;
+<!-- PromptName Dropdown -->
+<ng-container *ngIf="m_selectedPromptNames.length > 0">
+  <strong>PromptName:</strong>
+  <span class="selectionDropDown">
+    <input class="highlightInputDropDown" type="text" [value]="m_selectedPromptName">
+    <span class="listDropDown">
+        <option class="optionDropDown" *ngFor="let promptName of m_selectedPromptNames" [value]="promptName" (click)="onClickPromptName(promptName)">{{promptName}}</option>
+    </span>
+  </span>
+</ng-container>&nbsp;
+<!-- Prompt -->
+<div *ngIf="m_prompt">
+  <strong>Prompt:</strong><br>
+  <textarea id="promptText">{{m_prompt}}</textarea>
 </div>

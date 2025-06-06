@@ -29,7 +29,7 @@ public class LlmAssistWs
         byte[] encodedMsg = Encoding.UTF8.GetBytes("OnConnected:" + Utils.CamelCaseSerialize(msgObj));
         if (webSocket.State == WebSocketState.Open)
             await webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
-        LlmPrompt.GetPromptsDataFromGSheet(webSocket); // Send prompts data to the client
+        LlmPromptAssistant.GetPromptsDataFromGSheet(webSocket); // Send prompts data to the client
     }
 
     public static void OnWsClose(WebSocket webSocket)
