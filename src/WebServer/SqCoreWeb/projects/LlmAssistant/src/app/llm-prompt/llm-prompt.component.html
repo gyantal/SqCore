@@ -1,21 +1,31 @@
-<!-- Category Dropdown -->
-<strong>PromptCategory:</strong>
-<span class="selectionDropDown">
-  <input class="highlightInputDropDown" type="text" [value]="m_selectedCategory">
-  <span class="listDropDown">
-    <option class="optionDropDown" *ngFor="let category of m_uniquePromptCategories" (click)="onClickPromptCategory(category)">{{category}}</option>
-  </span>
-</span>&nbsp;
-<!-- PromptName Dropdown -->
-<ng-container *ngIf="m_selectedPromptNames.length > 0">
-  <strong>PromptName:</strong>
-  <span class="selectionDropDown">
-    <input class="highlightInputDropDown" type="text" [value]="m_selectedPromptName">
-    <span class="listDropDown">
-        <option class="optionDropDown" *ngFor="let promptName of m_selectedPromptNames" [value]="promptName" (click)="onClickPromptName(promptName)">{{promptName}}</option>
-    </span>
-  </span>
-</ng-container>&nbsp;
+<table>
+    <thead>
+        <tr>
+            <td><strong><a href="https://docs.google.com/spreadsheets/d/1wOY4OeoLbaYSfutiSc0elv26SVwLtBXqXnaNZ4YtggU" target="_blank">Category</a></strong></td>
+            <td><strong>Name</strong></td>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><!-- Category Dropdown -->
+                <span class="selectionDropDown">
+                <input class="highlightInputDropDown" type="text" [value]="m_selectedPromptCategory">
+                <span class="listDropDown">
+                    <option class="optionDropDown" *ngFor="let category of m_promptCategories" (click)="onClickPromptCategory(category)">{{category}}</option>
+                </span>
+                </span>
+            </td>
+            <td><!-- PromptName Dropdown -->
+                <span class="selectionDropDown">
+                <input class="highlightInputDropDown" type="text" [value]="m_selectedPromptName">
+                <span class="listDropDown">
+                    <option class="optionDropDown" *ngFor="let promptName of m_selectedCategoryPromptNames" [value]="promptName" (click)="onClickPromptName(promptName)">{{promptName}}</option>
+                </span>
+                </span>
+            </td>
+        </tr>
+    </tbody>
+</table><br>
 <!-- Prompt -->
 <div *ngIf="m_prompt">
   <strong>Prompt:</strong><br>

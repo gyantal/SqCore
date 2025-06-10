@@ -53,7 +53,9 @@ public class LlmPromptAssistant
             int promptStartIdx = cellThird.IndexOf('\"');
             if (promptStartIdx == -1)
                 continue;
-            string prompt = cellThird[(promptStartIdx + 1)..];
+
+            string tickerLstplaceholder = "_tickerList_"; // To retain "}" in {ticker_list}, temporarily replace {ticker_list} with a placeholder
+            string prompt = cellThird[(promptStartIdx + 1)..].Replace("{ticker_list}", tickerLstplaceholder).Replace("\\n", string.Empty).Replace("\"", string.Empty).Replace("}", string.Empty).Replace("]", string.Empty).Replace(tickerLstplaceholder, "{ticker_list} ").Replace("  ", string.Empty).Trim();
             llmPromptCategories.Add(new LlmPromptJs() { Category = category, PromptName = promptName, Prompt = prompt });
         }
 

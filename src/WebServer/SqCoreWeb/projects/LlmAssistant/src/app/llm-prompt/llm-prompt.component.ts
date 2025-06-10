@@ -16,9 +16,9 @@ export class LlmPromptComponent implements OnInit {
   @Input() m_parentWsConnection?: WebSocket | null = null; // this property will be input from above parent container
 
   m_llmPrompts: LlmPromptJs[] = [];
-  m_uniquePromptCategories: string[] = [];
-  m_selectedPromptNames: string[] = [];
-  m_selectedCategory: string = '';
+  m_promptCategories: string[] = [];
+  m_selectedCategoryPromptNames: string[] = [];
+  m_selectedPromptCategory: string = '';
   m_selectedPromptName: string = '';
   m_prompt: string = '';
 
@@ -32,13 +32,13 @@ export class LlmPromptComponent implements OnInit {
         console.log('webSocketOnMessage() - LlmPromptsData :', msgObjStr);
         this.m_llmPrompts = JSON.parse(msgObjStr);
         for (const prmptCat of this.m_llmPrompts) {
-          if (!this.m_uniquePromptCategories.includes(prmptCat.Category))
-            this.m_uniquePromptCategories.push(prmptCat.Category);
+          if (!this.m_promptCategories.includes(prmptCat.Category))
+            this.m_promptCategories.push(prmptCat.Category);
         }
         // Once data is avaiable, utomatically populate the promptCategory, promptName, and corresponding prompt
-        if (this.m_uniquePromptCategories.length > 0) {
-          this.m_selectedCategory = this.m_uniquePromptCategories[0];
-          this.onClickPromptCategory(this.m_selectedCategory);
+        if (this.m_promptCategories.length > 0) {
+          this.m_selectedPromptCategory = this.m_promptCategories[0];
+          this.onClickPromptCategory(this.m_selectedPromptCategory);
         }
         return true;
       default:
@@ -47,19 +47,19 @@ export class LlmPromptComponent implements OnInit {
   }
 
   onClickPromptCategory(category: string): void {
-    this.m_selectedCategory = category;
+    this.m_selectedPromptCategory = category;
     // Reset previously selected prompt data
     this.m_selectedPromptName = '';
     this.m_prompt = '';
-    this.m_selectedPromptNames = [];
+    this.m_selectedCategoryPromptNames = [];
     // Populate prompt names for the selected category
     for (const prmpt of this.m_llmPrompts) {
-      if (prmpt.Category == category && !this.m_selectedPromptNames.includes(prmpt.PromptName))
-        this.m_selectedPromptNames.push(prmpt.PromptName);
+      if (prmpt.Category == category && !this.m_selectedCategoryPromptNames.includes(prmpt.PromptName))
+        this.m_selectedCategoryPromptNames.push(prmpt.PromptName);
     }
     // Based on the prompt category, process the promptName and prompt
     for (const prmpt of this.m_llmPrompts) {
-      if (prmpt.Category == this.m_selectedCategory) {
+      if (prmpt.Category == this.m_selectedPromptCategory) {
         this.onClickPromptName(prmpt.PromptName);
         break;
       }
