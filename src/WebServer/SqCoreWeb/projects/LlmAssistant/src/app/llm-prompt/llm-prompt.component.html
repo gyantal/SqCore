@@ -3,6 +3,7 @@
         <tr>
             <td><strong><a href="https://docs.google.com/spreadsheets/d/1wOY4OeoLbaYSfutiSc0elv26SVwLtBXqXnaNZ4YtggU" target="_blank">Category</a></strong></td>
             <td><strong>Name</strong></td>
+            <td><strong>Tickers</strong></td>
         </tr>
     </thead>
     <tbody>
@@ -22,6 +23,10 @@
                     <option class="optionDropDown" *ngFor="let promptName of m_selectedCategoryPromptNames" [value]="promptName" (click)="onClickPromptName(promptName)">{{promptName}}</option>
                 </span>
                 </span>
+            </td>
+            <td>
+                <input [disabled]="!m_isUpdatePrompt" #tickersInput type="text" [value]="m_tickersStr" (input)="tickersInput.value = tickersInput.value.toUpperCase()">&nbsp;
+                <button [disabled]="!m_isUpdatePrompt" (click)="updatePromptWithTickers(tickersInput.value)">updatePromptWithTickers</button>
             </td>
         </tr>
     </tbody>

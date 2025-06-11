@@ -17,10 +17,12 @@ export class LlmPromptComponent implements OnInit {
 
   m_llmPrompts: LlmPromptJs[] = [];
   m_promptCategories: string[] = [];
-  m_selectedCategoryPromptNames: string[] = [];
   m_selectedPromptCategory: string = '';
+  m_selectedCategoryPromptNames: string[] = [];
   m_selectedPromptName: string = '';
   m_prompt: string = '';
+  m_isUpdatePrompt: boolean = true; // The "UpdatePrompt" button is enabled only when the prompt contains "{ticker_list}".
+  m_tickersStr: string = 'TSLA, AAPL';
 
   constructor() {}
 
@@ -78,5 +80,14 @@ export class LlmPromptComponent implements OnInit {
         break;
       }
     }
+    this.m_isUpdatePrompt = false;
+    if (this.m_prompt.includes('ticker_list'))
+      this.m_isUpdatePrompt = true;
+  }
+
+  updatePromptWithTickers(tickers: string) {
+    this.m_tickersStr = tickers;
+    if (this.m_prompt.includes('ticker_list'))
+      this.m_prompt = this.m_prompt.replace('ticker_list', this.m_tickersStr);
   }
 }
