@@ -1,5 +1,6 @@
 import { Component, ViewChild } from '@angular/core';
 import { LlmChatComponent } from './llm-chat/llm-chat.component';
+import { LlmBasicChatComponent } from './llm-basic-chat/llm-basic-chat.component';
 import { LlmScanComponent } from './llm-scan/llm-scan.component';
 import { LlmPromptComponent } from './llm-prompt/llm-prompt.component';
 
@@ -15,6 +16,7 @@ class HandshakeMessage {
 })
 export class AppComponent {
   @ViewChild(LlmChatComponent) private childLlmChatComponent!: LlmChatComponent;
+  @ViewChild(LlmBasicChatComponent) private childLlmBasicChatComponent!: LlmBasicChatComponent;
   @ViewChild(LlmScanComponent) private childLlmScanComponent!: LlmScanComponent;
   @ViewChild(LlmPromptComponent) private childLlmPromptComponent!: LlmPromptComponent;
 
@@ -37,6 +39,8 @@ export class AppComponent {
           break;
         default:
           let isHandled = this.childLlmChatComponent.webSocketOnMessage(msgCode, msgObjStr);
+          if (!isHandled)
+            isHandled = this.childLlmBasicChatComponent.webSocketOnMessage(msgCode, msgObjStr);
           if (!isHandled)
             isHandled = this.childLlmScanComponent.webSocketOnMessage(msgCode, msgObjStr);
           if (!isHandled)

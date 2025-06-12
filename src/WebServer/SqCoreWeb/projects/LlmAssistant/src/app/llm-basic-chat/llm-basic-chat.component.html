@@ -1,0 +1,20 @@
+<h1>LlmChat text generation</h1>
+LLMs are text completion engines. Trained on large corpus of documents. They predict the 'likely' next word by imagining a transcript of a chat between User and Assistant.<br>
+LLM-ModelName:
+<select name="model" [(ngModel)]="m_selectedLlmModel">
+  <option value="auto">auto</option>
+  <option value="grok">grok</option>
+  <option value="deepseek">deepseek</option>
+  <option value="gpt-3.5-turbo">disabled gpt-3.5-turbo(4K)</option>
+  <option value="gpt-4">disabled gpt-4(8K)</option>
+</select>
+<p>Type your prompt here and click Generate to send it to C# backend that uses the OpenAi API.</p>
+<textarea #userInputTextarea rows="5" cols="100"></textarea>
+<br>
+<button (click)="sendUserInputToBackEnd(userInputTextarea.value)">Generate Predicted Text</button>
+
+<div *ngFor="let chatItem of m_chatHistory" [innerHTML]="chatItem"></div>
+<br>
+Demo<br>Just for Testing
+<a href="https://finance.yahoo.com/" target="_blank"><img alt='YF' src='./assets/images/llm_yf_vslow_30pct.avif' width='20' height='20'></a>&nbsp;
+<a href="https://finance.yahoo.com/" target="_blank"><img alt='YF' src='./assets/yf_vslow_30pct.avif' width='20' height='20'></a>

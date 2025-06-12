@@ -48,6 +48,10 @@ public class LlmAssistWs
                 Utils.Logger.Info($"LlmAssistWs.OnWsReceiveAsync(): GetChatResponseLlm: '{msgObjStr}'");
                 LlmChat.GetChatResponseLlm(msgObjStr, webSocket);
                 break;
+            case "GetBasicChatResponseLlm":
+                Utils.Logger.Info($"LlmAssistWs.OnWsReceiveAsync(): GetChatResponseLlm: '{msgObjStr}'");
+                LlmBasicChat.GetChatResponseLlm(msgObjStr, webSocket);
+                break;
             case "GetStockPrice":
                 Utils.Logger.Info($"LlmAssistWs.OnWsReceiveAsync(): GetStockPrice: '{msgObjStr}'");
                 LlmScan.GetStockPrice(msgObjStr, webSocket);
