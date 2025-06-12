@@ -20,7 +20,7 @@ public class LlmBasicChat
         else
             responseStr = GenerateChatResponseLlmBasic(userInput).Result;
 
-        byte[] encodedMsg = Encoding.UTF8.GetBytes("LlmResponse:" + responseStr);
+        byte[] encodedMsg = Encoding.UTF8.GetBytes("LlmResponseBasicChat:" + responseStr);
         if (webSocket!.State == WebSocketState.Open)
             webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
     }

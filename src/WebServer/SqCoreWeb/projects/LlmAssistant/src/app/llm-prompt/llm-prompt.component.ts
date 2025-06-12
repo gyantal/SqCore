@@ -88,6 +88,6 @@ export class LlmPromptComponent implements OnInit {
   updatePromptWithTickers(tickers: string) {
     this.m_tickersStr = tickers;
     if (this.m_prompt.includes('ticker_list'))
-      this.m_prompt = this.m_prompt.replace('ticker_list', this.m_tickersStr);
+      this.m_prompt = this.m_prompt.replace('{ticker_list}', this.m_tickersStr);
   }
 }
