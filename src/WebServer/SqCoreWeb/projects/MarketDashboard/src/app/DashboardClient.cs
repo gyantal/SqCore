@@ -68,7 +68,7 @@ public partial class DashboardClient
     public static void ServerDiagnostic(StringBuilder p_sb)
     {
         p_sb.Append("<H2>Dashboard Clients</H2>");
-        var g_clientsPtrCpy = DashboardClient.g_clients;    // Multithread warning! Lockfree Read | Copy-Modify-Swap Write Pattern
+        List<DashboardClient> g_clientsPtrCpy = DashboardClient.g_clients; // Copy the pointer for reading. Just in case a Writer overwrites the pointer while we use that pointer for a long time (for a loop or if we use it many times). Multithread warning! Lockfree Read | Copy-Modify-Swap Write Pattern
         p_sb.Append($"DashboardClient.g_clients (#{g_clientsPtrCpy.Count}): ");
         p_sb.AppendLongListByLine(g_clientsPtrCpy.Select(r => $"'{r.UserEmail}/{r.ConnectionIdStr}'").ToArray(), ",", 3, "<br>");
         p_sb.Append($"<br>rtDashboardTimerRunning: {m_rtDashboardTimerRunning}<br>");
@@ -125,7 +125,7 @@ public partial class DashboardClient
     public void SendIsDashboardOpenManyTimes() // If Dashboard is open in more than one tab or browser.
     {
         int nClientsWitSameUserAndIp = 0;
-        var g_clientsPtrCpy = DashboardClient.g_clients;    // Multithread warning! Lockfree Read | Copy-Modify-Swap Write Pattern
+        List<DashboardClient> g_clientsPtrCpy = DashboardClient.g_clients; // Copy the pointer for reading. Just in case a Writer overwrites the pointer while we use that pointer for a long time (for a loop or if we use it many times). Multithread warning! Lockfree Read | Copy-Modify-Swap Write Pattern
         foreach (var client in g_clientsPtrCpy) // !Warning: Multithreaded Warning: This Reader code is fine. But potential problem if another thread removes clients from the List. The Modifier (Writer) thread should be careful, and Copy and Pointer-Swap when that Edit is taken.
         {
             if (client.UserEmail == UserEmail && client.ClientIP == ClientIP)

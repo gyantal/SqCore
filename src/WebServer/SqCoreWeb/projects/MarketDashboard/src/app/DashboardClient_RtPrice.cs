@@ -127,7 +127,7 @@ public partial class DashboardClient
             if (!m_rtDashboardTimerRunning)
                 return; // if it was disabled by another thread in the meantime, we should not waste resources to execute this.
 
-            var g_clientsPtrCpy = DashboardClient.g_clients;    // Multithread warning! Lockfree Read | Copy-Modify-Swap Write Pattern
+            List<DashboardClient> g_clientsPtrCpy = DashboardClient.g_clients; // Copy the pointer for reading. Just in case a Writer overwrites the pointer while we use that pointer for a long time (for a loop or if we use it many times). Multithread warning! Lockfree Read | Copy-Modify-Swap Write Pattern
             foreach (DashboardClient client in g_clientsPtrCpy) // RT timer should be fast, don't use LINQ.ForEach(), but use foreach()
             {
                 // To free up resources, send data only if active tool really uses RT prices. HealthMonitor and BrAccViewer

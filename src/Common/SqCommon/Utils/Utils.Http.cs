@@ -236,11 +236,14 @@ public static partial class Utils
             // curl -v --insecure "https://query2.finance.yahoo.com/v8/finance/chart/AAPL?period1=0&period2=1729692470&interval=1d&events=history,split" -H "User-Agent: " -H "Accept: "   // with empty headers, it returns "429 Too Many Requests". So, if the User-Agent is empty, then it fails. Otherwise, it is OK.
             //
             // curl -v --insecure "https://query2.finance.yahoo.com/v8/finance/chart/AAPL?period1=0&period2=1729692470&interval=1d&events=history,split" -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36" -H "Accept: " // implement this version in this C# code.
+            //
             // 2025-05-06: previous long "User-Agent" started to give "429 Too Many Requests" (although the same works in the browser).
             // https://github.com/ranaroussi/yfinance/issues/2422 Python YF library bug discussion 'YFRateLimitError('Too Many Requests)'
             // Their solution was to impersonate 'Chrome' browser that exactly imitates the TSL and HTML2 handshake communication of Chrome. But by accident I figured out that this is not yet necessary.
             // This works now both local and server console:
             // curl -v -k --insecure --http2 "https://query2.finance.yahoo.com/v8/finance/chart/AAPL?period1=0&period2=1729692470&interval=1d&events=history,split" -H "User-Agent: Mozilla/5.0"
+            // Laszlo info: "Surprisingly the YfQuoteCrawler was able to download the prices in the past days. One explanation could be, that it pays attention to not request too many data.
+            // I have a “60 requests per minute” limit in my mind, I think it is on the yahoo page. Anyway, the crawler waits between 2 requests if necessary to have at least a 1001 ms time gap between requests."
             return new HttpRequestMessage
             {
                 RequestUri = new Uri(p_url),
