@@ -20,7 +20,7 @@ public partial class DashboardClient
     public DateTime ConnectionTime { get; set; } = DateTime.MinValue;
     public ActivePage ActivePage = ActivePage.Unknown; // knowing which Tool is active can be useful. We might not send data to tools which never becomes active
 
-    public string ConnectionId // calculated field: a debugger friendly way of identifying the same websocket, in case WebSocket pointer is not good enough
+    public string ConnectionIdStr // calculated field: a debugger friendly way of identifying the same websocket, in case WebSocket pointer is not good enough
     {
         get { return this.ClientIP + "@" + ConnectionTime.ToString("MM'-'dd'T'HH':'mm':'ss"); }
     }
@@ -70,7 +70,7 @@ public partial class DashboardClient
         p_sb.Append("<H2>Dashboard Clients</H2>");
         var g_clientsPtrCpy = DashboardClient.g_clients;    // Multithread warning! Lockfree Read | Copy-Modify-Swap Write Pattern
         p_sb.Append($"DashboardClient.g_clients (#{g_clientsPtrCpy.Count}): ");
-        p_sb.AppendLongListByLine(g_clientsPtrCpy.Select(r => $"'{r.UserEmail}/{r.ConnectionId}'").ToArray(), ",", 3, "<br>");
+        p_sb.AppendLongListByLine(g_clientsPtrCpy.Select(r => $"'{r.UserEmail}/{r.ConnectionIdStr}'").ToArray(), ",", 3, "<br>");
         p_sb.Append($"<br>rtDashboardTimerRunning: {m_rtDashboardTimerRunning}<br>");
     }
 

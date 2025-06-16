@@ -11,7 +11,7 @@ namespace SqCoreWeb;
 
 public class LlmBasicChat
 {
-    public static void GetChatResponseLlm(string p_msg, WebSocket webSocket)
+    public static void GetChatResponseLlm(string p_msg, LlmAssistClient? p_llmClient)
     {
         string responseStr;
         LlmUserInput? userInput = JsonSerializer.Deserialize<LlmUserInput>(p_msg, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
@@ -21,8 +21,8 @@ public class LlmBasicChat
             responseStr = GenerateChatResponseLlmBasic(userInput).Result;
 
         byte[] encodedMsg = Encoding.UTF8.GetBytes("LlmResponseBasicChat:" + responseStr);
-        if (webSocket!.State == WebSocketState.Open)
-            webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+        if (p_llmClient!.WsWebSocket != null && p_llmClient.WsWebSocket!.State == WebSocketState.Open)
+            p_llmClient.WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
     }
 
     public static async Task<string> GenerateChatResponseLlmBasic(LlmUserInput p_userInput)

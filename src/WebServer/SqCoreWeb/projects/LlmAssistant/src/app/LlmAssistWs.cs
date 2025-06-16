@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net.WebSockets;
 using System.Text;
@@ -16,6 +17,7 @@ class HandshakeMessageLlmAssist
 }
 public class LlmAssistWs
 {
+    public static Dictionary<string, LlmAssistClient> g_clients = new();
     public static async Task OnWsConnectedAsync(HttpContext context, WebSocket webSocket)
     {
         Utils.Logger.Debug($"LlmAssistWs.OnConnectedAsync()) BEGIN");
@@ -30,6 +32,14 @@ public class LlmAssistWs
         if (webSocket.State == WebSocketState.Open)
             await webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
         LlmPromptAssistant.GetPromptsDataFromGSheet(webSocket); // Send prompts data to the client
+
+        string clientIP = WsUtils.GetRequestIPv6(context!);
+        Utils.Logger.Info($"LlmAssistWs.OnConnectedAsync(), Connection from IP: {clientIP} with email '{email}'");
+        LlmAssistClient client = new(clientIP, email, user, DateTime.UtcNow)
+        {
+            WsWebSocket = webSocket,
+        };
+        g_clients[client.ConnectionIdStr] = client; // add the client
     }
 
     public static void OnWsClose(WebSocket webSocket)
@@ -50,7 +60,8 @@ public class LlmAssistWs
                 break;
             case "GetBasicChatResponseLlm":
                 Utils.Logger.Info($"LlmAssistWs.OnWsReceiveAsync(): GetChatResponseLlm: '{msgObjStr}'");
-                LlmBasicChat.GetChatResponseLlm(msgObjStr, webSocket);
+                LlmAssistClient? llmClient = g_clients.Values.FirstOrDefault(c => c.WsWebSocket == webSocket);
+                LlmBasicChat.GetChatResponseLlm(msgObjStr, llmClient);
                 break;
             case "GetStockPrice":
                 Utils.Logger.Info($"LlmAssistWs.OnWsReceiveAsync(): GetStockPrice: '{msgObjStr}'");
