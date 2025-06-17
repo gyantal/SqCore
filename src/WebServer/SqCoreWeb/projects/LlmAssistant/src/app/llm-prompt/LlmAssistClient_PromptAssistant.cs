@@ -15,7 +15,7 @@ public class LlmPromptJs // sent to browser clients
     public string PromptName { get; set; } = string.Empty;
     public string Prompt { get; set; } = string.Empty;
 }
-public class LlmPromptAssistant
+public partial class LlmAssistClient
 {
     public static void GetPromptsDataFromGSheet(WebSocket webSocket)
     {
@@ -62,5 +62,10 @@ public class LlmPromptAssistant
         byte[] encodedMsg = Encoding.UTF8.GetBytes("LlmPromptsData:" + JsonSerializer.Serialize(llmPromptCategories));
         if (webSocket!.State == WebSocketState.Open)
             webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+    }
+
+    public bool OnReceiveWsAsync_PromptAssist(string msgCode, string msgObjStr)
+    {
+        throw new NotImplementedException();
     }
 }

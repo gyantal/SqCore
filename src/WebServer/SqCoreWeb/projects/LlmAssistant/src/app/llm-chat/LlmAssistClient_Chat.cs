@@ -9,9 +9,9 @@ using SqCommon;
 
 namespace SqCoreWeb;
 
-public class LlmChat
+public partial class LlmAssistClient
 {
-    public static void GetChatResponseLlm(string p_msg, WebSocket webSocket)
+    public void GetChatResponseLlm(string p_msg)
     {
         string responseStr;
         LlmUserInput? userInput = JsonSerializer.Deserialize<LlmUserInput>(p_msg, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
@@ -21,8 +21,8 @@ public class LlmChat
             responseStr = GenerateChatResponseLlm(userInput).Result;
 
         byte[] encodedMsg = Encoding.UTF8.GetBytes("LlmResponse:" + responseStr);
-        if (webSocket!.State == WebSocketState.Open)
-            webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+        if (WsWebSocket!.State == WebSocketState.Open)
+            WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
     }
 
     public static async Task<string> GenerateChatResponseLlm(LlmUserInput p_userInput)
@@ -65,6 +65,19 @@ public class LlmChat
             using JsonDocument jsonDoc = JsonDocument.Parse(result);
             string? responseStr = jsonDoc.RootElement.GetProperty("choices")[0].GetProperty("message").GetProperty("content").GetString();
             return responseStr ?? "Failed to get Llm response";
+        }
+    }
+
+    public bool OnReceiveWsAsync_Chat(string msgCode, string msgObjStr)
+    {
+        switch (msgCode)
+        {
+            case "GetChatResponseLlm":
+                Utils.Logger.Info($"OnReceiveWsAsync_Chat(): GetChatResponseLlm: '{msgObjStr}'");
+                GetChatResponseLlm(msgObjStr);
+                return true;
+            default:
+                return false;
         }
     }
 }

@@ -9,9 +9,9 @@ using SqCommon;
 
 namespace SqCoreWeb;
 
-public class LlmBasicChat
+public partial class LlmAssistClient
 {
-    public static void GetChatResponseLlm(string p_msg, LlmAssistClient? p_llmClient)
+    public void GetChatResponseLlmBasic(string p_msg)
     {
         string responseStr;
         LlmUserInput? userInput = JsonSerializer.Deserialize<LlmUserInput>(p_msg, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
@@ -21,8 +21,8 @@ public class LlmBasicChat
             responseStr = GenerateChatResponseLlmBasic(userInput).Result;
 
         byte[] encodedMsg = Encoding.UTF8.GetBytes("LlmResponseBasicChat:" + responseStr);
-        if (p_llmClient!.WsWebSocket != null && p_llmClient.WsWebSocket!.State == WebSocketState.Open)
-            p_llmClient.WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+        if (WsWebSocket!.State == WebSocketState.Open)
+            WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
     }
 
     public static async Task<string> GenerateChatResponseLlmBasic(LlmUserInput p_userInput)
@@ -65,6 +65,19 @@ public class LlmBasicChat
             using JsonDocument jsonDoc = JsonDocument.Parse(result);
             string? responseStr = jsonDoc.RootElement.GetProperty("choices")[0].GetProperty("message").GetProperty("content").GetString();
             return responseStr ?? "Failed to get Llm response";
+        }
+    }
+
+    public bool OnReceiveWsAsync_BasicChat(string msgCode, string msgObjStr)
+    {
+        switch (msgCode)
+        {
+            case "GetBasicChatResponseLlm":
+                Utils.Logger.Info($"OnReceiveWsAsync_BasicChat(): GetChatResponseLlmBasic: '{msgObjStr}'");
+                GetChatResponseLlmBasic(msgObjStr);
+                return true;
+            default:
+                return false;
         }
     }
 }

@@ -20,9 +20,9 @@ public class TickerEarningsDate
     public string Ticker { get; set; } = string.Empty;
     public string EarningsDateStr { get; set; } = string.Empty;
 }
-public class LlmScan
+public partial class LlmAssistClient
 {
-    public static void GetStockPrice(string p_tickersStr, WebSocket webSocket)
+    public void GetStockPrice(string p_tickersStr)
     {
         List<string> logs = new();
         if (p_tickersStr == null)
@@ -44,9 +44,9 @@ public class LlmScan
 
         ServerStockPriceDataResponse serverResponse = new() { StocksPriceResponse = response, Logs = logs };
         byte[] encodedMsg = Encoding.UTF8.GetBytes("StockPrice:" + JsonSerializer.Serialize(serverResponse));
-        if (webSocket!.State == WebSocketState.Open)
-            webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
-        GetEarningsDate(tickers, webSocket);
+        if (WsWebSocket!.State == WebSocketState.Open)
+            WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+        GetEarningsDate(tickers);
     }
 
     public static async Task<List<StockPriceData>> DownloadStockPriceData(string[] p_tickers)
@@ -68,7 +68,7 @@ public class LlmScan
         return tickerPos;
     }
 
-    public static void GetEarningsDate(string[] p_tickers, WebSocket webSocket) // e.g, p_tickers : [AAPL, TSLA]
+    public void GetEarningsDate(string[] p_tickers) // e.g, p_tickers : [AAPL, TSLA]
     {
         List<TickerEarningsDate> tickerEarningDateList = new();
         foreach (string ticker in p_tickers)
@@ -81,8 +81,8 @@ public class LlmScan
             tickerEarningDateList.Add(new TickerEarningsDate { Ticker = ticker, EarningsDateStr = responseDateStr });
         }
         byte[] encodedMsg = Encoding.UTF8.GetBytes("EarningsDate:" + JsonSerializer.Serialize(tickerEarningDateList));
-        if (webSocket!.State == WebSocketState.Open)
-            webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+        if (WsWebSocket!.State == WebSocketState.Open)
+            WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
     }
 
     public static string ProcessHtmlContentForEarningsDate(string p_html)
@@ -120,7 +120,7 @@ public class LlmScan
         return earningsDate;
     }
 
-    public static void GetTickerNews(string p_tickerStr, WebSocket webSocket)
+    public void GetTickerNews(string p_tickerStr)
     {
         List<TickerNews> tickerNewss = new();
         // var analyzer = new SentimentIntensityAnalyzer(); // Sentiment analysis
@@ -168,8 +168,8 @@ public class LlmScan
             }
         }
         byte[] encodedMsg = Encoding.UTF8.GetBytes("TickersNews:" + JsonSerializer.Serialize(tickerNewss));
-        if (webSocket!.State == WebSocketState.Open)
-            webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+        if (WsWebSocket!.State == WebSocketState.Open)
+            WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
     }
 
     // XmlReader is the fastest way to walk-forward an XML. A general reader of strings. A walk-forward one-way.
@@ -408,7 +408,7 @@ public class LlmScan
         return sb.ToString();
     }
 
-    public static void GetLlmAnswer(string p_msg, WebSocket webSocket)
+    public void GetLlmAnswer(string p_msg)
     {
         if (p_msg == null)
         {
@@ -432,7 +432,7 @@ public class LlmScan
                 LlmModelName = userInput.LlmModelName,
                 Msg = userInput.LlmQuestion + newsStr
             };
-            responseStr = LlmChat.GenerateChatResponseLlm(p_userInp).TurnAsyncToSyncTask();
+            responseStr = LlmAssistClient.GenerateChatResponseLlm(p_userInp).TurnAsyncToSyncTask();
         }
         string outputMsgCode = "LlmAnswer";
         if (userInput.LlmQuestion.Contains("summarize"))
@@ -441,7 +441,28 @@ public class LlmScan
             outputMsgCode = "LlmFutureOrGrowth";
 
         byte[] encodedMsg = Encoding.UTF8.GetBytes($"{outputMsgCode}:" + responseStr);
-        if (webSocket!.State == WebSocketState.Open)
-            webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+        if (WsWebSocket!.State == WebSocketState.Open)
+            WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+    }
+
+    public bool OnReceiveWsAsync_Scan(string msgCode, string msgObjStr)
+    {
+        switch (msgCode)
+        {
+            case "GetStockPrice":
+                Utils.Logger.Info($"OnReceiveWsAsync_Scan(): GetStockPrice: '{msgObjStr}'");
+                GetStockPrice(msgObjStr);
+                return true;
+            case "GetTickerNews":
+                Utils.Logger.Info($"OnReceiveWsAsync_Scan(): GetTickerNews: '{msgObjStr}'");
+                GetTickerNews(msgObjStr);
+                return true;
+            case "GetLlmAnswer":
+                Utils.Logger.Info($"OnReceiveWsAsync_Scan(): GetLlmAnswer: '{msgObjStr}'");
+                GetLlmAnswer(msgObjStr);
+                return true;
+            default:
+                return false;
+        }
     }
 }

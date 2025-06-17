@@ -17,7 +17,6 @@ class HandshakeMessageLlmAssist
 }
 public class LlmAssistWs
 {
-    public static Dictionary<string, LlmAssistClient> g_clients = new();
     public static async Task OnWsConnectedAsync(HttpContext context, WebSocket webSocket)
     {
         Utils.Logger.Debug($"LlmAssistWs.OnConnectedAsync()) BEGIN");
@@ -31,7 +30,7 @@ public class LlmAssistWs
         byte[] encodedMsg = Encoding.UTF8.GetBytes("OnConnected:" + Utils.CamelCaseSerialize(msgObj));
         if (webSocket.State == WebSocketState.Open)
             await webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
-        LlmPromptAssistant.GetPromptsDataFromGSheet(webSocket); // Send prompts data to the client
+        LlmAssistClient.GetPromptsDataFromGSheet(webSocket); // Send prompts data to the client
 
         string clientIP = WsUtils.GetRequestIPv6(context!);
         Utils.Logger.Info($"LlmAssistWs.OnConnectedAsync(), Connection from IP: {clientIP} with email '{email}'");
@@ -39,45 +38,36 @@ public class LlmAssistWs
         {
             WsWebSocket = webSocket,
         };
-        g_clients[client.ConnectionIdStr] = client; // add the client
+        LlmAssistClient.AddToClients(client); // add the client to the global list of clients
+    }
+
+    public static void OnWsReceiveAsync(/* HttpContext context, WebSocketReceiveResult? result, */ WebSocket webSocket,  string bufferStr)
+    {
+        LlmAssistClient? client = LlmAssistClient.FindClient(webSocket);
+        if (client == null)
+            return;
+
+        int semicolonInd = bufferStr.IndexOf(':');
+        string msgCode = bufferStr[..semicolonInd];
+        string msgObjStr = bufferStr[(semicolonInd + 1)..];
+
+        bool isHandled = client.OnReceiveWsAsync_LlmAssistClient(msgCode, msgObjStr);
+        if (!isHandled)
+        {
+            // throw new Exception($"Unexpected websocket received msgCode '{msgCode}'");
+            Utils.Logger.Error($"Unexpected websocket received msgCode '{msgCode}'");
+        }
     }
 
     public static void OnWsClose(WebSocket webSocket)
     {
-        _ = webSocket; // StyleCop SA1313 ParameterNamesMustBeginWithLowerCaseLetter. They won't fix. Recommended solution for unused parameters, instead of the discard (_1) parameters
+        LlmAssistClient? client = LlmAssistClient.FindClient(webSocket);
+        DisposeClient(client);
     }
 
-    public static void OnWsReceiveAsync(/* HttpContext context, WebSocketReceiveResult? result, */ WebSocket webSocket, string bufferStr)
+    public static void DisposeClient(LlmAssistClient? client)
     {
-        int semicolonInd = bufferStr.IndexOf(':');
-        string msgCode = bufferStr[..semicolonInd];
-        string msgObjStr = bufferStr[(semicolonInd + 1)..];
-        switch (msgCode)
-        {
-            case "GetChatResponseLlm":
-                Utils.Logger.Info($"LlmAssistWs.OnWsReceiveAsync(): GetChatResponseLlm: '{msgObjStr}'");
-                LlmChat.GetChatResponseLlm(msgObjStr, webSocket);
-                break;
-            case "GetBasicChatResponseLlm":
-                Utils.Logger.Info($"LlmAssistWs.OnWsReceiveAsync(): GetChatResponseLlm: '{msgObjStr}'");
-                LlmAssistClient? llmClient = g_clients.Values.FirstOrDefault(c => c.WsWebSocket == webSocket);
-                LlmBasicChat.GetChatResponseLlm(msgObjStr, llmClient);
-                break;
-            case "GetStockPrice":
-                Utils.Logger.Info($"LlmAssistWs.OnWsReceiveAsync(): GetStockPrice: '{msgObjStr}'");
-                LlmScan.GetStockPrice(msgObjStr, webSocket);
-                break;
-            case "GetTickerNews":
-                Utils.Logger.Info($"LlmAssistWs.OnWsReceiveAsync(): GetTickerNews: '{msgObjStr}'");
-                LlmScan.GetTickerNews(msgObjStr, webSocket);
-                break;
-            case "GetLlmAnswer":
-                Utils.Logger.Info($"LlmAssistWs.OnWsReceiveAsync(): GetLlmAnswer: '{msgObjStr}'");
-                LlmScan.GetLlmAnswer(msgObjStr, webSocket);
-                break;
-            default:
-                Utils.Logger.Info($"LlmAssistWs.OnWsReceiveAsync(): Unrecognized message from client, {msgCode},{msgObjStr}");
-                break;
-        }
+        if (client != null)
+            LlmAssistClient.RemoveFromClients(client);
     }
 }
