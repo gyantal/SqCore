@@ -3,7 +3,6 @@
         <tr>
             <td><strong><a href="https://docs.google.com/spreadsheets/d/1wOY4OeoLbaYSfutiSc0elv26SVwLtBXqXnaNZ4YtggU" target="_blank">Category</a></strong></td>
             <td><strong>Name</strong></td>
-            <td><strong>Tickers</strong></td>
         </tr>
     </thead>
     <tbody>
@@ -24,9 +23,19 @@
                 </span>
                 </span>
             </td>
+            <td><strong>Tickers:</strong></td>
             <td>
                 <input [disabled]="!m_isUpdatePrompt" #tickersInput type="text" [value]="m_tickersStr" (input)="tickersInput.value = tickersInput.value.toUpperCase()">&nbsp;
                 <button [disabled]="!m_isUpdatePrompt" (click)="updatePromptWithTickers(tickersInput.value)">updatePromptWithTickers</button>
+            </td>
+        </tr>
+        <tr>
+            <td></td>
+            <td></td>
+            <td><strong>KeyStats:</strong></td>
+            <td>
+                <input [disabled]="!m_isUpdatePrompt" #keyStatsInput type="text" [value]="m_keyStatsStr">&nbsp;
+                <button [disabled]="!m_isUpdatePrompt" (click)="updatePromptWithKeyStats(keyStatsInput.value)">updatePromptWithKeyStats</button>
             </td>
         </tr>
     </tbody>

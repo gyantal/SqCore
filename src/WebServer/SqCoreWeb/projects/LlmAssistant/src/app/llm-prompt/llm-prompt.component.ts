@@ -23,6 +23,7 @@ export class LlmPromptComponent implements OnInit {
   m_prompt: string = '';
   m_isUpdatePrompt: boolean = true; // The "UpdatePrompt" button is enabled only when the prompt contains "{ticker_list}".
   m_tickersStr: string = 'TSLA, AAPL';
+  m_keyStatsStr: string = 'MarketCap, P/E';
 
   constructor() {}
 
@@ -89,5 +90,11 @@ export class LlmPromptComponent implements OnInit {
     this.m_tickersStr = tickers;
     if (this.m_prompt.includes('ticker_list'))
       this.m_prompt = this.m_prompt.replace('{ticker_list}', this.m_tickersStr);
+  }
+
+  updatePromptWithKeyStats(keyStats: string) {
+    this.m_keyStatsStr = keyStats;
+    if (this.m_prompt.includes('P/E value'))
+      this.m_prompt = this.m_prompt.replace('P/E value', this.m_keyStatsStr + ' value');
   }
 }
