@@ -11,3 +11,16 @@
 <app-llm-basic-chat [hidden]="(m_activeTab != 'BasicChat')" [m_parentWsConnection]="m_socket"></app-llm-basic-chat>
 <app-llm-scan [hidden]="(m_activeTab != 'Scan')" [m_parentWsConnection]="m_socket"></app-llm-scan>
 <app-llm-prompt [hidden]="(m_activeTab != 'PromptAssistant')" [m_parentWsConnection]="m_socket"></app-llm-prompt>
+<div id="manyLlmAssistClientsDialog" [ngStyle]="{'display': isLlmAssistOpenManyTimesDialogVisible ? 'block' : 'none'}">
+  <div class="manyLlmAssistClientsDialog-content">
+    <p>"LlmAssistant is open in more than one tab or browser. This slows down both client and server. <br>
+      <span class="manyLlmAssistClntDialogSuggestion">Suggestion: Close this browser tabpage and find the other LlmAssistant."</span>
+    </p>
+  </div>
+  <div class="llmAssistDialogButtons">
+    <button type="button" (click)="onLlmAssistOpenedManyTimesContinueClicked()">Continue this tab</button>
+  </div>
+  <div class="llmAssistDialogButtons">
+    <button type="button" (click)="onLlmAssistOpenedManyTimesCloseClicked()">Close this tab</button>
+  </div>
+</div>
