@@ -86,15 +86,21 @@ export class LlmPromptComponent implements OnInit {
       this.m_isUpdatePrompt = true;
   }
 
-  updatePromptWithTickers(tickers: string) {
-    this.m_tickersStr = tickers;
+  onBlurTickerList(event: Event) {
+    this.m_tickersStr = (event.target as HTMLInputElement).value;
+  }
+
+  onBlurKeyStats(event: Event) {
+    this.m_keyStatsStr = (event.target as HTMLInputElement).value;
+  }
+
+  updatePromptWithTickers() {
     if (this.m_prompt.includes('ticker_list'))
       this.m_prompt = this.m_prompt.replace('{ticker_list}', this.m_tickersStr);
   }
 
-  updatePromptWithKeyStats(keyStats: string) {
-    this.m_keyStatsStr = keyStats;
-    if (this.m_prompt.includes('P/E value'))
-      this.m_prompt = this.m_prompt.replace('P/E value', this.m_keyStatsStr + ' value');
+  updatePromptWithKeyStats() {
+    if (this.m_prompt.includes('key_stats'))
+      this.m_prompt = this.m_prompt.replace('{key_stats}', this.m_keyStatsStr);
   }
 }

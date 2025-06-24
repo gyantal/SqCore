@@ -25,8 +25,8 @@
             </td>
             <td><strong>Tickers:</strong></td>
             <td>
-                <input [disabled]="!m_isUpdatePrompt" #tickersInput type="text" [value]="m_tickersStr" (input)="tickersInput.value = tickersInput.value.toUpperCase()">&nbsp;
-                <button [disabled]="!m_isUpdatePrompt" (click)="updatePromptWithTickers(tickersInput.value)">updatePromptWithTickers</button>
+                <input [disabled]="!m_isUpdatePrompt" #tickersInput type="text" [value]="m_tickersStr" (input)="tickersInput.value = tickersInput.value.toUpperCase()" (blur)="onBlurTickerList($event)">&nbsp; <!-- the blur event gets fired when the focus is lost-->
+                <button [disabled]="!m_isUpdatePrompt" (click)="updatePromptWithTickers()">updatePromptWithTickers</button>
             </td>
         </tr>
         <tr>
@@ -34,8 +34,8 @@
             <td></td>
             <td><strong>KeyStats:</strong></td>
             <td>
-                <input [disabled]="!m_isUpdatePrompt" #keyStatsInput type="text" [value]="m_keyStatsStr">&nbsp;
-                <button [disabled]="!m_isUpdatePrompt" (click)="updatePromptWithKeyStats(keyStatsInput.value)">updatePromptWithKeyStats</button>
+                <input [disabled]="!m_isUpdatePrompt" #keyStatsInput type="text" [value]="m_keyStatsStr" (input)="keyStatsInput.value = keyStatsInput.value.toUpperCase()" (blur)="onBlurKeyStats($event)">&nbsp; <!-- the blur event gets fired when the focus is lost-->
+                <button [disabled]="!m_isUpdatePrompt" (click)="updatePromptWithKeyStats()">updatePromptWithKeyStats</button>
             </td>
         </tr>
     </tbody>
