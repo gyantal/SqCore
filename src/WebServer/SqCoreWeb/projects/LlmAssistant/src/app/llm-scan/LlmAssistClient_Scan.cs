@@ -332,7 +332,7 @@ public partial class LlmAssistClient
         if (htmlContent == null)
             throw new SqException($"DownloadStringWithRetryAsync failed for Url {p_newsUrl}");
 
-        if ((p_newsUrl.StartsWith("https://finance.yahoo.com") || p_newsUrl.StartsWith("https://ca.finance.yahoo.com/")) && !htmlContent.Contains("Continue reading")) // if the YF news on YF website has "Continue reading" then a link will lead to another website (Bloomberg, Fools), in that case we don't process it.
+        if ((p_newsUrl.StartsWith("https://finance.yahoo.com") || p_newsUrl.StartsWith("https://uk.finance.yahoo.com") || p_newsUrl.StartsWith("https://ca.finance.yahoo.com/")) && !htmlContent.Contains("Continue reading", StringComparison.OrdinalIgnoreCase)) // if the YF news on YF website has "Continue reading" then a link will lead to another website (Bloomberg, Fools), in that case we don't process it.
         {
             // responseStr = ProcessHtmlContentRegex(htmlContent);
             string responseHtmlStr = ProcessHtmlContentFast(htmlContent);
@@ -353,54 +353,41 @@ public partial class LlmAssistClient
     // Previously, content was extracted using "class=view-cmts-cta-wrapper" has changed to "class=atoms-wrapper", and multiple "atoms-wrapper" blocks can exist in a single URL.
     // The method is modified to iterate through each "atoms-wrapper" block and extract the content within the <p class="yf-1090901"> tags inside each block.
     // e.g, the news is wrapped as <div class=atoms-wrapper><p class=yf-1090901>Some news </p></div>
+    // On 2025-06-24, it was noticed that yahoo finance has changed the structure of there news articles. Earlier the content was clean and wrapped only in <p> tags, with no interfering tags like <figure> or <div>.
+    // This change broke our parsing logic, so we now extract content by targeting <p> tags using a class selector (<p class="yf-1090901">) for news items.
     static string ProcessHtmlContentFast(string p_html)
     {
         Stopwatch sw = new();
         sw.Start();
         StringBuilder sb = new();
         ReadOnlySpan<char> htmlSpan = p_html.AsSpan();
-
+        string pTagClassSelectorStr = "<p class=\"yf-1090901\"";
+        string pTagClose = "</p>";
+        int currentIdx = 0;
         while (true)
         {
-            int divWithClassAtomsWrapperStart = htmlSpan.IndexOf("class=\"atoms-wrapper\"");
-            if (divWithClassAtomsWrapperStart == -1)
+            int pTagStartIdx = htmlSpan.Slice(currentIdx).IndexOf(pTagClassSelectorStr, StringComparison.OrdinalIgnoreCase);
+            if (pTagStartIdx == -1)
+                break;
+            currentIdx += pTagStartIdx;
+
+            int pTagStartEndIdx = htmlSpan.Slice(currentIdx).IndexOf('>');
+            if (pTagStartEndIdx == -1)
                 break;
 
-            divWithClassAtomsWrapperStart += "class=\"atoms-wrapper\"".Length;
-            ReadOnlySpan<char> divWithClassAtomsWrapperSpan = htmlSpan.Slice(divWithClassAtomsWrapperStart);
-
-            int divWithClassAtomsWrapperEnd = divWithClassAtomsWrapperSpan.IndexOf("</p></div>");
-            if (divWithClassAtomsWrapperEnd == -1)
+            int contentStartIdx = currentIdx + pTagStartEndIdx + 1;
+            int contentEndIdx = htmlSpan.Slice(contentStartIdx).IndexOf(pTagClose, StringComparison.OrdinalIgnoreCase);
+            if (contentEndIdx == -1)
                 break;
 
-            ReadOnlySpan<char> atomsWrapperSpan = divWithClassAtomsWrapperSpan.Slice(0, divWithClassAtomsWrapperEnd + "</p></div>".Length);
+            string contentStr = htmlSpan.Slice(contentStartIdx, contentEndIdx).ToString()
+                .Replace("<!-- HTML_TAG_START -->", string.Empty) // Remove <!-- HTML_TAG_START --> and <!-- HTML_TAG_END --> inside the content
+                .Replace("<!-- HTML_TAG_END -->", string.Empty).Trim();
 
-            // extract all <p class="yf-1090901">some news</p>
-            while (true)
-            {
-                int pTagStart = atomsWrapperSpan.IndexOf("<p class=\"yf-1090901\"");
-                if (pTagStart == -1)
-                    break;
+            if (!string.IsNullOrWhiteSpace(contentStr))
+                sb.AppendLine(contentStr);
 
-                int pTagStartClose = atomsWrapperSpan.Slice(pTagStart).IndexOf('>');
-                if (pTagStartClose == -1)
-                    break;
-
-                int pContentStart = pTagStart + pTagStartClose + 1;
-                int pTagEnd = atomsWrapperSpan.Slice(pContentStart).IndexOf("</p>");
-                if (pTagEnd == -1)
-                    break;
-
-                string contentStr = atomsWrapperSpan.Slice(pContentStart, pTagEnd).ToString();
-                contentStr = contentStr.Replace("<!-- HTML_TAG_START -->", string.Empty).Replace("<!-- HTML_TAG_END -->", string.Empty).Trim(); // Remove <!-- HTML_TAG_START --> and <!-- HTML_TAG_END --> inside the content
-
-                sb.Append(contentStr);
-                sb.AppendLine();
-
-                atomsWrapperSpan = atomsWrapperSpan.Slice(pContentStart + pTagEnd + "</p>".Length); // Move the atomsWrapperSpan position to the end of the </p>
-            }
-
-            htmlSpan = divWithClassAtomsWrapperSpan.Slice(divWithClassAtomsWrapperEnd + "</p></div>".Length); // Move the htmlSpan position to the end of the </p></div> to find next "atoms-wrapper"
+            currentIdx = contentStartIdx + contentEndIdx + pTagClose.Length; // Update currentIdx to continue scanning after the current </p> tag
         }
         sw.Stop();
 
