@@ -32,7 +32,8 @@ async function AsyncStartDownloadAndExecuteCbLater(url: string, callback: (json:
 
 function onClickGameChanger() {
   lastSelectedUniverse = 1;
-  AsyncStartDownloadAndExecuteCbLater('/StrategyUberTaa?universe=1&winnerRun=1', (json: any) => {
+  // AsyncStartDownloadAndExecuteCbLater('/StrategyUberTaa?universe=1&winnerRun=1', (json: any) => {
+  AsyncStartDownloadAndExecuteCbLater('/StrategyUberTaa?universe=1&winnerRun=0', (json: any) => {
     onReceiveData(json);
   });
 }
@@ -94,6 +95,7 @@ function onReceiveData(json: any) {
 function uberTaaTbls(json: any) {
   // Creating JavaScript data arrays by splitting.
   const assetNames2Array = json.assetNames2.split(', ');
+  const gCh10BoolVector: boolean[] = json.importantTickers.split(', ').map((val: string) => val === '1');
   const currPosNumArray = json.currPosNum.split(', ');
   const currPosValArray = json.currPosVal.split(', ');
   const nextPosNumArray = json.nextPosNum.split(', ');
@@ -151,7 +153,8 @@ function uberTaaTbls(json: any) {
   chngInPosTbl += '<td bgcolor="#66CCFF">' + assetNames2Array[assetNames2Array.length - 1] + '</td>';
 
   chngInPosTbl += '</tr >'; // nextTrading day row
-  if (lastSelectedUniverse == 2) { // Trading rules have been changed for TaaGC! Let the Winners Run is used. The first table's first and third rows are removed because they are not valid.
+  // if (lastSelectedUniverse == 2) { // Trading rules have been changed for TaaGC! Let the Winners Run is used. The first table's first and third rows are removed because they are not valid.
+  if (lastSelectedUniverse != 3) {
     chngInPosTbl += ' <tr align="center"><td align="center" rowspan="2" bgcolor="#FF6633">' + json.nextTradingDay + '</td>';
     for (let i = 0; i < assetNames2Array.length; i++)
       chngInPosTbl += '<td bgcolor="#' + prevAssetEventMtx[1][i + 1] + '">' + nextPosValArray[i] + '</td>';
@@ -171,13 +174,22 @@ function uberTaaTbls(json: any) {
 
 
   chngInPosTbl += '</tr >'; // Change in posotions row
-  if (lastSelectedUniverse == 2) { // Trading rules have been changed for TaaGC! Let the Winners Run is used. The first table's first and third rows are removed because they are not valid.
-    chngInPosTbl += ' <tr align="center"><td align="center" rowspan="2" bgcolor="#FF6633">Change in Positions</td>';
+  // if (lastSelectedUniverse == 2) { // Trading rules have been changed for TaaGC! Let the Winners Run is used. The first table's first and third rows are removed because they are not valid.
+  if (lastSelectedUniverse != 3) {
+    chngInPosTbl += lastSelectedUniverse == 1 ? ' <tr align="center"><td align="center" rowspan="2" bgcolor="#FF6633">Change in Positions GCh20</td>' : '<tr align="center"><td align="center" rowspan="2" bgcolor="#FF6633">Change in Positions</td>';
     for (let i = 0; i < assetNames2Array.length; i++)
       chngInPosTbl += '<td bgcolor="#FFFF00">' + diffPosValArray[i] + '</td>';
     chngInPosTbl += '</tr > <tr>';
     for (let i = 0; i < assetNames2Array.length; i++)
       chngInPosTbl += '<td bgcolor="#FFFF00">' + diffPosNumArray[i] + '</td>';
+  }
+  if (lastSelectedUniverse == 1) { // In case of GameChangers, show potion change of GCh10 as well
+    chngInPosTbl += ' <tr align="center"><td align="center" rowspan="2" bgcolor="#FF6633">Change in Positions GCh10</td>';
+    for (let i = 0; i < assetNames2Array.length; i++)
+      chngInPosTbl += '<td bgcolor="#ADD8E6">' + (gCh10BoolVector[i] ? diffPosValArray[i] : '') + '</td>';
+    chngInPosTbl += '</tr > <tr>';
+    for (let i = 0; i < assetNames2Array.length; i++)
+      chngInPosTbl += '<td bgcolor="#ADD8E6">' + (gCh10BoolVector[i] ? diffPosNumArray[i] : '') + '</td>';
   }
 
   chngInPosTbl += '</tr></table>';

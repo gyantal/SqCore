@@ -39,6 +39,16 @@ public struct AggregateDatePctlChannel
     public List<PctlChannel> PctlChannels { get; set; }
 }
 
+public record GSheetResult(
+    double[] DateVec,
+    int[,] CodesAssets,
+    int[] EventCodes,
+    int[] EventMultipl,
+    string[] EventNames,
+    int[] CurrPosDateCash,
+    int[] CurrPosAssets,
+    bool[] ImportantTickersBool);
+
 [ApiController]
 [Route("[controller]")]
 [ResponseCache(CacheProfileName = "NoCache")]
@@ -81,7 +91,7 @@ public class StrategyUberTaaController : ControllerBase
                 usedGSheetUrl = "https://docs.google.com/spreadsheets/d/1AGci_xFhgcC-Q1tEZ5E-HTBWbOU-C9ZXyjLIN1bEZeE";
                 usedGSheetStr = UberTaaGoogleApiGsheet("https://sheets.googleapis.com/v4/spreadsheets/1AGci_xFhgcC-Q1tEZ5E-HTBWbOU-C9ZXyjLIN1bEZeE/values/A1:AF3000?key=");
                 usedAssetList = GetTickersFromGSheet(usedGSheetStr) ?? Array.Empty<string>();
-                warningGCh = "WARNING! Trading rules have been changed for TaaGC! Let the Winners Run is used. The first table's first and third rows are removed because they are not valid. Trade this based on the second table's Percentage targets.";
+                // warningGCh = "WARNING! Trading rules have been changed for TaaGC! Let the Winners Run is used. The first table's first and third rows are removed because they are not valid. Trade this based on the second table's Percentage targets.";
                 break;
             case Universe.GlobalAssets:
                 titleString = "Global Assets";
@@ -125,9 +135,9 @@ public class StrategyUberTaaController : ControllerBase
 
         // Get, split and convert GSheet data
         // string? gSheetString = UberTaaGoogleApiGsheet(usedGSheetRef);
-        Tuple<double[], int[,], int[], int[], string[], int[], int[]> gSheetResToFinCalc = GSheetConverter(usedGSheetStr, allAssetList);
+        GSheetResult gSheetResToFinCalc = GSheetConverter(usedGSheetStr, allAssetList);
         Debug.WriteLine($"The Data from gSheet is: {gSheetResToFinCalc}");
-        string overallConstLevStr = gSheetResToFinCalc.Item6[2].ToString() + '%';
+        string overallConstLevStr = gSheetResToFinCalc.CurrPosDateCash[2].ToString() + '%';
 
         // Calculating final weights - Advanced UberTAA
         Tuple<double[,], double[,], double[,], string[], string[]> weightsFinal = MultiplFinCalc(p_universe, clmtRes, gSheetResToFinCalc, allAssetList, lastDataDate, taaWeightResultsTuple);
@@ -146,7 +156,7 @@ public class StrategyUberTaaController : ControllerBase
         DateTime startMatlabDate = DateTime.ParseExact("1900/01/01", "yyyy/MM/dd", CultureInfo.InvariantCulture);
         DateTime nextTradingDay = startMatlabDate.AddDays(weightsFinal.Item1[weightsFinal.Item1.GetLength(0) - 1, 0] - 693962);
         string nextTradingDayString = nextTradingDay.ToString("yyyy-MM-dd");
-        DateTime currPosDate = startMatlabDate.AddDays(gSheetResToFinCalc.Item6[0] - 693962);
+        DateTime currPosDate = startMatlabDate.AddDays(gSheetResToFinCalc.CurrPosDateCash[0] - 693962);
         string currPosDateString = currPosDate.ToString("yyyy-MM-dd");
 
         double currPV;
@@ -155,13 +165,13 @@ public class StrategyUberTaaController : ControllerBase
         double[] currPosValue = new double[usedAssetList.Length + 1];
         for (int jCols = 0; jCols < currPosValue.Length - 2; jCols++)
         {
-            currPosInt[jCols] = gSheetResToFinCalc.Item7[jCols];
+            currPosInt[jCols] = gSheetResToFinCalc.CurrPosAssets[jCols];
             currPosValue[jCols] = quotesData[jCols][quotesData[0].Count - 1].AdjClosePrice * currPosInt[jCols];
         }
-        currPosInt[^2] = gSheetResToFinCalc.Item7[^1];
-        currPosInt[^1] = gSheetResToFinCalc.Item6[1];
-        currPosValue[^2] = cashEquivalentQuotesData[quotesData[0].Count - 1].AdjClosePrice * gSheetResToFinCalc.Item7[^1];
-        currPosValue[^1] = gSheetResToFinCalc.Item6[1];
+        currPosInt[^2] = gSheetResToFinCalc.CurrPosAssets[^1];
+        currPosInt[^1] = gSheetResToFinCalc.CurrPosDateCash[1];
+        currPosValue[^2] = cashEquivalentQuotesData[quotesData[0].Count - 1].AdjClosePrice * gSheetResToFinCalc.CurrPosAssets[^1];
+        currPosValue[^1] = gSheetResToFinCalc.CurrPosDateCash[1];
         currPV = Math.Round(currPosValue.Sum());
 
         double[] nextPosValue = new double[usedAssetList.Length + 1];
@@ -484,10 +494,16 @@ public class StrategyUberTaaController : ControllerBase
             sb.Append(usedAssetList[i] + ", ");
         sb.Append("Cash");
 
+        sb.Append(@"""," + Environment.NewLine + @"""importantTickers"": """);
+        // sb.Append(JsonSerializer.Serialize(gSheetResToFinCalc.ImportantTickersBool));
+        for (int i = 0; i < gSheetResToFinCalc.ImportantTickersBool.Length - 1; i++)
+            sb.Append((gSheetResToFinCalc.ImportantTickersBool[i] ? "1" : "0") + ", ");
+        sb.Append(gSheetResToFinCalc.ImportantTickersBool[^1] ? "1" : "0");
+
         sb.Append(@"""," + Environment.NewLine + @"""currPosNum"": """);
         for (int i = 0; i < currPosInt.Length - 1; i++)
             sb.Append(currPosInt[i].ToString() + ", ");
-        sb.Append("$" + Math.Round(currPosInt[^1] / 1000.0).ToString() + "K");
+        sb.Append("$" + FormatCurrencyKOrM(currPosInt[^1]));
 
         sb.Append(@"""," + Environment.NewLine + @"""currPosVal"": """);
         for (int i = 0; i < currPosValue.Length - 1; i++)
@@ -658,7 +674,7 @@ public class StrategyUberTaaController : ControllerBase
         return valuesFromGSheetStr;
     }
 
-    public static Tuple<double[], int[,], int[], int[], string[], int[], int[]> GSheetConverter(string? p_gSheetString, string[] p_allAssetList)
+    public static GSheetResult GSheetConverter(string? p_gSheetString, string[] p_allAssetList)
     {
         if (p_gSheetString != null)
         {
@@ -673,6 +689,15 @@ public class StrategyUberTaaController : ControllerBase
             int currPosCash = Int32.Parse(currPos[^3]);
             int[] currPosDateCash = new int[] { currPosDate, currPosCash, overallConstantLev };
             int[] currPosAssets = Array.ConvertAll(currPosAP, int.Parse);
+
+            string importantTickersRaw = gSheetTableRows[4];
+            importantTickersRaw = importantTickersRaw.Replace("\n", string.Empty).Replace("]", string.Empty).Replace("\",", "BRB").Replace("\"", string.Empty).Replace(" ", string.Empty).Replace(",", string.Empty);
+            string[] importantTickers = importantTickersRaw.Split(["BRB"], StringSplitOptions.RemoveEmptyEntries);
+            // Skip first 2 and last 2 entries
+            string[] importantTickers2 = importantTickers.Skip(2).Take(importantTickers.Length - 4).ToArray();
+
+            // Generate bool array: true if entry contains "***", else false
+            bool[] importantTickersBool = importantTickers2.Select(entry => entry.Contains("***")).ToArray();
 
             p_gSheetString = p_gSheetString.Replace("\n", string.Empty).Replace("]", string.Empty).Replace("\"", string.Empty).Replace(" ", string.Empty).Replace(",,", ",0,");
             gSheetTableRows = p_gSheetString.Split(new string[] { "[" }, StringSplitOptions.RemoveEmptyEntries);
@@ -722,7 +747,8 @@ public class StrategyUberTaaController : ControllerBase
             {
                 gSheetEventNames[iRows] = gSheetCodes[iRows, gSheetCodes.GetLength(1) - 2];
             }
-            Tuple<double[], int[,], int[], int[], string[], int[], int[]> gSheetResFinal = Tuple.Create(gSheetDateVec, gSheetCodesAssets, gSheetEventCodes, gSheetEventMultipl, gSheetEventNames, currPosDateCash, currPosAssets);
+            GSheetResult gSheetResFinal = new(gSheetDateVec, gSheetCodesAssets, gSheetEventCodes, gSheetEventMultipl, gSheetEventNames, currPosDateCash, currPosAssets, importantTickersBool);
+            // Tuple<double[], int[,], int[], int[], string[], int[], int[]> gSheetResFinal = Tuple.Create(gSheetDateVec, gSheetCodesAssets, gSheetEventCodes, gSheetEventMultipl, gSheetEventNames, currPosDateCash, currPosAssets);
 
             return gSheetResFinal;
         }
@@ -1175,12 +1201,12 @@ public class StrategyUberTaaController : ControllerBase
         return clmtTotalResu;
     }
 
-    public static Tuple<double[,], double[,], double[,], string[], string[]> MultiplFinCalc(Universe p_universe, double[][] p_clmtRes, Tuple<double[], int[,], int[], int[], string[], int[], int[]> p_gSheetResToFinCalc, string[] p_allAssetList, double p_lastDataDate, Tuple<double[], double[,]> p_taaWeightResultsTuple)
+    public static Tuple<double[,], double[,], double[,], string[], string[]> MultiplFinCalc(Universe p_universe, double[][] p_clmtRes, GSheetResult p_gSheetResToFinCalc, string[] p_allAssetList, double p_lastDataDate, Tuple<double[], double[,]> p_taaWeightResultsTuple)
     {
         int pastDataLength = 20;
         int futDataLength = 10;
         int indClmtRes = Array.IndexOf(p_clmtRes[0], p_lastDataDate);
-        int indGSheetRes = Array.FindLastIndex(p_gSheetResToFinCalc.Item1, x => x <= p_lastDataDate); // On weekend, p_lastDataDate is higher than the last element in p_gSheetResToFinCalc.Item1, thus index becomes -1.
+        int indGSheetRes = Array.FindLastIndex(p_gSheetResToFinCalc.DateVec, x => x <= p_lastDataDate); // On weekend, p_lastDataDate is higher than the last element in p_gSheetResToFinCalc.Item1, thus index becomes -1.
         int indWeightsRes = Array.IndexOf(p_taaWeightResultsTuple.Item1, p_lastDataDate);
 
         double[,] pastCodes = new double[pastDataLength, p_allAssetList.Length - 3];
@@ -1188,33 +1214,33 @@ public class StrategyUberTaaController : ControllerBase
         string[] pastEvents = new string[pastDataLength];
         string[] futEvents = new string[futDataLength];
 
-        double overallConstLev = (double)p_gSheetResToFinCalc.Item6[2] / 100.0;
+        double overallConstLev = (double)p_gSheetResToFinCalc.CurrPosDateCash[2] / 100.0;
 
         for (int iRows = 0; iRows < pastCodes.GetLength(0); iRows++)
         {
-            pastEvents[iRows] = p_gSheetResToFinCalc.Item5[indGSheetRes - pastDataLength + iRows + 2];
-            pastCodes[iRows, 0] = p_gSheetResToFinCalc.Item1[indGSheetRes - pastDataLength + iRows + 2];
+            pastEvents[iRows] = p_gSheetResToFinCalc.EventNames[indGSheetRes - pastDataLength + iRows + 2];
+            pastCodes[iRows, 0] = p_gSheetResToFinCalc.DateVec[indGSheetRes - pastDataLength + iRows + 2];
             for (int jCols = 1; jCols < pastCodes.GetLength(1); jCols++)
             {
-                if (p_gSheetResToFinCalc.Item2[indGSheetRes - pastDataLength + iRows + 2, jCols - 1] == 9)
+                if (p_gSheetResToFinCalc.CodesAssets[indGSheetRes - pastDataLength + iRows + 2, jCols - 1] == 9)
                 {
                     pastCodes[iRows, jCols] = 7;
                 }
-                else if (p_gSheetResToFinCalc.Item3[indGSheetRes - pastDataLength + iRows + 2] == 1)
+                else if (p_gSheetResToFinCalc.EventCodes[indGSheetRes - pastDataLength + iRows + 2] == 1)
                 {
                     pastCodes[iRows, jCols] = 1;
                 }
-                else if (p_gSheetResToFinCalc.Item2[indGSheetRes - pastDataLength + iRows + 2, jCols - 1] == 3)
+                else if (p_gSheetResToFinCalc.CodesAssets[indGSheetRes - pastDataLength + iRows + 2, jCols - 1] == 3)
                 {
                     pastCodes[iRows, jCols] = 5;
                 }
-                else if (p_gSheetResToFinCalc.Item3[indGSheetRes - pastDataLength + iRows + 2] == 2)
+                else if (p_gSheetResToFinCalc.EventCodes[indGSheetRes - pastDataLength + iRows + 2] == 2)
                 {
                     pastCodes[iRows, jCols] = 2;
                 }
-                else if (p_gSheetResToFinCalc.Item2[indGSheetRes - pastDataLength + iRows + 2, jCols - 1] == 1)
+                else if (p_gSheetResToFinCalc.CodesAssets[indGSheetRes - pastDataLength + iRows + 2, jCols - 1] == 1)
                 {
-                    if (p_gSheetResToFinCalc.Item3[indGSheetRes - pastDataLength + iRows + 2] == 3)
+                    if (p_gSheetResToFinCalc.EventCodes[indGSheetRes - pastDataLength + iRows + 2] == 3)
                     {
                         pastCodes[iRows, jCols] = 3;
                     }
@@ -1223,11 +1249,11 @@ public class StrategyUberTaaController : ControllerBase
                         pastCodes[iRows, jCols] = 6;
                     }
                 }
-                else if (p_gSheetResToFinCalc.Item3[indGSheetRes - pastDataLength + iRows + 2] == 3)
+                else if (p_gSheetResToFinCalc.EventCodes[indGSheetRes - pastDataLength + iRows + 2] == 3)
                 {
                     pastCodes[iRows, jCols] = 3;
                 }
-                else if (p_gSheetResToFinCalc.Item3[indGSheetRes - pastDataLength + iRows + 2] == 4)
+                else if (p_gSheetResToFinCalc.EventCodes[indGSheetRes - pastDataLength + iRows + 2] == 4)
                 {
                     pastCodes[iRows, jCols] = 4;
                 }
@@ -1248,29 +1274,29 @@ public class StrategyUberTaaController : ControllerBase
 
         for (int iRows = 0; iRows < futCodes.GetLength(0); iRows++)
         {
-            futEvents[iRows] = p_gSheetResToFinCalc.Item5[indGSheetRes + iRows + 2];
-            futCodes[iRows, 0] = p_gSheetResToFinCalc.Item1[indGSheetRes + iRows + 2];
+            futEvents[iRows] = p_gSheetResToFinCalc.EventNames[indGSheetRes + iRows + 2];
+            futCodes[iRows, 0] = p_gSheetResToFinCalc.DateVec[indGSheetRes + iRows + 2];
             for (int jCols = 1; jCols < futCodes.GetLength(1); jCols++)
             {
-                if (p_gSheetResToFinCalc.Item2[indGSheetRes + iRows + 2, jCols - 1] == 9)
+                if (p_gSheetResToFinCalc.CodesAssets[indGSheetRes + iRows + 2, jCols - 1] == 9)
                 {
                     futCodes[iRows, jCols] = 7;
                 }
-                else if (p_gSheetResToFinCalc.Item3[indGSheetRes + iRows + 2] == 1)
+                else if (p_gSheetResToFinCalc.EventCodes[indGSheetRes + iRows + 2] == 1)
                 {
                     futCodes[iRows, jCols] = 1;
                 }
-                else if (p_gSheetResToFinCalc.Item2[indGSheetRes + iRows + 2, jCols - 1] == 3)
+                else if (p_gSheetResToFinCalc.CodesAssets[indGSheetRes + iRows + 2, jCols - 1] == 3)
                 {
                     futCodes[iRows, jCols] = 5;
                 }
-                else if (p_gSheetResToFinCalc.Item3[indGSheetRes + iRows + 2] == 2)
+                else if (p_gSheetResToFinCalc.EventCodes[indGSheetRes + iRows + 2] == 2)
                 {
                     futCodes[iRows, jCols] = 2;
                 }
-                else if (p_gSheetResToFinCalc.Item2[indGSheetRes + iRows + 2, jCols - 1] == 1)
+                else if (p_gSheetResToFinCalc.CodesAssets[indGSheetRes + iRows + 2, jCols - 1] == 1)
                 {
-                    if (p_gSheetResToFinCalc.Item3[indGSheetRes + iRows + 2] == 3)
+                    if (p_gSheetResToFinCalc.EventCodes[indGSheetRes + iRows + 2] == 3)
                     {
                         futCodes[iRows, jCols] = 3;
                     }
@@ -1279,11 +1305,11 @@ public class StrategyUberTaaController : ControllerBase
                         futCodes[iRows, jCols] = 6;
                     }
                 }
-                else if (p_gSheetResToFinCalc.Item3[indGSheetRes + iRows + 2] == 3)
+                else if (p_gSheetResToFinCalc.EventCodes[indGSheetRes + iRows + 2] == 3)
                 {
                     futCodes[iRows, jCols] = 3;
                 }
-                else if (p_gSheetResToFinCalc.Item3[indGSheetRes + iRows + 2] == 4)
+                else if (p_gSheetResToFinCalc.EventCodes[indGSheetRes + iRows + 2] == 4)
                 {
                     futCodes[iRows, jCols] = 4;
                 }
@@ -1369,5 +1395,13 @@ public class StrategyUberTaaController : ControllerBase
             return null;
         string tickers = p_gSheetStr.Substring(tickerStartIdx + 5, tickerEndIdx - tickerStartIdx - 6);
         return tickers.Split(new string[] { ",\n", "\"" }, StringSplitOptions.RemoveEmptyEntries).Where(x => !string.IsNullOrWhiteSpace(x.Trim())).ToArray();
+    }
+
+    static string FormatCurrencyKOrM(double value)
+    {
+        if (value >= 1000000.0)
+            return (value / 1000000.0).ToString("0.###") + "M";
+        else
+            return Math.Round(value / 1000.0).ToString() + "K";
     }
 }
