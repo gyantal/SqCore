@@ -1,6 +1,13 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { UserInput } from '../lib/gpt-common';
+import { markdown2HtmlFormatter } from '../../../../../TsLib/sq-common/utils_string';
 // import { ServerResponse, UserInput } from '../lib/gpt-common'; // commentting this as we need this for chatgpt
+
+class ChatItem {
+  isUser : boolean = false; // User messages are written by user. LlmMessages are written by LlmModels.
+  chatMdStr: string = ''; // C# server sends the raw Llm answer as MD text
+  chatHtmlStr: string = ''; // formatted in HTML for visualization
+}
 
 @Component({
   selector: 'app-llm-chat',
@@ -12,12 +19,16 @@ export class LlmChatComponent implements OnInit {
   @Input() m_parentWsConnection?: WebSocket | null = null; // this property will be input from above parent container
 
   m_selectedLlmModel: string = 'grok';
-  m_chatHistory: string[] = [];
+  m_chatItems: ChatItem[] = [];
 
   constructor() {}
 
   sendUserInputToBackEnd(userInput: string): void {
-    this.m_chatHistory.push('- User: ' + userInput.replace('\n', '<br/>')); // Show user input it chatHistory
+    const chatItem = new ChatItem();
+    chatItem.isUser = true;
+    chatItem.chatMdStr = userInput.replace('\n', '<br/>');
+    chatItem.chatHtmlStr = chatItem.chatMdStr;
+    this.m_chatItems.push(chatItem);
     const usrInp : UserInput = { LlmModelName: this.m_selectedLlmModel, Msg: userInput };
     console.log(usrInp);
 
@@ -30,7 +41,13 @@ export class LlmChatComponent implements OnInit {
   public webSocketOnMessage(msgCode: string, msgObjStr: string): boolean {
     switch (msgCode) {
       case 'LlmResponse':
-        this.m_chatHistory.push('- Assistant: ' + msgObjStr);
+        let lastChat: ChatItem = this.m_chatItems[this.m_chatItems.length - 1];
+        if (lastChat.isUser) { // new message streaming starts
+          lastChat = new ChatItem();
+          this.m_chatItems.push(lastChat);
+        }
+        lastChat.chatMdStr += msgObjStr;
+        lastChat.chatHtmlStr = markdown2HtmlFormatter(lastChat.chatMdStr);
         return true;
       default:
         return false;

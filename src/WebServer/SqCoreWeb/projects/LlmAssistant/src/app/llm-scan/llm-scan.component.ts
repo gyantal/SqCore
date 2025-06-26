@@ -1,4 +1,5 @@
 import { Component, Input, OnInit } from '@angular/core';
+import { markdown2HtmlFormatter } from '../../../../../TsLib/sq-common/utils_string';
 
 class NewsItem {
   Title: string = '';
@@ -99,7 +100,7 @@ export class LlmScanComponent implements OnInit {
         for (const tickerNews of this.m_tickerNewss) {
           for (const newsItem of tickerNews.NewsItems) {
             if (newsItem.Guid == this.m_selectedNewsItem.Guid)
-              newsItem.NewsSummary = msgObjStr;
+              newsItem.NewsSummary = markdown2HtmlFormatter(msgObjStr);
           }
         }
         this.m_isSpinnerVisible = false;

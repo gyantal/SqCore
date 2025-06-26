@@ -13,7 +13,10 @@ LLM-ModelName:
 <br>
 <button (click)="sendUserInputToBackEnd(userInputTextarea.value)">Generate Predicted Text</button>
 
-<div *ngFor="let chatItem of m_chatHistory" [innerHTML]="chatItem"></div>
+<div *ngFor="let chatItem of m_chatItems">
+  <span>{{ chatItem.isUser ? '[User]:' : '[Llm]:' }}</span>
+  <span [innerHTML]="chatItem.chatHtmlStr"></span>
+</div>
 <br>
 Demo<br>Just for Testing
 <a class="commonTinySpace" href="https://finance.yahoo.com/" target="_blank"><img alt='YF' src='./assets/images/llm_yf_vslow_30pct.avif' width='20' height='20'></a>&nbsp;
