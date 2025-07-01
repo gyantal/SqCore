@@ -21,6 +21,7 @@ export class LlmPromptComponent implements OnInit {
   m_selectedCategoryPromptNames: string[] = [];
   m_selectedPromptName: string = '';
   m_prompt: string = '';
+  m_isCopyToClipboardDialogVisible: boolean = false;
   m_isUpdatePrompt: boolean = true; // The "UpdatePrompt" button is enabled only when the prompt contains "{ticker_list}".
   m_tickersStr: string = 'TSLA, AAPL';
   m_keyStatsStr: string = 'MarketCap, P/E';
@@ -102,5 +103,15 @@ export class LlmPromptComponent implements OnInit {
   updatePromptWithKeyStats() {
     if (this.m_prompt.includes('{key_stats}'))
       this.m_prompt = this.m_prompt.replace('{key_stats}', this.m_keyStatsStr);
+  }
+
+  onClickCopyToClipboard() {
+    window.navigator.clipboard.writeText(this.m_prompt)
+        .then(() => { this.m_isCopyToClipboardDialogVisible = true; }) // display the copy to clipboard dialog
+        .catch((error) => { console.error('Failed to copy: ', error); }); // log the error
+  }
+
+  onCopyDialogCloseClicked() {
+    this.m_isCopyToClipboardDialogVisible = false;
   }
 }

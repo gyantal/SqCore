@@ -21,6 +21,15 @@ export function markdown2HtmlFormatter(markdownText: string): string {
   formattedHtml = formattedHtml.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // bold
       .replace(/(?:\*|_)([^*_]+)(?:\*|_)/g, '<em>$1</em>'); // italic
 
+  // Convert markdown links
+  formattedHtml = formattedHtml.replace(/\[([^\]]+)]\((https?:\/\/[^\s)]+)\)/g,
+      '<a href="$2" target="_blank">$1</a>');
+
+  // Convert tables
+  formattedHtml = formattedHtml.replace(/(^\|.+\|\n\|[-| ]+\|\n(?:\|.+\|\n?)+)/gm,
+      (tableBlock: string) => convertMarkdownTableToHtml(tableBlock.trim())
+  );
+
   // Ordered lists: 1. item1, 2. item2
   formattedHtml = formattedHtml.replace(/(^|\n)((?:\d+\. .+(?:\n|$))+)/g, (_: string, lineBreak: string, listBlock: string) => {
     return `${lineBreak}${createHtmlListStr(listBlock, 'ol')}`;
@@ -50,4 +59,49 @@ function createHtmlListStr(listBlock: string, tag: 'ol' | 'ul'): string {
       listHtmlStr += `<li>${listItemText}</li>`;
   }
   return `<${tag}>${listHtmlStr}</${tag}>`; // Wrap all <li> items in <ol> or <ul>
+}
+
+// Convert markdown table block to HTML table
+function convertMarkdownTableToHtml(tableMarkdown: string): string {
+  const tableData = tableMarkdown.split('\n');
+  if (tableData.length < 2)
+    return tableMarkdown;
+
+  const headerLine = tableData[0];
+  const headers: string[] = [];
+  const headerCells = headerLine.split('|');
+  for (let i = 0; i < headerCells.length; i++) {
+    const headerContent = headerCells[i].trim();
+    if (headerContent !== '')
+      headers.push(headerContent);
+  }
+
+  const tableDataRows: string[][] = [];
+  for (let i = 2; i < tableData.length; i++) {
+    const rowLine = tableData[i];
+    const rowCells = rowLine.split('|');
+    const row: string[] = [];
+    for (let j = 0; j < rowCells.length; j++) {
+      const cellContent = rowCells[j].trim();
+      if (cellContent !== '')
+        row.push(cellContent);
+    }
+    tableDataRows.push(row);
+  }
+
+  let thead = '<thead><tr>';
+  for (let i = 0; i < headers.length; i++)
+    thead += `<th>${headers[i]}</th>`;
+  thead += '</tr><tr><td colspan="' + headers.length + '"><hr></td></tr></thead>';
+
+  let tbody = '<tbody>';
+  for (let i = 0; i < tableDataRows.length; i++) {
+    tbody += '<tr>';
+    for (let j = 0; j < tableDataRows[i].length; j++)
+      tbody += `<td>${tableDataRows[i][j]}</td>`;
+    tbody += '</tr><tr><td colspan="' + headers.length + '"><hr></td></tr>';
+  }
+  tbody += '</tbody>';
+
+  return `<table>${thead}${tbody}</table>`;
 }
