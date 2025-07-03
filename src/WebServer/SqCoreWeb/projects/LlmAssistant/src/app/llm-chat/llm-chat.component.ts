@@ -53,4 +53,10 @@ export class LlmChatComponent implements OnInit {
         return false;
     }
   }
+
+  onClickNewChat() {
+    this.m_chatItems.length = 0;
+    if (this.m_parentWsConnection != null && this.m_parentWsConnection.readyState == this.m_parentWsConnection.OPEN)
+      this.m_parentWsConnection.send('ClearLlmResponse:');
+  }
 }

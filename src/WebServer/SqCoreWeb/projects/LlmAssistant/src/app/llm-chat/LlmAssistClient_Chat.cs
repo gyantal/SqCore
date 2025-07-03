@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
@@ -7,6 +8,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Azure.AI.OpenAI;
 using SqCommon;
 
 namespace SqCoreWeb;
@@ -75,6 +77,10 @@ public partial class LlmAssistClient
                 Utils.Logger.Info($"OnReceiveWsAsync_Chat(): GetChatResponseLlm: '{msgObjStr}'");
                 GetChatResponseLlm(msgObjStr);
                 return true;
+            case "ClearLlmResponse":
+                Utils.Logger.Info($"OnReceiveWsAsync_Chat(): ClearLlmResponse:");
+                m_chatMessages.Clear();
+                return true;
             default:
                 return false;
         }
@@ -106,14 +112,18 @@ public partial class LlmAssistClient
 
         if (string.IsNullOrWhiteSpace(apiKey) || string.IsNullOrWhiteSpace(apiUrl))
             return "Error: API key or URL is not configured.";
+
+        m_chatMessages.Add(new ChatMessage { Role = "user", Content = userInput.Msg });
+        // when we supply the m_chatMessages to the ChatRequestBody we are getting error: "Response status code does not indicate success: 422 (Unprocessable Entity)". Because the messages Structure is expecting List<Object> where as m_chatMessages is List<ChatMessage>.
+        // The Role is ChatRole in m_chatMessages but in requestbody its a string type. so the structure is not supporting.
+        List<object> msgs = new();
+        foreach (ChatMessage chat in m_chatMessages)
+            msgs.Add(new { role = chat.Role.ToString(), content = chat.Content });
         // Prepare the request body for the chat completion
         var chatRequestBody = new
         {
             model = llmModelName,
-            messages = new[]
-            {
-                new { role = "user", content = userInput.Msg }
-            },
+            messages = msgs,
             stream = true
         };
         try
@@ -134,7 +144,8 @@ public partial class LlmAssistClient
             await using Stream stream = await httpResponse.Content.ReadAsStreamAsync();
             using StreamReader reader = new StreamReader(stream);
 
-            StringBuilder responseChunkSb = new StringBuilder();
+            StringBuilder responseChunkSb = new StringBuilder(); // partial chunks for every(500ms)
+            StringBuilder fullResponseSb = new(); // accumulates full response
             Stopwatch sw = Stopwatch.StartNew();
             while (!reader.EndOfStream)
             {
@@ -156,6 +167,7 @@ public partial class LlmAssistClient
                     continue;
 
                 responseChunkSb.Append(token);
+                fullResponseSb.Append(token);
 
                 if (sw.ElapsedMilliseconds >= 500) // send the responsechunk for every 500ms
                 {
@@ -174,6 +186,7 @@ public partial class LlmAssistClient
                 responseChunkSb.Clear();
                 sw.Restart(); // reset the stopwatch
             }
+            m_chatMessages.Add(new ChatMessage { Role = "assistant", Content = fullResponseSb.ToString() });
             return null;
         }
         catch (Exception ex)

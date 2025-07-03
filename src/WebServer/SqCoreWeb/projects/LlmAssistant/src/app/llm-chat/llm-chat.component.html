@@ -11,13 +11,10 @@ LLM-ModelName:
 <p>Type your prompt here and click Generate to send it to C# backend that uses the OpenAi API.</p>
 <textarea #userInputTextarea rows="5" cols="100"></textarea>
 <br>
-<button (click)="sendUserInputToBackEnd(userInputTextarea.value)">Generate Predicted Text</button>
-
+<button (click)="sendUserInputToBackEnd(userInputTextarea.value)">Generate Predicted Text</button>&nbsp;
+<button (click)="onClickNewChat()">New Chat</button>
 <div *ngFor="let chatItem of m_chatItems">
   <span>{{ chatItem.isUser ? '[User]:' : '[Llm]:' }}</span>
   <span [innerHTML]="chatItem.chatHtmlStr"></span>
 </div>
 <br>
-Demo<br>Just for Testing
-<a class="commonTinySpace" href="https://finance.yahoo.com/" target="_blank"><img alt='YF' src='./assets/images/llm_yf_vslow_30pct.avif' width='20' height='20'></a>&nbsp;
-<a class="commonTinySpace" href="https://finance.yahoo.com/" target="_blank"><img alt='YF' src='./assets/yf_vslow_30pct.avif' width='20' height='20'></a>
