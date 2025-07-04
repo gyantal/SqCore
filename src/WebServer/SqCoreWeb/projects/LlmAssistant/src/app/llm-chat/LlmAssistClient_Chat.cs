@@ -26,49 +26,6 @@ public partial class LlmAssistClient
         }
     }
 
-    public static async Task<string> GenerateChatResponseLlm(LlmUserInput p_userInput)
-    {
-        string apiKey = string.Empty;
-        string apiUrl = string.Empty;
-        string llmModelName = p_userInput.LlmModelName;
-        if (llmModelName == "grok")
-        {
-            llmModelName = "grok-3-mini-latest";
-            apiUrl = "https://api.x.ai/v1/chat/completions";
-            apiKey = Utils.Configuration["ConnectionStrings:GrokAIApiKey"] ?? throw new SqException("GrokApiKey is missing from Config");
-        }
-        else if (llmModelName == "deepseek")
-        {
-            llmModelName = "deepseek-chat";
-            apiUrl = "https://api.deepseek.com/v1/chat/completions";
-            apiKey = Utils.Configuration["ConnectionStrings:DeepseekAIApiKey"] ?? throw new SqException("DeepseekAIApiKey is missing from Config");
-        }
-
-        if (string.IsNullOrWhiteSpace(apiKey) || string.IsNullOrWhiteSpace(apiUrl))
-            return "API key or URL is not configured.";
-
-        using (HttpClient client = new HttpClient())
-        {
-            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
-            var requestBody = new
-            {
-                model = llmModelName,
-                messages = new[]
-                {
-                    new { role = "user", content = p_userInput.Msg }
-                }
-            };
-            string json = JsonSerializer.Serialize(requestBody);
-            StringContent content = new StringContent(json, Encoding.UTF8, "application/json");
-            HttpResponseMessage response = await client.PostAsync(apiUrl, content);
-            string result = await response.Content.ReadAsStringAsync();
-            // Extract the response
-            using JsonDocument jsonDoc = JsonDocument.Parse(result);
-            string? responseStr = jsonDoc.RootElement.GetProperty("choices")[0].GetProperty("message").GetProperty("content").GetString();
-            return responseStr ?? "Failed to get Llm response";
-        }
-    }
-
     public bool OnReceiveWsAsync_Chat(string msgCode, string msgObjStr)
     {
         switch (msgCode)

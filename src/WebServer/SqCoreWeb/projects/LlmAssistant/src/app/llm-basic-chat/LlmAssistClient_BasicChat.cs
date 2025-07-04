@@ -18,14 +18,14 @@ public partial class LlmAssistClient
         if (userInput == null)
             responseStr = "Invalid data";
         else
-            responseStr = GenerateChatResponseLlmBasic(userInput).Result;
+            responseStr = GenerateChatResponseLlm(userInput).Result;
 
         byte[] encodedMsg = Encoding.UTF8.GetBytes("LlmResponseBasicChat:" + responseStr);
         if (WsWebSocket!.State == WebSocketState.Open)
             WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
     }
 
-    public static async Task<string> GenerateChatResponseLlmBasic(LlmUserInput p_userInput)
+    public static async Task<string> GenerateChatResponseLlm(LlmUserInput p_userInput)
     {
         string apiKey = string.Empty;
         string apiUrl = string.Empty;

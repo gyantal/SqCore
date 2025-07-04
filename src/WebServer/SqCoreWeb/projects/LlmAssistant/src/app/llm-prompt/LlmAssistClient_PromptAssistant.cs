@@ -56,7 +56,7 @@ public partial class LlmAssistClient
 
             string tickerLstplaceholder = "_tickerList_"; // To retain "}" in {ticker_list}, temporarily replace {ticker_list} with a placeholder
             string keyStatsplaceholder = "_keyStats_"; // To retain "}" in {key_stats}, temporarily replace {key_stats} with a placeholder
-            string prompt = cellThird[(promptStartIdx + 1)..].Replace("{ticker_list}", tickerLstplaceholder).Replace("{key_stats}", keyStatsplaceholder).Replace("\\n", string.Empty).Replace("\"", string.Empty).Replace("}", string.Empty).Replace("]", string.Empty).Replace(tickerLstplaceholder, "{ticker_list} ").Replace(keyStatsplaceholder, "{key_stats} ");
+            string prompt = cellThird[(promptStartIdx + 1)..].Replace("{ticker_list}", tickerLstplaceholder).Replace("{key_stats}", keyStatsplaceholder).Replace("\\n", "\n").Replace("\r\n", "\n").Replace("\r", string.Empty).Replace("\"", string.Empty).Replace("}", string.Empty).Replace("]", string.Empty).Replace(tickerLstplaceholder, "{ticker_list}").Replace(keyStatsplaceholder, "{key_stats}").Trim();
             llmPromptCategories.Add(new LlmPromptJs() { Category = category, PromptName = promptName, Prompt = prompt });
         }
 
