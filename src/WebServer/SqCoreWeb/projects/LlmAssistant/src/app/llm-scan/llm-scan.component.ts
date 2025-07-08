@@ -155,7 +155,7 @@ export class LlmScanComponent implements OnInit {
   getNewsAndSummarize(newsItem: NewsItem) {
     this.m_selectedNewsItem = newsItem;
     console.log('link for summarizing the news', newsItem.Link);
-    const questionStr = 'summarize this:\n';
+    const questionStr = 'Summarize this:\n';
     const usrInp: LlmInput = { LlmModelName: this.m_selectedLlmModel, NewsUrl: newsItem.Link, LlmQuestion: questionStr };
 
     this.m_isSpinnerVisible = true;

@@ -9,7 +9,7 @@ LLM-ModelName:
   <option value="gpt-4">disabled gpt-4(8K)</option>
 </select>
 <p>Type your prompt here and click Generate to send it to C# backend that uses the OpenAi API.</p>
-<textarea #userInputTextarea rows="5" cols="100"></textarea>
+<textarea #userInputTextarea id="userInput" rows="5" cols="100"></textarea>
 <br>
 <button (click)="sendUserInputToBackEnd(userInputTextarea.value)">Generate Predicted Text</button>&nbsp;
 <button (click)="onClickNewChat()">New Chat</button>

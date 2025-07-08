@@ -56,7 +56,10 @@ export class LlmChatComponent implements OnInit {
 
   onClickNewChat() {
     this.m_chatItems.length = 0;
+    // empty the user input textarea
+    const userInputText: HTMLTextAreaElement = document.getElementById('userInput') as HTMLTextAreaElement;
+    userInputText.value = '';
     if (this.m_parentWsConnection != null && this.m_parentWsConnection.readyState == this.m_parentWsConnection.OPEN)
-      this.m_parentWsConnection.send('ClearLlmResponse:');
+      this.m_parentWsConnection.send('LlmAssistNewChat:');
   }
 }

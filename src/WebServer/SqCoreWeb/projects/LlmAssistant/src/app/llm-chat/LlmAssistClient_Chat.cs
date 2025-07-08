@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Net.WebSockets;
 using System.Text;
@@ -34,8 +35,8 @@ public partial class LlmAssistClient
                 Utils.Logger.Info($"OnReceiveWsAsync_Chat(): GetChatResponseLlm: '{msgObjStr}'");
                 GetChatResponseLlm(msgObjStr);
                 return true;
-            case "ClearLlmResponse":
-                Utils.Logger.Info($"OnReceiveWsAsync_Chat(): ClearLlmResponse:");
+            case "LlmAssistNewChat":
+                Utils.Logger.Info($"OnReceiveWsAsync_Chat(): LlmAssistNewChat:");
                 m_chatMessages.Clear();
                 return true;
             default:
@@ -71,16 +72,15 @@ public partial class LlmAssistClient
             return "Error: API key or URL is not configured.";
 
         m_chatMessages.Add(new ChatMessage { Role = "user", Content = userInput.Msg });
-        // when we supply the m_chatMessages to the ChatRequestBody we are getting error: "Response status code does not indicate success: 422 (Unprocessable Entity)". Because the messages Structure is expecting List<Object> where as m_chatMessages is List<ChatMessage>.
-        // The Role is ChatRole in m_chatMessages but in requestbody its a string type. so the structure is not supporting.
-        List<object> msgs = new();
-        foreach (ChatMessage chat in m_chatMessages)
-            msgs.Add(new { role = chat.Role.ToString(), content = chat.Content });
         // Prepare the request body for the chat completion
         var chatRequestBody = new
         {
             model = llmModelName,
-            messages = msgs,
+            messages = m_chatMessages.Select(msg => new
+            {
+                role = msg.Role.ToString().ToLower(),
+                content = msg.Content
+            }),
             stream = true
         };
         try

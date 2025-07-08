@@ -18,14 +18,14 @@ public partial class LlmAssistClient
         if (userInput == null)
             responseStr = "Invalid data";
         else
-            responseStr = GenerateChatResponseLlm(userInput).Result;
+            responseStr = GenerateChatResponseLlmBasic(userInput).Result;
 
         byte[] encodedMsg = Encoding.UTF8.GetBytes("LlmResponseBasicChat:" + responseStr);
         if (WsWebSocket!.State == WebSocketState.Open)
             WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
     }
 
-    public static async Task<string> GenerateChatResponseLlm(LlmUserInput p_userInput)
+    public static async Task<string> GenerateChatResponseLlmBasic(LlmUserInput p_userInput)
     {
         string apiKey = string.Empty;
         string apiUrl = string.Empty;
@@ -54,7 +54,7 @@ public partial class LlmAssistClient
                 model = llmModelName,
                 messages = new[]
                 {
-                    new { role = "user", content = p_userInput.Msg }
+                    new { role = "user", content = p_userInput.Msg } // e.g. p_userInput.Msg = "Summarize this: ...<long news text>..."
                 }
             };
             string json = JsonSerializer.Serialize(requestBody);

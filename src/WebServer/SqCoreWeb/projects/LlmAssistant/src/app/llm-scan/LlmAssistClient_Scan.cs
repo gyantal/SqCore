@@ -419,10 +419,10 @@ public partial class LlmAssistClient
                 LlmModelName = userInput.LlmModelName,
                 Msg = userInput.LlmQuestion + newsStr
             };
-            responseStr = LlmAssistClient.GenerateChatResponseLlm(p_userInp).TurnAsyncToSyncTask();
+            responseStr = LlmAssistClient.GenerateChatResponseLlmBasic(p_userInp).TurnAsyncToSyncTask();
         }
         string outputMsgCode = "LlmAnswer";
-        if (userInput.LlmQuestion.Contains("summarize"))
+        if (userInput.LlmQuestion.Contains("Summarize"))
             outputMsgCode = "LlmSummary";
         if (userInput.LlmQuestion.Contains("future"))
             outputMsgCode = "LlmFutureOrGrowth";
