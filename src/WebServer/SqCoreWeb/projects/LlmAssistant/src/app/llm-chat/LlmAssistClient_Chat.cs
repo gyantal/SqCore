@@ -18,10 +18,10 @@ public partial class LlmAssistClient
 {
     public void GetChatResponseLlm(string p_msg)
     {
-        string? responseStr = GenerateStreamChatResponseLlm(p_msg).TurnAsyncToSyncTask();
-        if (responseStr != null)
+        string? sendingErrorStr = SendStreamChatResponseLlm(p_msg).TurnAsyncToSyncTask();
+        if (sendingErrorStr != null) // if there was an error while we tried to send, then inform the client about the error in a separate error message.
         {
-            byte[] encodedMsg = Encoding.UTF8.GetBytes("LlmResponse:" + responseStr);
+            byte[] encodedMsg = Encoding.UTF8.GetBytes("LlmResponse:" + sendingErrorStr);
             if (WsWebSocket!.State == WebSocketState.Open)
                 WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
         }
@@ -44,7 +44,7 @@ public partial class LlmAssistClient
         }
     }
 
-    public async Task<string?> GenerateStreamChatResponseLlm(string p_msg)
+    public async Task<string?> SendStreamChatResponseLlm(string p_msg)
     {
         LlmUserInput? userInput = JsonSerializer.Deserialize<LlmUserInput>(p_msg, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
         if (userInput == null)
@@ -76,11 +76,7 @@ public partial class LlmAssistClient
         var chatRequestBody = new
         {
             model = llmModelName,
-            messages = m_chatMessages.Select(msg => new
-            {
-                role = msg.Role.ToString().ToLower(),
-                content = msg.Content
-            }),
+            messages = m_chatMessages,
             stream = true
         };
         try
@@ -92,7 +88,7 @@ public partial class LlmAssistClient
 
             using HttpRequestMessage httpRequest = new HttpRequestMessage(HttpMethod.Post, apiUrl)
             {
-                Content = new StringContent(JsonSerializer.Serialize(chatRequestBody), Encoding.UTF8, "application/json")
+                Content = new StringContent(JsonSerializer.Serialize(chatRequestBody, new JsonSerializerOptions { Converters = { new ChatMessageConverter() } }), Encoding.UTF8, "application/json")
             };
 
             using HttpResponseMessage httpResponse = await httpClient.SendAsync(httpRequest, HttpCompletionOption.ResponseHeadersRead);
@@ -144,7 +140,7 @@ public partial class LlmAssistClient
                 sw.Restart(); // reset the stopwatch
             }
             m_chatMessages.Add(new ChatMessage { Role = "assistant", Content = fullResponseSb.ToString() });
-            return null;
+            return null; // return No Error string
         }
         catch (Exception ex)
         {

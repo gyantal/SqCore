@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Azure; // API uses Azure.Response class
@@ -95,6 +96,20 @@ public class LlmInput
     public string LlmModelName { get; set; } = string.Empty; // "auto", "gpt-3.5-turbo" (4K), "gpt-3.5-turbo-16k", "gpt-4" (8K), "gpt-4-32k"
     public string NewsUrl { get; set; } = string.Empty;
     public string LlmQuestion { get; set; } = string.Empty;
+}
+
+// Custom converter is required because Azure.AI.OpenAI.ChatMessage is not directly serializable by System.Text.Json.
+public class ChatMessageConverter : JsonConverter<ChatMessage>
+{
+    public override ChatMessage Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        => throw new NotImplementedException(); // Not needed for serialization
+    public override void Write(Utf8JsonWriter writer, ChatMessage value, JsonSerializerOptions options)
+    {
+        writer.WriteStartObject();
+        writer.WriteString("role", value.Role.ToString().ToLowerInvariant());
+        writer.WriteString("content", value.Content);
+        writer.WriteEndObject();
+    }
 }
 
 [Route("[controller]")]

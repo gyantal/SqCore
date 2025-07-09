@@ -26,8 +26,8 @@ export class LlmChatComponent implements OnInit {
   sendUserInputToBackEnd(userInput: string): void {
     const chatItem = new ChatItem();
     chatItem.isUser = true;
-    chatItem.chatMdStr = userInput.replace('\n', '<br/>');
-    chatItem.chatHtmlStr = chatItem.chatMdStr;
+    chatItem.chatMdStr = userInput;
+    chatItem.chatHtmlStr = userInput.replace('\n', '<br/>');
     this.m_chatItems.push(chatItem);
     const usrInp : UserInput = { LlmModelName: this.m_selectedLlmModel, Msg: userInput };
     console.log(usrInp);
