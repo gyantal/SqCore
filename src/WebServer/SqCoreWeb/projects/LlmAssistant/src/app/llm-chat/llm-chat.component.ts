@@ -3,6 +3,10 @@ import { UserInput } from '../lib/gpt-common';
 import { markdown2HtmlFormatter } from '../../../../../TsLib/sq-common/utils_string';
 // import { ServerResponse, UserInput } from '../lib/gpt-common'; // commentting this as we need this for chatgpt
 
+export interface LlmChatUserInput extends UserInput {
+  IsSearchOnWeb: boolean;
+}
+
 class ChatItem {
   isUser : boolean = false; // User messages are written by user. LlmMessages are written by LlmModels.
   chatMdStr: string = ''; // C# server sends the raw Llm answer as MD text
@@ -20,6 +24,7 @@ export class LlmChatComponent implements OnInit {
 
   m_selectedLlmModel: string = 'grok';
   m_chatItems: ChatItem[] = [];
+  m_isWebSearch: boolean = false;
 
   constructor() {}
 
@@ -29,7 +34,7 @@ export class LlmChatComponent implements OnInit {
     chatItem.chatMdStr = userInput;
     chatItem.chatHtmlStr = userInput.replace('\n', '<br/>');
     this.m_chatItems.push(chatItem);
-    const usrInp : UserInput = { LlmModelName: this.m_selectedLlmModel, Msg: userInput };
+    const usrInp : LlmChatUserInput = { LlmModelName: this.m_selectedLlmModel, Msg: userInput, IsSearchOnWeb: this.m_isWebSearch};
     console.log(usrInp);
 
     if (this.m_parentWsConnection != null && this.m_parentWsConnection.readyState == this.m_parentWsConnection.OPEN)
@@ -61,5 +66,10 @@ export class LlmChatComponent implements OnInit {
     userInputText.value = '';
     if (this.m_parentWsConnection != null && this.m_parentWsConnection.readyState == this.m_parentWsConnection.OPEN)
       this.m_parentWsConnection.send('LlmAssistNewChat:');
+  }
+
+  onChangeWebSearchCheckbox(event: Event): void {
+    const webSearchInputElement: HTMLInputElement = event.target as HTMLInputElement;
+    this.m_isWebSearch = webSearchInputElement.checked;
   }
 }

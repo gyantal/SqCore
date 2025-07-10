@@ -14,6 +14,20 @@ using SqCommon;
 
 namespace SqCoreWeb;
 
+public class LlmChatUserInput : LlmUserInput
+{
+    public bool IsWebSearch { get; set; }
+}
+
+public class ChatRequestBody // Used in the body of an HTTP POST request to an LLM API
+{
+    public string? model { get; set; }
+    public object? messages { get; set; }
+    public bool stream { get; set; }
+    public object? searchParams { get; set; } // used by grok, e.g: "searchParams : { "mode": "on" }" to enable live web search
+    public bool? web_search { get; set; } // used by deepseek, e.g: "web_search = true" to enable or disable web search
+}
+
 public partial class LlmAssistClient
 {
     public void GetChatResponseLlm(string p_msg)
@@ -46,7 +60,7 @@ public partial class LlmAssistClient
 
     public async Task<string?> SendStreamChatResponseLlm(string p_msg)
     {
-        LlmUserInput? userInput = JsonSerializer.Deserialize<LlmUserInput>(p_msg, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        LlmChatUserInput? userInput = JsonSerializer.Deserialize<LlmChatUserInput>(p_msg, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
         if (userInput == null)
             return "Error: Invalid user input";
         string apiKey = string.Empty;
@@ -73,12 +87,26 @@ public partial class LlmAssistClient
 
         m_chatMessages.Add(new ChatMessage { Role = "user", Content = userInput.Msg });
         // Prepare the request body for the chat completion
-        var chatRequestBody = new
+        ChatRequestBody chatRequestBody = new ChatRequestBody
         {
             model = llmModelName,
             messages = m_chatMessages,
             stream = true
         };
+        // enable web search
+        if (userInput.IsWebSearch)
+        {
+            if (userInput.LlmModelName == "grok")
+            {
+                chatRequestBody.searchParams = new
+                {
+                    mode = "on"
+                };
+            }
+            else if (userInput.LlmModelName == "deepseek")
+                chatRequestBody.web_search = true;
+        }
+
         try
         {
             HttpClient httpClient = new HttpClient();

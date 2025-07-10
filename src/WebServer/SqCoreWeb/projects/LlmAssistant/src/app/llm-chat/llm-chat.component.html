@@ -11,6 +11,7 @@ LLM-ModelName:
 <p>Type your prompt here and click Generate to send it to C# backend that uses the OpenAi API.</p>
 <textarea #userInputTextarea id="userInput" rows="5" cols="100"></textarea>
 <br>
+WebSearch<input type="checkbox" (change)="onChangeWebSearchCheckbox($event)">&nbsp;
 <button (click)="sendUserInputToBackEnd(userInputTextarea.value)">Generate Predicted Text</button>&nbsp;
 <button (click)="onClickNewChat()">New Chat</button>
 <div *ngFor="let chatItem of m_chatItems">
