@@ -76,6 +76,9 @@ function convertMarkdownTableToHtml(tableMarkdown: string): string {
       headers.push(headerContent);
   }
 
+  // Check if table has a 'Ticker' column
+  const tickerColIndex: number = headers.findIndex((header) => header == 'Ticker');
+
   const tableDataRows: string[][] = [];
   for (let i = 2; i < tableData.length; i++) {
     const rowLine = tableData[i];
@@ -97,8 +100,13 @@ function convertMarkdownTableToHtml(tableMarkdown: string): string {
   let tbody = '<tbody>';
   for (let i = 0; i < tableDataRows.length; i++) {
     tbody += '<tr>';
-    for (let j = 0; j < tableDataRows[i].length; j++)
-      tbody += `<td>${tableDataRows[i][j]}</td>`;
+    for (let j = 0; j < tableDataRows[i].length; j++) {
+      if ( j == tickerColIndex) {
+        const ticker = tableDataRows[i][j];
+        tbody += `<td><a href="https://sqcore.net/webapps/TechnicalAnalyzer/?tickers=${ticker}" target="_blank">${ticker}</a></td>`;
+      } else
+        tbody += `<td>${tableDataRows[i][j]}</td>`;
+    }
     tbody += '</tr><tr><td colspan="' + headers.length + '"><hr></td></tr>';
   }
   tbody += '</tbody>';
