@@ -8,6 +8,7 @@ import { SqStatisticsBuilder, StatisticsResults, DetailedStatistics, BacktestDet
 import { ChrtGenBacktestResult, UiChrtGenPrtfRunResult, CgTimeSeries, SqLog, ChartResolution, UiChartPoint, FolderJs, PortfolioJs, prtfsParseHelper, fldrsParseHelper, TreeViewState, TreeViewItem, createTreeViewData, PrtfItemType, LineStyle, ChartJs, SeasonalityData, getSeasonalityData, getDetailedStats, SqLogLevel } from '../../../../TsLib/sq-common/backtestCommon';
 import { SqTreeViewComponent } from '../../../sq-ng-common/src/lib/sq-tree-view/sq-tree-view.component';
 import { isValidDay, isValidMonth, isValidYear, parseNumberToDate } from '../../../../TsLib/sq-common/utils-common';
+import { SqChart } from '../../../../TsLib/sq-common/sqChart';
 
 type Nullable<T> = T | null;
 
@@ -98,6 +99,19 @@ export class AppComponent implements OnInit {
   m_userWarning: string | null = null;
   m_hasSqLogErrOrWarn: boolean = false;
 
+  // Sample data for sqChart developing
+  chartData: UiChartPoint[] = [
+    { date: new Date('2025-01-01'), value: 100 },
+    { date: new Date('2025-02-01'), value: 150 },
+    { date: new Date('2025-03-01'), value: 200 },
+    { date: new Date('2025-04-01'), value: 150 },
+    { date: new Date('2025-05-01'), value: 200 },
+    { date: new Date('2025-06-01'), value: 150 },
+    { date: new Date('2025-07-01'), value: 200 },
+    { date: new Date('2025-08-01'), value: 100 },
+    { date: new Date('2025-09-01'), value: 175 },
+  ];
+
   // Constants
   public gPortfolioIdOffset: number = 10000;
   public static readonly cSecToMSec: number = 1000;
@@ -179,6 +193,7 @@ export class AppComponent implements OnInit {
               }
             }
           }
+          this.drawSqChart();
           break;
         case 'BacktestResults':
           // "await sleep(5000); // simulate slow C# server backtest" - in case we need to Debug something around this in the future.
@@ -622,5 +637,19 @@ export class AppComponent implements OnInit {
     // The only thing that would help is to Wrap m_startDateStr in an Object:
     // m_startDateObj = { dateStr: '' }; // Wrap the string in an object, then you can pass that object in HTML template function as a reference (not value)
     this.onUserChangedStartOrEndDateWidgets();
+  }
+
+  drawSqChart() {
+    // Get the chart container
+    const chartDiv = document.getElementById('chartContainer') as HTMLElement;
+    // Create and initialize the chart
+    const chart = new SqChart();
+    chart.init(chartDiv, 400, 200);
+    // Add a data series
+    chart.addLine(this.chartData);
+    // Set viewport to show data between two dates
+    const startDate = new Date('2025-01-01');
+    const endDate = new Date('2025-08-01');
+    chart.setViewport(startDate, endDate);
   }
 }
