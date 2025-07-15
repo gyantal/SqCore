@@ -94,9 +94,9 @@ public partial class MemDb
         }
         else // if id is valid, edit the Item
         {
-            errMsg = m_Db.UpdatePortfolio(p_id, p_user, p_name, p_parentFldId, p_currency, p_prtfType, p_algorithm, p_algorithmParam, p_userAccess, p_note, sharedUsersWith, p_tradeHistoryId); // gives back an error message or empty string if everything was OK.
+            errMsg = m_Db.UpdatePortfolio(p_id, p_user, p_name, p_parentFldId, p_currency, p_prtfType, p_algorithm, p_algorithmParam, p_userAccess, p_note, sharedUsersWith, p_tradeHistoryId, p_legacyPrtfName); // gives back an error message or empty string if everything was OK.
             if (String.IsNullOrEmpty(errMsg)) // if there is no error in RedisDb operation
-                prtf = m_memData.EditPortfolio(p_id, p_user, p_name, p_parentFldId, p_currency, p_prtfType, p_algorithm, p_algorithmParam, p_userAccess, p_note, sharedUsersWith, p_tradeHistoryId);
+                prtf = m_memData.EditPortfolio(p_id, p_user, p_name, p_parentFldId, p_currency, p_prtfType, p_algorithm, p_algorithmParam, p_userAccess, p_note, sharedUsersWith, p_tradeHistoryId, p_legacyPrtfName);
         }
         p_newItem = prtf;
         return errMsg;

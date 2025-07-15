@@ -450,7 +450,7 @@ public partial class Db
         return string.Empty;
     }
 
-    internal string UpdatePortfolio(int p_id, User? p_user, string p_name, int p_parentFldId, CurrencyId p_currency, PortfolioType p_type, string p_algorithm, string p_algorithmParam, SharedAccess p_sharedAccess, string p_note, List<User> p_sharedUsersWith, int p_tradeHistoryId)
+    internal string UpdatePortfolio(int p_id, User? p_user, string p_name, int p_parentFldId, CurrencyId p_currency, PortfolioType p_type, string p_algorithm, string p_algorithmParam, SharedAccess p_sharedAccess, string p_note, List<User> p_sharedUsersWith, int p_tradeHistoryId, string? p_legacyDbPortfName)
     {
         string redisKey = p_id.ToString();
         string? pfInDb = m_redisDb.HashGet("portfolio", redisKey);
@@ -473,6 +473,7 @@ public partial class Db
         Utils.Logger.Debug($"shareduserwith{p_sharedUsersWith}"); // need to develop this - Daya
         // pfInDbCandidate.SharedUsersWith = p_sharedUsersWith.ToString();
         pfInDbCandidate.TradeHistoryId = p_tradeHistoryId == -1 ? null : p_tradeHistoryId;
+        pfInDbCandidate.LegacyDbPortfName = p_legacyDbPortfName == null ? string.Empty : p_legacyDbPortfName;
         string redisValue = JsonSerializer.Serialize<PortfolioInDb>(pfInDbCandidate, new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull });
         m_redisDb.HashSet("portfolio", redisKey, redisValue);
         return string.Empty;

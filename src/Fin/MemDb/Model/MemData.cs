@@ -196,7 +196,7 @@ internal class MemData // don't expose to clients.
         }
     }
 
-    public Portfolio? EditPortfolio(int p_id, User? p_user, string p_name, int p_parentFldId, CurrencyId p_currency, PortfolioType p_type, string p_algorithm, string p_algorithmParam, SharedAccess p_sharedAccess, string p_note, List<User> p_sharedUsersWith, int p_tradeHistoryId) // method to Edit the portfolio based on fld key
+    public Portfolio? EditPortfolio(int p_id, User? p_user, string p_name, int p_parentFldId, CurrencyId p_currency, PortfolioType p_type, string p_algorithm, string p_algorithmParam, SharedAccess p_sharedAccess, string p_note, List<User> p_sharedUsersWith, int p_tradeHistoryId, string? p_legacyDbPortfName) // method to Edit the portfolio based on fld key
     {
         lock (PrFldUpdateLock)
         {
@@ -213,6 +213,9 @@ internal class MemData // don't expose to clients.
                 portfolio.Note = p_note;
                 portfolio.SharedUsersWith = p_sharedUsersWith;
                 portfolio.TradeHistoryId = p_tradeHistoryId;
+
+                if (portfolio is LegacyPortfolio legacyPortfolio)
+                    legacyPortfolio.LegacyDbPortfName = p_legacyDbPortfName == null ? string.Empty : p_legacyDbPortfName;
                 return portfolio;
             }
             else
