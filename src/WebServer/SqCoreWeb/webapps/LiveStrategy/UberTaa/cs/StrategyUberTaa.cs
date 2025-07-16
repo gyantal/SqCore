@@ -1321,7 +1321,7 @@ public class StrategyUberTaaController : ControllerBase
         }
 
         double[,] pastWeightsFinal = new double[pastCodes.GetLength(0), p_allAssetList.Length - 3];
-        // double numAss = Convert.ToDouble(p_allAssetList.Length - 4);
+        double numAss = Convert.ToDouble(p_allAssetList.Length - 4);
         for (int iRows = 0; iRows < pastWeightsFinal.GetLength(0); iRows++)
         {
             pastWeightsFinal[iRows, 0] = pastCodes[iRows, 0];
@@ -1337,7 +1337,7 @@ public class StrategyUberTaaController : ControllerBase
                 }
                 else if (pastCodes[iRows, jCols] == 5)
                 {
-                    pastWeightsFinal[iRows, jCols] = Math.Max(1.5 * p_taaWeightResultsTuple.Item2[indWeightsRes - pastDataLength + iRows + 1, jCols - 1], 1) * overallConstLev;
+                    pastWeightsFinal[iRows, jCols] = Math.Max(1.5 * p_taaWeightResultsTuple.Item2[indWeightsRes - pastDataLength + iRows + 1, jCols - 1], 1 / numAss) * overallConstLev;
                 }
                 else if (pastCodes[iRows, jCols] == 2)
                 {
@@ -1349,7 +1349,7 @@ public class StrategyUberTaaController : ControllerBase
                 }
                 else if (pastCodes[iRows, jCols] == 6)
                 {
-                    pastWeightsFinal[iRows, jCols] = Math.Max(1.5 * p_taaWeightResultsTuple.Item2[indWeightsRes - pastDataLength + iRows + 1, jCols - 1], 1) * overallConstLev;
+                    pastWeightsFinal[iRows, jCols] = Math.Max(1.5 * p_taaWeightResultsTuple.Item2[indWeightsRes - pastDataLength + iRows + 1, jCols - 1], 1 / numAss) * overallConstLev;
                     // pastWeightsFinal[iRows, jCols] = Math.Max(1.25 * p_taaWeightResultsTuple.Item2[indWeightsRes - pastDataLength + iRows + 1, jCols - 1], 1 / numAss); #Mr.C. decided to increase leverage to 50% on bullish days
                 }
                 else if (pastCodes[iRows, jCols] == 4)
