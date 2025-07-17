@@ -642,14 +642,23 @@ export class AppComponent implements OnInit {
   drawSqChart() {
     // Get the chart container
     const chartDiv = document.getElementById('chartContainer') as HTMLElement;
+    const chrtWidth = chartDiv.clientWidth as number;
+    const chrtHeight = chartDiv.clientHeight as number;
+
     // Create and initialize the chart
     const chart = new SqChart();
-    chart.init(chartDiv, 400, 200);
+    chart.init(chartDiv, chrtWidth, chrtHeight);
     // Add a data series
     chart.addLine(this.chartData);
     // Set viewport to show data between two dates
     const startDate = new Date('2025-01-01');
     const endDate = new Date('2025-08-01');
     chart.setViewport(startDate, endDate);
+    // resizing the chart dynamically when the window is resized
+    window.addEventListener('resize', () => {
+      const chrtWidth = chartDiv.clientWidth as number;
+      const chrtHeight = chartDiv.clientHeight as number;
+      chart.init(chartDiv, chrtWidth, chrtHeight);
+    });
   }
 }

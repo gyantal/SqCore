@@ -71,6 +71,7 @@ export class SqChart {
   private chartDiv: HTMLElement | null;
   private width: number;
   private height: number;
+  private margin: {top: number; right: number; bottom: number; left: number;} = {top: 30, right: 30, bottom: 30, left: 30};
 
   constructor() {
     this.chartLines = [];
@@ -126,32 +127,51 @@ export class SqChart {
     this.chartDiv.innerHTML = '';
 
     // Create a canvas and render
-    const canvas = document.createElement('canvas');
-    canvas.width = this.width;
-    canvas.height = this.height;
+    const canvas: HTMLCanvasElement = document.createElement('canvas');
+    canvas.width = this.width - this.margin.left - this.margin.right;
+    canvas.height = this.height- this.margin.top - this.margin.bottom;
     this.chartDiv.appendChild(canvas);
 
     const canvasRenderingCtx: CanvasRenderingContext2D | null = canvas.getContext('2d');
     if (canvasRenderingCtx == null)
       return;
 
+    console.log(canvasRenderingCtx);
+
+    canvasRenderingCtx.fillStyle = '#6bf366ff'; // adding the  background
+    canvasRenderingCtx.fillRect(this.margin.left, this.margin.top, canvas.width, canvas.height);
     canvasRenderingCtx.beginPath();
+    let visibleData: UiChartPoint[] | null = null;
     for (const line of this.chartLines) {
-      const visibleData: UiChartPoint[] = line.getVisibleData();
+      visibleData = line.getVisibleData();
       if (visibleData.length == 0)
         continue;
 
       // Basic line drawing logic (simplified)
-      const xScale: number = this.width / (visibleData.length - 1);
-      const yScale: number = this.height / Math.max(...visibleData.map((d) => d.value));
+      const xScale: number = canvas.width / (visibleData.length - 1);
+      const yScale: number = canvas.height / Math.max(...visibleData.map((d) => d.value));
 
-      canvasRenderingCtx.moveTo(0, this.height - visibleData[0].value * yScale);
-      for (let i = 1; i < visibleData.length; i++)
-        canvasRenderingCtx.lineTo(i * xScale, this.height - visibleData[i].value * yScale);
+      canvasRenderingCtx.moveTo(this.margin.left, canvas.height - visibleData[0].value * yScale);
+      for (let i = 1; i < visibleData.length; i++) {
+        const x: number = this.margin.left + i * xScale;
+        const y: number = this.height - this.margin.bottom - visibleData[i].value * yScale;
+        canvasRenderingCtx.lineTo(x, y);
+      }
     }
-    canvasRenderingCtx.strokeStyle = '#007bff';
-    canvasRenderingCtx.fillStyle = '#FFFFFF';
-    canvasRenderingCtx.fillRect(0, 0, this.width, this.height);
+    canvasRenderingCtx.strokeStyle = '#007bff'; // line color
     canvasRenderingCtx.stroke();
+
+    // displaying the chart dimesions for debugging
+    if (visibleData != null) {
+      const x0: string = visibleData[0].date.toDateString();
+      const y0: number = visibleData[0].value;
+      const text: string = `x0: ${x0}, y0: ${y0}, width: ${canvas.width}, height: ${canvas.height}`;
+
+      canvasRenderingCtx.font = '14px sans-serif';
+      canvasRenderingCtx.fillStyle = '#000000';
+      const textWidth: number = canvasRenderingCtx.measureText(text).width;
+
+      canvasRenderingCtx.fillText( text, (canvas.width - textWidth) / 2, canvas.height / 2 );
+    }
   }
 }
