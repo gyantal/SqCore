@@ -279,7 +279,29 @@ thead {
 }
 
 #chartContainer {
+  position: relative;
+  float: left;
   background-color: whitesmoke;
-  width: 100%;
+  width: 99.5%;
   height: 42.5vh;
+}
+
+#heightResizer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 0.2rem;
+  width: 100%;
+  cursor: ns-resize;
+  background-color: #888;
+}
+
+#widthResizer {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 0.25rem;
+  height: 100%;
+  cursor: ew-resize;
+  background-color: #888;
 }
