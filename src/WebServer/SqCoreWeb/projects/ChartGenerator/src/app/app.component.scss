@@ -290,10 +290,11 @@ thead {
   position: absolute;
   bottom: 0;
   left: 0;
-  height: 0.2rem;
+  height: 0.25rem;
   width: 100%;
   cursor: ns-resize;
   background-color: #888;
+  z-index: 1;
 }
 
 #widthResizer {
@@ -304,4 +305,5 @@ thead {
   height: 100%;
   cursor: ew-resize;
   background-color: #888;
+  z-index: 1;
 }

@@ -7,7 +7,7 @@ import { UltimateChart } from '../../../../TsLib/sq-common/chartUltimate';
 import { SqStatisticsBuilder, StatisticsResults, DetailedStatistics, BacktestDetailedStatistics } from '../../../../TsLib/sq-common/backtestStatistics';
 import { ChrtGenBacktestResult, UiChrtGenPrtfRunResult, CgTimeSeries, SqLog, ChartResolution, UiChartPoint, FolderJs, PortfolioJs, prtfsParseHelper, fldrsParseHelper, TreeViewState, TreeViewItem, createTreeViewData, PrtfItemType, LineStyle, ChartJs, SeasonalityData, getSeasonalityData, getDetailedStats, SqLogLevel } from '../../../../TsLib/sq-common/backtestCommon';
 import { SqTreeViewComponent } from '../../../sq-ng-common/src/lib/sq-tree-view/sq-tree-view.component';
-import { isValidDay, isValidMonth, isValidYear, parseNumberToDate } from '../../../../TsLib/sq-common/utils-common';
+import { isValidDay, isValidMonth, isValidYear, parseNumberToDate, widthResizer, heightResizer, } from '../../../../TsLib/sq-common/utils-common';
 import { SqChart } from '../../../../TsLib/sq-common/sqChart';
 
 type Nullable<T> = T | null;
@@ -641,8 +641,9 @@ export class AppComponent implements OnInit {
 
   drawSqChart() {
     // Get the chart container
-    const chartDiv = document.getElementById('chartContainer') as HTMLElement;
-
+    const chartDiv: HTMLElement = document.getElementById('chartContainer') as HTMLElement;
+    const widthResizerDiv: HTMLElement = document.getElementById('widthResizer') as HTMLElement;
+    const heightResizerDiv: HTMLElement = document.getElementById('heightResizer') as HTMLElement;
     // Create and initialize the chart
     const chart = new SqChart();
     chart.init(chartDiv);
@@ -652,5 +653,8 @@ export class AppComponent implements OnInit {
     const startDate = new Date('2025-01-01');
     const endDate = new Date('2025-08-01');
     chart.setViewport(startDate, endDate);
+    // resizing
+    widthResizer(chartDiv, widthResizerDiv);
+    heightResizer(chartDiv, heightResizerDiv);
   }
 }

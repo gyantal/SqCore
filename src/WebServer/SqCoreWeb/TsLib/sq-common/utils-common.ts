@@ -80,3 +80,45 @@ export function isValidDay(day: string, date: Date): boolean {
   const maxDays = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate(); // Calculates the maximum days in a month by moving to the next month's 0th day (0 as the day, refers to the last day of the current month)
   return day.length == 2 && dayInt >= 1 && dayInt <= maxDays;
 }
+
+export function widthResizer(chartContainerDiv: HTMLElement, resizerDiv: HTMLElement) {
+  resizerDiv.addEventListener('mousedown', resizingDiv);
+  function resizingDiv(event: MouseEvent) {
+    const originalMouseX: number = event.pageX;
+    const chartDivDomRect: DOMRect = chartContainerDiv.getBoundingClientRect();
+
+    function mousemove(event: MouseEvent) {
+      const newWidth: number = chartDivDomRect.width - (originalMouseX - event.pageX);
+      const chartDivWidth: number = chartDivDomRect.width;
+      const restrictedWidth: number = Math.min(newWidth, chartDivWidth); // Prevent the width from exceeding the container's width
+      chartContainerDiv.style.width = (restrictedWidth / chartDivWidth) * 100 + '%';
+    }
+
+    function stopResize() {
+      window.removeEventListener('mousemove', mousemove);
+    }
+    window.addEventListener('mousemove', mousemove);
+    window.addEventListener('mouseup', stopResize);
+  }
+}
+
+export function heightResizer(chartContainerDiv: HTMLElement, resizerDiv: HTMLElement) {
+  resizerDiv.addEventListener('mousedown', resizingDiv);
+  function resizingDiv(event: MouseEvent) {
+    const originalMouseY: number = event.pageY;
+    const chartDivDomRect: DOMRect = chartContainerDiv.getBoundingClientRect();
+
+    function mousemove(event: MouseEvent) {
+      const newHeight: number = chartDivDomRect.height - (originalMouseY - event.pageY);
+      const chartDivHeight: number = chartDivDomRect.height;
+      const restrictedHeight: number = Math.min(newHeight, chartDivHeight); // Prevent the height from exceeding the container's height
+      chartContainerDiv.style.height = (restrictedHeight / window.innerHeight) * 100 + 'vh';
+    }
+
+    function stopResize() {
+      window.removeEventListener('mousemove', mousemove);
+    }
+    window.addEventListener('mousemove', mousemove);
+    window.addEventListener('mouseup', stopResize);
+  }
+}
