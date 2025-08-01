@@ -65,6 +65,156 @@ class ChartLine {
   }
 }
 
+class XAxis {
+  public generateTicks(data: UiChartPoint[]): { time: number, label: string }[] {
+    if (data.length < 2)
+      return [];
+
+    const startDate: Date = data[0].date;
+    const endDate: Date = data[data.length - 1].date;
+    const range: number = endDate.getTime() - startDate.getTime();
+    const msPerDay: number = 24 * 60 * 60 * 1000; // Number of milliseconds in a day
+    const msPerMonth: number = 30 * msPerDay;
+    const msPerYear: number = 365 * msPerDay;
+    // Determine appropriate step size and format based on range
+    let stepSize: number;
+    let formatLabel: (date: Date) => string;
+    if (range <= 7 * msPerDay) { // Less than a week: use days
+      stepSize = msPerDay;
+      formatLabel = (date) => date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    } else if (range <= 6 * msPerMonth) { // Less than 6 months: use months
+      stepSize = msPerMonth;
+      formatLabel = (date) => date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+    } else { // Years
+      stepSize = msPerYear;
+      formatLabel = (date) => date.getFullYear().toString();
+    }
+
+    const ticks: { time: number, label: string }[] = [];
+    let current: number = Math.floor(startDate.getTime() / stepSize) * stepSize;
+    while (current <= endDate.getTime()) {
+      ticks.push({ time: current, label: formatLabel(new Date(current)) });
+      current += stepSize;
+    }
+
+    return ticks;
+  }
+
+  public render(ctx: CanvasRenderingContext2D, canvasWidth: number, data: UiChartPoint[]): void {
+    if (data.length < 2)
+      return;
+
+    ctx.beginPath();
+    // Draw axis line (top of canvas)
+    ctx.moveTo(0, 0);
+    ctx.lineTo(canvasWidth, 0);
+    ctx.stroke();
+
+    // Draw ticks and labels
+    const ticks: { time: number; label: string; }[] = this.generateTicks(data);
+    const minTime: number = data[0].date.getTime();
+    const maxTime: number = data[data.length - 1].date.getTime();
+    const timeRange: number = maxTime - minTime || 1; // Avoid division by zero
+    const xScale: number = canvasWidth / timeRange;
+
+    for (let i = 0; i < ticks.length; i++) {
+      const { time, label } = ticks[i];
+      const x: number = (time - minTime) * xScale;
+
+      // Draw tick mark
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, 5);
+      ctx.stroke();
+
+      // Draw tick label
+      const textWidth: number = ctx.measureText(label).width;
+      ctx.fillStyle = 'black';
+      ctx.fillText(label, x - textWidth / 2, 15);
+    }
+  }
+}
+
+class YAxis {
+  public generateTicks(data: UiChartPoint[]): number[] {
+    if (data.length === 0) return [];
+
+    // Extract all values and compute min/max
+    const values: number[] = data.map((d) => d.value);
+    const minValue: number = Math.min(...values);
+    const maxValue: number = Math.max(...values);
+    const valueRange: number = maxValue - minValue;
+    // Determine an appropriate step size (similar to D3's "nice" ticks https://github.com/d3/d3-scale/blob/main/src/linear.js)
+    const targetTickCount: number = 10; // default number of ticks
+    const rawStep: number = valueRange / targetTickCount; // Calculate an initial raw step between ticks
+    const stepMagnitude: number = Math.pow(10, Math.floor(Math.log10(rawStep))); // Determine the order of magnitude of the step
+    const residual: number = rawStep / stepMagnitude; // Residual helps us decide a "nice" rounded step
+
+    let niceStep: number;
+    if (residual >= 5)
+      niceStep = 10 * stepMagnitude;
+    else if (residual >= 2)
+      niceStep = 5 * stepMagnitude;
+    else if (residual >= 1)
+      niceStep = 2 * stepMagnitude;
+    else
+      niceStep = 1 * stepMagnitude;
+
+    // Extend the domain to nice round numbers
+    const roundedMin: number = Math.floor(minValue / niceStep) * niceStep;
+    const roundedMax: number = Math.ceil(maxValue / niceStep) * niceStep;
+
+    // Generate ticks from roundedMin to roundedMax
+    const ticks: number[] = [];
+    for (let tick = roundedMin; tick <= roundedMax; tick += niceStep)
+      ticks.push(tick);
+
+    return ticks;
+  }
+
+  public render(ctx: CanvasRenderingContext2D, canvasHeight: number, data: UiChartPoint[]): void {
+    if (data.length == 0)
+      return;
+
+    const tickLabelXOffset = 10; // Controls the horizontal position of the tick labels relative to the axis.
+    const tickLabelYOffset = 4; // Adjusts the vertical alignment of the tick labels to ensure they are visually centered relative to the tick marks.
+    const tickMarkLength = 5; // Length of tick marks on the axis
+    // Draw axis line (left side of canvas)
+    ctx.moveTo(0, 0);
+    ctx.lineTo(0, canvasHeight);
+    ctx.stroke();
+
+    // Draw ticks, labels
+    const ticks = this.generateTicks(data);
+    const values = data.map((d) => d.value);
+    let min = Math.min(...values);
+    let max = Math.max(...values);
+
+    // Add 10% padding to min and max to prevent ticks at canvas edges
+    const range = max - min;
+    const padding = range * 0.01;
+    min -= padding;
+    max += padding;
+    const yScale = max > min ? canvasHeight / (max - min) : 1;
+
+    for (let i = 0; i < ticks.length; i++) {
+      const tick: number = ticks[i];
+      const y: number = canvasHeight - (tick - min) * yScale;
+
+      // Draw tick mark
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(tickMarkLength, y);
+      ctx.stroke();
+
+      // Draw tick label
+      const label = tick.toFixed(0);
+      ctx.fillStyle = 'black';
+      ctx.fillText(label, tickLabelXOffset, y + tickLabelYOffset);
+    }
+  }
+}
+
 // Main chart class
 export class SqChart {
   private chartLines: ChartLine[] = [];
@@ -72,6 +222,8 @@ export class SqChart {
   private canvas: HTMLCanvasElement | null = null;
   private widthPercent = 0.97;
   private heightPercent = 0.9;
+  private xAxis: XAxis = new XAxis();
+  private yAxis: YAxis = new YAxis();
 
   public init(chartDiv: HTMLElement): void {
     this.chartDiv = chartDiv;
@@ -129,13 +281,13 @@ export class SqChart {
     if (canvasRenderingCtx == null)
       return;
 
-    const canvasWwidth: number = this.canvas.width;
+    const canvasWidth: number = this.canvas.width;
     const canvasHeight: number = this.canvas.height;
 
     // Clear
-    canvasRenderingCtx.clearRect(0, 0, canvasWwidth, canvasHeight);
+    canvasRenderingCtx.clearRect(0, 0, canvasWidth, canvasHeight);
     canvasRenderingCtx.fillStyle = '#6bf366ff'; // adding the  background
-    canvasRenderingCtx.fillRect(0, 0, canvasWwidth, canvasHeight);
+    canvasRenderingCtx.fillRect(0, 0, canvasWidth, canvasHeight);
 
     canvasRenderingCtx.beginPath();
     let visibleData: UiChartPoint[] | null = null;
@@ -145,7 +297,7 @@ export class SqChart {
         continue;
 
       // Basic line drawing logic (simplified)
-      const xScale: number = canvasWwidth / (visibleData.length - 1);
+      const xScale: number = canvasWidth / (visibleData.length - 1);
       const yScale: number = canvasHeight / Math.max(...visibleData.map((d) => d.value));
 
       canvasRenderingCtx.moveTo(0, canvasHeight - visibleData[0].value * yScale);
@@ -164,12 +316,12 @@ export class SqChart {
     if (visibleData != null) {
       const x0: string = visibleData[0].date.toDateString();
       const y0: number = visibleData[0].value;
-      const text: string = `x0: ${x0}, y0: ${y0}, width: ${canvasWwidth}, height: ${canvasHeight}`;
+      const text: string = `x0: ${x0}, y0: ${y0}, width: ${canvasWidth}, height: ${canvasHeight}`;
 
       canvasRenderingCtx.font = '14px sans-serif';
       canvasRenderingCtx.fillStyle = '#000000';
       const textWidth: number = canvasRenderingCtx.measureText(text).width;
-      canvasRenderingCtx.fillText( text, (canvasWwidth - textWidth) / 2, canvasHeight / 2 );
+      canvasRenderingCtx.fillText( text, (canvasWidth - textWidth) / 2, canvasHeight / 2 );
     }
   }
 
@@ -204,18 +356,18 @@ export class SqChart {
 
     // Append the xAxis canvas
     this.chartDiv.appendChild(xAxisCanvas);
-    const xAxisCtx = xAxisCanvas.getContext('2d');
+    const xAxisCtx: CanvasRenderingContext2D | null = xAxisCanvas.getContext('2d');
     if (xAxisCtx == null)
       return;
-    xAxisCtx.fillStyle = '#f36666ff'; // adding the  background for debugging
-    xAxisCtx.fillRect(0, 0, this.canvas.width, this.canvas.height * (1 - this.heightPercent));
+
+    this.xAxis.render(xAxisCtx, this.canvas.width, visibleData);
 
     // Remove old yAxisCanvas
     const existingYAxis: Element | null = this.chartDiv.querySelector('#yAxisCanvas');
     if (existingYAxis != null)
       this.chartDiv.removeChild(existingYAxis);
     // Create the yAxis canvas
-    const yAxisCanvas = document.createElement('canvas');
+    const yAxisCanvas: HTMLCanvasElement = document.createElement('canvas');
     yAxisCanvas.id = 'yAxisCanvas';
     yAxisCanvas.width = this.canvas.width * (1 - this.widthPercent);
     yAxisCanvas.height = this.canvas.height;
@@ -223,10 +375,10 @@ export class SqChart {
     yAxisCanvas.style.left = `${this.canvas.width}px`; // chart starts at margin.left
     // Append the yAxis canvas
     this.chartDiv.appendChild(yAxisCanvas);
-    const yAxisCtx = yAxisCanvas.getContext('2d');
+    const yAxisCtx: CanvasRenderingContext2D | null = yAxisCanvas.getContext('2d');
     if (yAxisCtx == null)
       return;
-    yAxisCtx.fillStyle = '#FFFF8F'; // adding the  background for debugging
-    yAxisCtx.fillRect(0, 0, this.canvas.width * (1 - this.heightPercent), this.canvas.height);
+
+    this.yAxis.render(yAxisCtx, this.canvas.height, visibleData);
   }
 }

@@ -101,15 +101,17 @@ export class AppComponent implements OnInit {
 
   // Sample data for sqChart developing
   chartData: UiChartPoint[] = [
-    { date: new Date('2025-01-01'), value: 100 },
-    { date: new Date('2025-02-01'), value: 150 },
-    { date: new Date('2025-03-01'), value: 200 },
-    { date: new Date('2025-04-01'), value: 150 },
-    { date: new Date('2025-05-01'), value: 200 },
-    { date: new Date('2025-06-01'), value: 150 },
-    { date: new Date('2025-07-01'), value: 200 },
-    { date: new Date('2025-08-01'), value: 100 },
-    { date: new Date('2025-09-01'), value: 175 },
+    { date: new Date('2021-01-01'), value: 100 },
+    { date: new Date('2021-02-01'), value: 150 },
+    { date: new Date('2021-03-01'), value: 120 },
+    { date: new Date('2021-04-01'), value: 110 },
+    { date: new Date('2022-03-01'), value: 200 },
+    { date: new Date('2022-04-01'), value: 150 },
+    { date: new Date('2023-05-01'), value: 200 },
+    { date: new Date('2023-06-01'), value: 150 },
+    { date: new Date('2024-07-01'), value: 200 },
+    { date: new Date('2024-08-01'), value: 100 },
+    { date: new Date('2025-05-01'), value: 175 },
   ];
 
   // Constants
@@ -650,8 +652,8 @@ export class AppComponent implements OnInit {
     // Add a data series
     chart.addLine(this.chartData);
     // Set viewport to show data between two dates
-    const startDate = new Date('2025-01-01');
-    const endDate = new Date('2025-08-01');
+    const startDate = new Date('2021-01-01');
+    const endDate = new Date('2025-04-01');
     chart.setViewport(startDate, endDate);
     // resizing
     widthResizer(chartDiv, widthResizerDiv);
