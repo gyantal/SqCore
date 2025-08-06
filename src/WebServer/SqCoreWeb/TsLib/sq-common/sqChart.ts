@@ -66,35 +66,31 @@ class ChartLine {
 }
 
 class XAxis {
+  private minTime: number = 0;
+  private maxTime: number = 1;
+  private canvasWidth: number = 1;
+
+  public setDomain(data: UiChartPoint[], canvasWidth: number) {
+    this.minTime = data[0].date.getTime();
+    this.maxTime = data[data.length - 1].date.getTime();
+    this.canvasWidth = canvasWidth;
+  }
+
   public generateTicks(data: UiChartPoint[]): { time: number, label: string }[] {
     if (data.length < 2)
       return [];
 
     const startDate: Date = data[0].date;
     const endDate: Date = data[data.length - 1].date;
-    const range: number = endDate.getTime() - startDate.getTime();
-    const msPerDay: number = 24 * 60 * 60 * 1000; // Number of milliseconds in a day
-    const msPerMonth: number = 30 * msPerDay;
-    const msPerYear: number = 365 * msPerDay;
-    // Determine appropriate step size and format based on range
-    let stepSize: number;
-    let formatLabel: (date: Date) => string;
-    if (range <= 7 * msPerDay) { // Less than a week: use days
-      stepSize = msPerDay;
-      formatLabel = (date) => date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    } else if (range <= 6 * msPerMonth) { // Less than 6 months: use months
-      stepSize = msPerMonth;
-      formatLabel = (date) => date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-    } else { // Years
-      stepSize = msPerYear;
-      formatLabel = (date) => date.getFullYear().toString();
-    }
-
+    const current: Date = new Date(startDate);
+    current.setDate(1); // Align to first of the month
     const ticks: { time: number, label: string }[] = [];
-    let current: number = Math.floor(startDate.getTime() / stepSize) * stepSize;
-    while (current <= endDate.getTime()) {
-      ticks.push({ time: current, label: formatLabel(new Date(current)) });
-      current += stepSize;
+    while (current <= endDate) {
+      const month: number = current.getMonth();
+      const label: string = month === 0 ? current.getFullYear().toString() : current.toLocaleDateString('en-US', { month: 'short' }); // Feb, Mar, etc.
+
+      ticks.push({ time: current.getTime(), label });
+      current.setMonth(current.getMonth() + 1);
     }
 
     return ticks;
@@ -110,16 +106,16 @@ class XAxis {
     ctx.lineTo(canvasWidth, 0);
     ctx.stroke();
 
+    this.setDomain(data, canvasWidth);
+
     // Draw ticks and labels
     const ticks: { time: number; label: string; }[] = this.generateTicks(data);
-    const minTime: number = data[0].date.getTime();
-    const maxTime: number = data[data.length - 1].date.getTime();
-    const timeRange: number = maxTime - minTime || 1; // Avoid division by zero
+    const timeRange: number = this.maxTime - this.minTime || 1; // Avoid division by zero
     const xScale: number = canvasWidth / timeRange;
 
     for (let i = 0; i < ticks.length; i++) {
       const { time, label } = ticks[i];
-      const x: number = (time - minTime) * xScale;
+      const x: number = (time - this.minTime) * xScale;
 
       // Draw tick mark
       ctx.beginPath();
@@ -133,17 +129,31 @@ class XAxis {
       ctx.fillText(label, x - textWidth / 2, 15);
     }
   }
+
+  public scaleXToTime(xPixel: number): Date { // Converts a horizontal pixel coordinate on the canvas to a Date.
+    const time: number = this.minTime + (xPixel / this.canvasWidth) * (this.maxTime - this.minTime);
+    return new Date(time);
+  }
 }
 
 class YAxis {
+  private minValue: number = 0;
+  private maxValue: number = 1;
+  private canvasHeight: number = 1;
+
+  public setDomain(data: UiChartPoint[], canvasHeight: number): void {
+    const values: number[] = data.map((d) => d.value);
+    this.minValue = Math.min(...values);
+    this.maxValue = Math.max(...values);
+    this.canvasHeight = canvasHeight;
+  }
+
   public generateTicks(data: UiChartPoint[]): number[] {
-    if (data.length === 0) return [];
+    if (data.length == 0)
+      return [];
 
     // Extract all values and compute min/max
-    const values: number[] = data.map((d) => d.value);
-    const minValue: number = Math.min(...values);
-    const maxValue: number = Math.max(...values);
-    const valueRange: number = maxValue - minValue;
+    const valueRange: number = this.maxValue - this.minValue;
     // Determine an appropriate step size (similar to D3's "nice" ticks https://github.com/d3/d3-scale/blob/main/src/linear.js)
     const targetTickCount: number = 10; // default number of ticks
     const rawStep: number = valueRange / targetTickCount; // Calculate an initial raw step between ticks
@@ -161,8 +171,8 @@ class YAxis {
       niceStep = 1 * stepMagnitude;
 
     // Extend the domain to nice round numbers
-    const roundedMin: number = Math.floor(minValue / niceStep) * niceStep;
-    const roundedMax: number = Math.ceil(maxValue / niceStep) * niceStep;
+    const roundedMin: number = Math.floor(this.minValue / niceStep) * niceStep;
+    const roundedMax: number = Math.ceil(this.maxValue / niceStep) * niceStep;
 
     // Generate ticks from roundedMin to roundedMax
     const ticks: number[] = [];
@@ -183,23 +193,21 @@ class YAxis {
     ctx.moveTo(0, 0);
     ctx.lineTo(0, canvasHeight);
     ctx.stroke();
-
+    this.setDomain(data, this.canvasHeight);
     // Draw ticks, labels
     const ticks = this.generateTicks(data);
-    const values = data.map((d) => d.value);
-    let min = Math.min(...values);
-    let max = Math.max(...values);
 
     // Add 10% padding to min and max to prevent ticks at canvas edges
-    const range = max - min;
-    const padding = range * 0.01;
-    min -= padding;
-    max += padding;
-    const yScale = max > min ? canvasHeight / (max - min) : 1;
+    const range: number = this.maxValue - this.minValue;
+    const padding: number = range * 0.01;
+    this.minValue -= padding;
+    this.maxValue += padding;
+    this.canvasHeight = canvasHeight;
+    const yScale = this.maxValue > this.minValue ? canvasHeight / (this.maxValue - this.minValue) : 1;
 
     for (let i = 0; i < ticks.length; i++) {
       const tick: number = ticks[i];
-      const y: number = canvasHeight - (tick - min) * yScale;
+      const y: number = canvasHeight - (tick - this.minValue) * yScale;
 
       // Draw tick mark
       ctx.beginPath();
@@ -212,6 +220,10 @@ class YAxis {
       ctx.fillStyle = 'black';
       ctx.fillText(label, tickLabelXOffset, y + tickLabelYOffset);
     }
+  }
+
+  public scaleYToValue(yPixel: number): number { // Converts a vertical pixel coordinate on the canvas to a data value(price).
+    return this.maxValue - (yPixel / this.canvasHeight) * (this.maxValue - this.minValue);
   }
 }
 
@@ -286,8 +298,6 @@ export class SqChart {
 
     // Clear
     canvasRenderingCtx.clearRect(0, 0, canvasWidth, canvasHeight);
-    canvasRenderingCtx.fillStyle = '#6bf366ff'; // adding the  background
-    canvasRenderingCtx.fillRect(0, 0, canvasWidth, canvasHeight);
 
     canvasRenderingCtx.beginPath();
     let visibleData: UiChartPoint[] | null = null;
@@ -311,6 +321,8 @@ export class SqChart {
     canvasRenderingCtx.stroke();
 
     this.drawAxes(visibleData);
+
+    this.displayTooltip(this.chartDiv!, canvasWidth, canvasHeight, this.xAxis, this.yAxis);
 
     // displaying the chart dimesions for debugging
     if (visibleData != null) {
@@ -350,6 +362,7 @@ export class SqChart {
     const xAxisCanvas: HTMLCanvasElement = document.createElement('canvas');
     xAxisCanvas.id = 'xAxisCanvas';
     xAxisCanvas.width = this.canvas.width;
+    xAxisCanvas.height = this.canvas.height * (1 - this.heightPercent);
     xAxisCanvas.style.position = 'absolute';
     xAxisCanvas.style.top = `${this.canvas.height}px`;
     xAxisCanvas.style.left = '0px'; // align with chart
@@ -380,5 +393,89 @@ export class SqChart {
       return;
 
     this.yAxis.render(yAxisCtx, this.canvas.height, visibleData);
+  }
+
+  private displayTooltip(chartDiv: HTMLElement, canvasWidth: number, canvasHeight: number, xAxis: XAxis, yAxis: YAxis) {
+    // Remove old tooltipCanvas
+    const existingTooltipCanvas: Element | null = chartDiv.querySelector('#tooltipCanvas');
+    if (existingTooltipCanvas != null)
+      chartDiv.removeChild(existingTooltipCanvas);
+    // create tooltip canvas
+    const tooltipCanvas = document.createElement('canvas');
+    tooltipCanvas.id = 'tooltipCanvas';
+    tooltipCanvas.style.position = 'absolute';
+    tooltipCanvas.style.left = '0';
+    tooltipCanvas.style.top = '0';
+    tooltipCanvas.style.zIndex = '1';
+    tooltipCanvas.style.pointerEvents = 'none';
+
+    chartDiv.appendChild(tooltipCanvas);
+    tooltipCanvas.width = canvasWidth;
+    tooltipCanvas.height = canvasHeight;
+    const canvasRenderingCtx = tooltipCanvas.getContext('2d');
+    if (canvasRenderingCtx == null)
+      return;
+
+    chartDiv.addEventListener('mousemove', function(event) {
+      canvasRenderingCtx.clearRect(0, 0, canvasWidth, canvasHeight); // Clear canvas
+
+      const chartDivRect: DOMRect = chartDiv.getBoundingClientRect();
+      const x: number = event.clientX - chartDivRect.left;
+      const y: number = event.clientY - chartDivRect.top;
+
+      // Compute values
+      const date: Date = xAxis.scaleXToTime(x);
+      const dateStr: string = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      const priceStr: string = yAxis.scaleYToValue(y).toFixed(2);
+      // Draw vertical line
+      canvasRenderingCtx.beginPath();
+      canvasRenderingCtx.moveTo(x, 0);
+      canvasRenderingCtx.lineTo(x, canvasHeight);
+      canvasRenderingCtx.strokeStyle = 'green';
+      canvasRenderingCtx.setLineDash([5, 5]);
+      canvasRenderingCtx.stroke();
+
+      // Draw horizontal line
+      canvasRenderingCtx.beginPath();
+      canvasRenderingCtx.moveTo(0, y);
+      canvasRenderingCtx.lineTo(canvasWidth, y);
+      canvasRenderingCtx.strokeStyle = 'blue';
+      canvasRenderingCtx.stroke();
+
+      // Draw price on right side (Y axis)
+      const paddingX: number = 4;
+      const paddingY: number = 2;
+      const fontSize: number = 12;
+      canvasRenderingCtx.font = `${fontSize}px sans-serif`;
+      const priceTextWidth: number = canvasRenderingCtx.measureText(priceStr).width;
+      const priceTextHeight: number = fontSize;
+
+      const priceBoxX: number = canvasWidth - priceTextWidth - paddingX * 2;
+      const priceBoxY: number = y - priceTextHeight / 2 - paddingY;
+
+      canvasRenderingCtx.fillStyle = 'black';
+      canvasRenderingCtx.fillRect(priceBoxX, priceBoxY, priceTextWidth + paddingX * 2, priceTextHeight + paddingY * 2);
+
+      canvasRenderingCtx.fillStyle = 'white';
+      canvasRenderingCtx.fillText(priceStr, priceBoxX + paddingX, priceBoxY + priceTextHeight + paddingY / 2);
+
+      // Draw date on bottom (X axis)
+      const dateTextWidth: number = canvasRenderingCtx.measureText(dateStr).width;
+      const dateTextHeight: number = fontSize;
+
+      const dateBoxX: number = x - dateTextWidth / 2 - paddingX;
+      const dateBoxY: number = canvasHeight - dateTextHeight - paddingY * 2;
+
+      canvasRenderingCtx.fillStyle = 'black';
+      canvasRenderingCtx.fillRect(dateBoxX, dateBoxY, dateTextWidth + paddingX * 2, dateTextHeight + paddingY * 2);
+
+      canvasRenderingCtx.fillStyle = 'white';
+      canvasRenderingCtx.fillText(dateStr, dateBoxX + paddingX, dateBoxY + dateTextHeight + paddingY / 2);
+    });
+
+    // Clear crosshair when mouse leaves chart
+    chartDiv.addEventListener('mouseleave', () => {
+      canvasRenderingCtx.clearRect(0, 0, canvasWidth, canvasHeight);
+    });
   }
 }
