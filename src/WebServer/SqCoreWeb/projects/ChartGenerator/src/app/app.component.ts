@@ -652,8 +652,8 @@ export class AppComponent implements OnInit {
     // Add a data series
     chart.addLine(this.chartData);
     // Set viewport to show data between two dates
-    const startDate = new Date('2021-01-01');
-    const endDate = new Date('2025-04-01');
+    const startDate: Date = new Date('2021-01-01');
+    const endDate: Date = new Date('2023-08-01');
     chart.setViewport(startDate, endDate);
     // resizing
     widthResizer(chartDiv, widthResizerDiv);

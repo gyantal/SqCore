@@ -63,6 +63,10 @@ class ChartLine {
     this.visibleDataStartIdx = 0;
     this.visibleDataEndIdx = this.data.length - 1;
   }
+
+  public getVisibleRange(): [number, number] {
+    return [this.visibleDataStartIdx, this.visibleDataEndIdx];
+  }
 }
 
 class XAxis {
@@ -237,6 +241,9 @@ export class SqChart {
   private xAxis: XAxis = new XAxis();
   private yAxis: YAxis = new YAxis();
 
+  // Drag state
+  private isDragging = false;
+
   public init(chartDiv: HTMLElement): void {
     this.chartDiv = chartDiv;
     const chartDivWidth = this.chartDiv.clientWidth as number;
@@ -251,6 +258,8 @@ export class SqChart {
     this.redraw();
     // ResizeObserver - Ensures the canvas stays correctly sized when the chart container is resized by user or layout change. see https://developer.mozilla.org/en-US/docs/Web/API/ResizeObserver
     new ResizeObserver(() => { this.resizeCanvasToContainer(); }).observe(this.chartDiv);
+
+    this.enableXAxisDrag();
   }
 
   public addLine(data: UiChartPoint[]): ChartLine {
@@ -476,6 +485,63 @@ export class SqChart {
     // Clear crosshair when mouse leaves chart
     chartDiv.addEventListener('mouseleave', () => {
       canvasRenderingCtx.clearRect(0, 0, canvasWidth, canvasHeight);
+    });
+  }
+
+  private enableXAxisDrag(): void {
+    if (this.canvas == null)
+      return;
+
+    let clientX: number = 0;
+    this.canvas.addEventListener('mousedown', (event: MouseEvent) => {
+      this.isDragging = true;
+      clientX = event.clientX;
+    });
+
+    this.canvas.addEventListener('mouseup', () => { this.isDragging = false; });
+    this.canvas.addEventListener('mouseleave', () => { this.isDragging = false; });
+
+    this.canvas.addEventListener('mousemove', (e) => {
+      if (!this.isDragging)
+        return;
+
+      const deltaX: number = e.clientX - clientX;
+      clientX = e.clientX;
+
+      if (this.chartLines.length == 0)
+        return;
+
+      const firstLine: ChartLine = this.chartLines[0];
+      const visibleData: UiChartPoint[] = firstLine.getVisibleData();
+      if (visibleData.length == 0)
+        return;
+
+      const totalVisible: number = visibleData.length;
+      const pxPerPoint: number = this.canvas!.width / totalVisible; // Compute how many pixels correspond to one data point across the canvas
+      const shiftPoints: number = Math.round(-deltaX / pxPerPoint); // Convert pixel drag distance to number of data points to shift
+
+      for (const line of this.chartLines) {
+        const data: UiChartPoint[] = line.getData();
+        const [startIdx, endIdx] = line.getVisibleRange();
+        let newStart: number = startIdx + shiftPoints;
+        let newEnd: number = endIdx + shiftPoints;
+
+        // If the user drags too far left, lock the view to the first chunk of data(e.g, if 50 points fit on screen -> show points 0-49)
+        if (newStart < 0) {
+          newStart = 0;
+          newEnd = totalVisible - 1;
+        }
+
+        // If the user drags too far right, lock the view to the last chunk of data(e.g, if 50 points fit on screen and the dataset has 200 points-> show points 150-199)
+        if (newEnd >= data.length) {
+          newEnd = data.length - 1;
+          newStart = newEnd - totalVisible + 1;
+        }
+
+        line.setVisibleRange(newStart, newEnd);
+      }
+
+      this.redraw();
     });
   }
 }
