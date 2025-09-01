@@ -7,6 +7,7 @@
 //   { date: new Date('2025-03-01'), value: 200 },
 // ];
 
+import { maxDate, minDate } from '../../projects/sq-ng-common/src/lib/sq-ng-common.utils_time';
 import { UiChartPoint } from './backtestCommon';
 
 // // Get the chart container
@@ -27,33 +28,33 @@ import { UiChartPoint } from './backtestCommon';
 
 // Chart line class to manage individual data series
 class ChartLine {
-  private data: UiChartPoint[];
-  private visibleDataStartIdx: number;
-  private visibleDataEndIdx: number;
+  private dataSets: UiChartPoint[][];
+  public visibleDataStartIdx: number;
+  public visibleDataEndIdx: number;
 
-  constructor(data: UiChartPoint[] = []) {
-    this.data = data;
+  constructor(dataSets: UiChartPoint[][] = []) {
+    this.dataSets = dataSets;
     this.visibleDataStartIdx = 0;
-    this.visibleDataEndIdx = data.length - 1;
+    this.visibleDataEndIdx = dataSets.length > 0 ? dataSets[0].length - 1 : 0;
   }
 
   // Getters
-  public getData(): UiChartPoint[] {
-    return this.data;
+  public getDataSets(): UiChartPoint[][] {
+    return this.dataSets;
   }
 
-  public getVisibleData(): UiChartPoint[] {
-    return this.data.slice(this.visibleDataStartIdx, this.visibleDataEndIdx + 1);
+  public getVisibleData(): UiChartPoint[][] {
+    return this.dataSets.map((ds) => ds.slice(this.visibleDataStartIdx, this.visibleDataEndIdx + 1));
   }
 
   // Setters
-  public setData(data: UiChartPoint[]): void {
-    this.data = data;
+  public setDataSets(dataSets: UiChartPoint[][]): void {
+    this.dataSets = dataSets;
     this.resetVisibleIndices();
   }
 
   public setVisibleRange(startIdx: number, endIdx: number): void {
-    if (startIdx >= 0 && endIdx < this.data.length && startIdx <= endIdx) {
+    if (startIdx >= 0 && this.dataSets.length > 0 && endIdx < this.dataSets[0].length && startIdx <= endIdx) {
       this.visibleDataStartIdx = startIdx;
       this.visibleDataEndIdx = endIdx;
     }
@@ -61,35 +62,44 @@ class ChartLine {
 
   private resetVisibleIndices(): void {
     this.visibleDataStartIdx = 0;
-    this.visibleDataEndIdx = this.data.length - 1;
-  }
-
-  public getVisibleRange(): [number, number] {
-    return [this.visibleDataStartIdx, this.visibleDataEndIdx];
+    this.visibleDataEndIdx = this.dataSets.length > 0 ? this.dataSets[0].length - 1 : 0;
   }
 }
 
 class XAxis {
-  private minTime: number = 0;
-  private maxTime: number = 1;
-  private canvasWidth: number = 1;
+  public minTime: number = 0;
+  public maxTime: number = 1;
+  public canvasWidth: number = 1;
 
-  public setDomain(data: UiChartPoint[], canvasWidth: number) {
-    this.minTime = data[0].date.getTime();
-    this.maxTime = data[data.length - 1].date.getTime();
-    this.canvasWidth = canvasWidth;
-  }
 
-  public generateTicks(data: UiChartPoint[]): { time: number, label: string }[] {
-    if (data.length < 2)
+  public generateTicks(dataSets: UiChartPoint[][]): { time: number, label: string }[] {
+    if (dataSets.length == 0)
       return [];
 
-    const startDate: Date = data[0].date;
-    const endDate: Date = data[data.length - 1].date;
-    const current: Date = new Date(startDate);
+    let minStarDate: Date = maxDate;
+    let maxEndDate: Date = minDate;
+    // Find start and end dates from the datasets
+    for (let i = 0; i < dataSets.length; i++) {
+      const dataset: UiChartPoint[] = dataSets[i];
+      if (dataset.length == 0)
+        continue;
+
+      const startDate: Date = dataset[0].date;
+      const endDate: Date = dataset[dataset.length - 1].date;
+      if (startDate < minStarDate)
+        minStarDate = startDate;
+
+      if (endDate > maxEndDate)
+        maxEndDate = endDate;
+    }
+
+    this.minTime = minStarDate.getTime();
+    this.maxTime = maxEndDate.getTime();
+
+    const current: Date = new Date(minStarDate);
     current.setDate(1); // Align to first of the month
     const ticks: { time: number, label: string }[] = [];
-    while (current <= endDate) {
+    while (current <= maxEndDate) {
       const month: number = current.getMonth();
       const label: string = month === 0 ? current.getFullYear().toString() : current.toLocaleDateString('en-US', { month: 'short' }); // Feb, Mar, etc.
 
@@ -100,8 +110,8 @@ class XAxis {
     return ticks;
   }
 
-  public render(ctx: CanvasRenderingContext2D, canvasWidth: number, data: UiChartPoint[]): void {
-    if (data.length < 2)
+  public render(ctx: CanvasRenderingContext2D, canvasWidth: number, dataSets: UiChartPoint[][]): void {
+    if (dataSets.length == 0)
       return;
 
     ctx.beginPath();
@@ -110,10 +120,10 @@ class XAxis {
     ctx.lineTo(canvasWidth, 0);
     ctx.stroke();
 
-    this.setDomain(data, canvasWidth);
+    this.canvasWidth = canvasWidth;
 
     // Draw ticks and labels
-    const ticks: { time: number; label: string; }[] = this.generateTicks(data);
+    const ticks: { time: number; label: string; }[] = this.generateTicks(dataSets);
     const timeRange: number = this.maxTime - this.minTime || 1; // Avoid division by zero
     const xScale: number = canvasWidth / timeRange;
 
@@ -141,22 +151,30 @@ class XAxis {
 }
 
 class YAxis {
-  private minValue: number = 0;
-  private maxValue: number = 1;
-  private canvasHeight: number = 1;
+  public minValue: number = Number.MAX_VALUE; // Initialize with a large value;
+  public maxValue: number = Number.MIN_VALUE; // Initialize with a small value
+  public canvasHeight: number = 1;
 
-  public setDomain(data: UiChartPoint[], canvasHeight: number): void {
-    const values: number[] = data.map((d) => d.value);
-    this.minValue = Math.min(...values);
-    this.maxValue = Math.max(...values);
-    this.canvasHeight = canvasHeight;
-  }
+  public generateTicks(dataSets: UiChartPoint[][]): number[] {
+    if (dataSets.length == 0)
+      return [];
+    // Reset
+    this.minValue = Number.MAX_VALUE;
+    this.maxValue = -Number.MAX_VALUE;
 
-  public generateTicks(data: UiChartPoint[]): number[] {
-    if (data.length == 0)
+    // Find min and max value
+    for (const dataset of dataSets) {
+      for (const point of dataset) {
+        if (point.value < this.minValue)
+          this.minValue = point.value;
+        if (point.value > this.maxValue)
+          this.maxValue = point.value;
+      }
+    }
+
+    if (this.minValue == Number.MAX_VALUE || this.maxValue == -Number.MAX_VALUE)
       return [];
 
-    // Extract all values and compute min/max
     const valueRange: number = this.maxValue - this.minValue;
     // Determine an appropriate step size (similar to D3's "nice" ticks https://github.com/d3/d3-scale/blob/main/src/linear.js)
     const targetTickCount: number = 10; // default number of ticks
@@ -186,7 +204,7 @@ class YAxis {
     return ticks;
   }
 
-  public render(ctx: CanvasRenderingContext2D, canvasHeight: number, data: UiChartPoint[]): void {
+  public render(ctx: CanvasRenderingContext2D, canvasHeight: number, data: UiChartPoint[][]): void {
     if (data.length == 0)
       return;
 
@@ -197,7 +215,6 @@ class YAxis {
     ctx.moveTo(0, 0);
     ctx.lineTo(0, canvasHeight);
     ctx.stroke();
-    this.setDomain(data, this.canvasHeight);
     // Draw ticks, labels
     const ticks = this.generateTicks(data);
 
@@ -236,8 +253,8 @@ export class SqChart {
   private chartLines: ChartLine[] = [];
   private chartDiv: HTMLElement | null = null;
   private canvas: HTMLCanvasElement | null = null;
-  private widthPercent = 0.97;
-  private heightPercent = 0.9;
+  private canvasWidthPercent = 0.97;
+  private canvasHeightPercent = 0.9;
   private xAxis: XAxis = new XAxis();
   private yAxis: YAxis = new YAxis();
 
@@ -250,8 +267,8 @@ export class SqChart {
     const chartDivHeight = this.chartDiv.clientHeight as number;
     const canvas = document.createElement('canvas');
     // Allocate space for X and Y axes by adjusting the canvas size
-    canvas.width = chartDivWidth * this.widthPercent; // 97% of the ChartDiv Width
-    canvas.height = chartDivHeight * this.heightPercent; // 90% of the ChartDiv Height
+    canvas.width = chartDivWidth * this.canvasWidthPercent; // 97% of the ChartDiv Width
+    canvas.height = chartDivHeight * this.canvasHeightPercent; // 90% of the ChartDiv Height
 
     this.chartDiv.appendChild(canvas);
     this.canvas = canvas;
@@ -262,7 +279,7 @@ export class SqChart {
     this.enableXAxisDrag();
   }
 
-  public addLine(data: UiChartPoint[]): ChartLine {
+  public addLine(data: UiChartPoint[][]): ChartLine {
     const line = new ChartLine(data);
     this.chartLines.push(line);
     this.redraw();
@@ -271,25 +288,29 @@ export class SqChart {
 
   public setViewport(startDate: Date, endDate: Date): void {
     for (const line of this.chartLines) {
-      const chrtData: UiChartPoint[] = line.getData();
-      let startIdx: number = 0;
-      let endIdx: number = chrtData.length - 1;
+      const dataSets: UiChartPoint[][] = line.getDataSets();
 
-      for (let i = 0; i < chrtData.length; i++) {
-        if (chrtData[i].date >= startDate) {
-          startIdx = i;
-          break;
+      for (let i = 0; i < dataSets.length; i++) {
+        const dataSet: UiChartPoint[] = dataSets[i];
+        let startIdx: number = 0;
+        let endIdx: number = dataSet.length - 1;
+
+        for (let j = 0; j < dataSet.length; j++) {
+          if (dataSet[j].date >= startDate) {
+            startIdx = j;
+            break;
+          }
         }
-      }
 
-      for (let i = chrtData.length - 1; i >= 0; i--) {
-        if (chrtData[i].date <= endDate) {
-          endIdx = i;
-          break;
+        for (let k = dataSet.length - 1; k >= 0; k--) {
+          if (dataSet[k].date <= endDate) {
+            endIdx = k;
+            break;
+          }
         }
-      }
 
-      line.setVisibleRange(startIdx, endIdx);
+        line.setVisibleRange(startIdx, endIdx);
+      }
     }
     this.redraw();
   }
@@ -308,35 +329,45 @@ export class SqChart {
     // Clear
     canvasRenderingCtx.clearRect(0, 0, canvasWidth, canvasHeight);
 
-    canvasRenderingCtx.beginPath();
-    let visibleData: UiChartPoint[] | null = null;
+    // Collect all visible data
+    const visibleDataSets: UiChartPoint[][] = [];
     for (const line of this.chartLines) {
-      visibleData = line.getVisibleData();
-      if (visibleData.length == 0)
-        continue;
-
-      // Basic line drawing logic (simplified)
-      const xScale: number = canvasWidth / (visibleData.length - 1);
-      const yScale: number = canvasHeight / Math.max(...visibleData.map((d) => d.value));
-
-      canvasRenderingCtx.moveTo(0, canvasHeight - visibleData[0].value * yScale);
-      for (let i = 1; i < visibleData.length; i++) {
-        const x: number = i * xScale;
-        const y: number = canvasHeight - visibleData[i].value * yScale;
-        canvasRenderingCtx.lineTo(x, y);
-      }
+      const visibleData: UiChartPoint[][] = line.getVisibleData();
+      visibleDataSets.push(...visibleData);
     }
-    canvasRenderingCtx.strokeStyle = '#007bff'; // line color
-    canvasRenderingCtx.stroke();
 
-    this.drawAxes(visibleData);
+    if (visibleDataSets.length == 0)
+      return;
+
+    // Basic line drawing logic (simplified)
+    for (const visibleData of visibleDataSets) {
+      if (visibleData.length < 2)
+        continue;
+      const xScale = canvasWidth / (this.xAxis.maxTime - this.xAxis.minTime);
+      const yScale = canvasHeight / (this.yAxis.maxValue - this.yAxis.minValue);
+      canvasRenderingCtx.beginPath();
+      let firstVal: boolean = true;
+      for (const point of visibleData) {
+        const x: number = (point.date.getTime() - this.xAxis.minTime) * xScale;
+        const y: number = canvasHeight - ((point.value - this.yAxis.minValue) * yScale);
+        if (firstVal) {
+          canvasRenderingCtx.moveTo(x, y);
+          firstVal = false;
+        } else
+          canvasRenderingCtx.lineTo(x, y);
+      }
+      canvasRenderingCtx.strokeStyle = '#007bff'; // line color
+      canvasRenderingCtx.stroke();
+    }
+
+    this.drawAxes(visibleDataSets);
 
     this.displayTooltip(this.chartDiv!, canvasWidth, canvasHeight, this.xAxis, this.yAxis);
 
     // displaying the chart dimesions for debugging
-    if (visibleData != null) {
-      const x0: string = visibleData[0].date.toDateString();
-      const y0: number = visibleData[0].value;
+    if (visibleDataSets != null) {
+      const x0: string = visibleDataSets[0][0].date.toDateString();
+      const y0: number = visibleDataSets[0][0].value;
       const text: string = `x0: ${x0}, y0: ${y0}, width: ${canvasWidth}, height: ${canvasHeight}`;
 
       canvasRenderingCtx.font = '14px sans-serif';
@@ -352,13 +383,13 @@ export class SqChart {
       return;
 
     const chartDivRect: DOMRect = this.chartDiv.getBoundingClientRect();
-    this.canvas.width = chartDivRect.width * this.widthPercent;
-    this.canvas.height = chartDivRect.height * this.heightPercent;
+    this.canvas.width = chartDivRect.width * this.canvasWidthPercent;
+    this.canvas.height = chartDivRect.height * this.canvasHeightPercent;
 
     this.redraw(); // Redraw chart with new canvas size
   }
 
-  private drawAxes(visibleData: UiChartPoint[] | null): void {
+  private drawAxes(visibleData: UiChartPoint[][] | null): void {
     if (visibleData == null || this.chartDiv == null || this.canvas == null)
       return;
 
@@ -371,7 +402,7 @@ export class SqChart {
     const xAxisCanvas: HTMLCanvasElement = document.createElement('canvas');
     xAxisCanvas.id = 'xAxisCanvas';
     xAxisCanvas.width = this.canvas.width;
-    xAxisCanvas.height = this.canvas.height * (1 - this.heightPercent);
+    xAxisCanvas.height = this.canvas.height * (1 - this.canvasHeightPercent);
     xAxisCanvas.style.position = 'absolute';
     xAxisCanvas.style.top = `${this.canvas.height}px`;
     xAxisCanvas.style.left = '0px'; // align with chart
@@ -391,7 +422,7 @@ export class SqChart {
     // Create the yAxis canvas
     const yAxisCanvas: HTMLCanvasElement = document.createElement('canvas');
     yAxisCanvas.id = 'yAxisCanvas';
-    yAxisCanvas.width = this.canvas.width * (1 - this.widthPercent);
+    yAxisCanvas.width = this.canvas.width * (1 - this.canvasWidthPercent);
     yAxisCanvas.height = this.canvas.height;
     yAxisCanvas.style.position = 'absolute';
     yAxisCanvas.style.left = `${this.canvas.width}px`; // chart starts at margin.left
@@ -512,34 +543,34 @@ export class SqChart {
         return;
 
       const firstLine: ChartLine = this.chartLines[0];
-      const visibleData: UiChartPoint[] = firstLine.getVisibleData();
+      const visibleData: UiChartPoint[][] = firstLine.getVisibleData();
       if (visibleData.length == 0)
         return;
 
-      const totalVisible: number = visibleData.length;
+      const totalVisible: number = visibleData[0].length;
       const pxPerPoint: number = this.canvas!.width / totalVisible; // Compute how many pixels correspond to one data point across the canvas
       const shiftPoints: number = Math.round(-deltaX / pxPerPoint); // Convert pixel drag distance to number of data points to shift
 
-      for (const line of this.chartLines) {
-        const data: UiChartPoint[] = line.getData();
-        const [startIdx, endIdx] = line.getVisibleRange();
-        let newStart: number = startIdx + shiftPoints;
-        let newEnd: number = endIdx + shiftPoints;
+      // update the visible range
+      const [startIdx, endIdx] = [firstLine.visibleDataStartIdx, firstLine.visibleDataEndIdx]; // get the current Visible Range
+      let newStart: number = startIdx + shiftPoints;
+      let newEnd: number = endIdx + shiftPoints;
+      const totalDataLength = firstLine.getDataSets()[0].length;
 
-        // If the user drags too far left, lock the view to the first chunk of data(e.g, if 50 points fit on screen -> show points 0-49)
-        if (newStart < 0) {
-          newStart = 0;
-          newEnd = totalVisible - 1;
-        }
-
-        // If the user drags too far right, lock the view to the last chunk of data(e.g, if 50 points fit on screen and the dataset has 200 points-> show points 150-199)
-        if (newEnd >= data.length) {
-          newEnd = data.length - 1;
-          newStart = newEnd - totalVisible + 1;
-        }
-
-        line.setVisibleRange(newStart, newEnd);
+      // If the user drags too far left, lock the view to the first chunk of data(e.g, if 50 points fit on screen -> show points 0-49)
+      if (newStart < 0) {
+        newStart = 0;
+        newEnd = totalVisible - 1;
       }
+
+      // If the user drags too far right, lock the view to the last chunk of data(e.g, if 50 points fit on screen and the dataset has 200 points-> show points 150-199)
+      if (newEnd >= totalDataLength) {
+        newEnd = totalDataLength - 1;
+        newStart = newEnd - totalVisible + 1;
+      }
+      // Update all chart lines with the same range
+      for (const line of this.chartLines)
+        line.setVisibleRange(newStart, newEnd);
 
       this.redraw();
     });
