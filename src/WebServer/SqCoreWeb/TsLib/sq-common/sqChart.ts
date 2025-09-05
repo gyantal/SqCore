@@ -261,6 +261,8 @@ export class SqChart {
   // Drag state
   private isDragging = false;
 
+  private pixelsPerPeriod: number = 1; // horizontal zoom level
+
   public init(chartDiv: HTMLElement): void {
     this.chartDiv = chartDiv;
     const chartDivWidth = this.chartDiv.clientWidth as number;
@@ -277,13 +279,13 @@ export class SqChart {
     new ResizeObserver(() => { this.resizeCanvasToContainer(); }).observe(this.chartDiv);
 
     this.enableXAxisDrag();
+    this.enableXAxisZoom();
   }
 
-  public addLine(data: UiChartPoint[][]): ChartLine {
+  public addLine(data: UiChartPoint[][]): void {
     const line = new ChartLine(data);
     this.chartLines.push(line);
     this.redraw();
-    return line;
   }
 
   public setViewport(startDate: Date, endDate: Date): void {
@@ -460,25 +462,25 @@ export class SqChart {
       canvasRenderingCtx.clearRect(0, 0, canvasWidth, canvasHeight); // Clear canvas
 
       const chartDivRect: DOMRect = chartDiv.getBoundingClientRect();
-      const x: number = event.clientX - chartDivRect.left;
-      const y: number = event.clientY - chartDivRect.top;
+      const mouseX: number = event.clientX - chartDivRect.left;
+      const mouseY: number = event.clientY - chartDivRect.top;
 
       // Compute values
-      const date: Date = xAxis.scaleXToTime(x);
+      const date: Date = xAxis.scaleXToTime(mouseX);
       const dateStr: string = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-      const priceStr: string = yAxis.scaleYToValue(y).toFixed(2);
+      const priceStr: string = yAxis.scaleYToValue(mouseY).toFixed(2);
       // Draw vertical line
       canvasRenderingCtx.beginPath();
-      canvasRenderingCtx.moveTo(x, 0);
-      canvasRenderingCtx.lineTo(x, canvasHeight);
+      canvasRenderingCtx.moveTo(mouseX, 0);
+      canvasRenderingCtx.lineTo(mouseX, canvasHeight);
       canvasRenderingCtx.strokeStyle = 'green';
       canvasRenderingCtx.setLineDash([5, 5]);
       canvasRenderingCtx.stroke();
 
       // Draw horizontal line
       canvasRenderingCtx.beginPath();
-      canvasRenderingCtx.moveTo(0, y);
-      canvasRenderingCtx.lineTo(canvasWidth, y);
+      canvasRenderingCtx.moveTo(0, mouseY);
+      canvasRenderingCtx.lineTo(canvasWidth, mouseY);
       canvasRenderingCtx.strokeStyle = 'blue';
       canvasRenderingCtx.stroke();
 
@@ -491,7 +493,7 @@ export class SqChart {
       const priceTextHeight: number = fontSize;
 
       const priceBoxX: number = canvasWidth - priceTextWidth - paddingX * 2;
-      const priceBoxY: number = y - priceTextHeight / 2 - paddingY;
+      const priceBoxY: number = mouseY - priceTextHeight / 2 - paddingY;
 
       canvasRenderingCtx.fillStyle = 'black';
       canvasRenderingCtx.fillRect(priceBoxX, priceBoxY, priceTextWidth + paddingX * 2, priceTextHeight + paddingY * 2);
@@ -503,7 +505,7 @@ export class SqChart {
       const dateTextWidth: number = canvasRenderingCtx.measureText(dateStr).width;
       const dateTextHeight: number = fontSize;
 
-      const dateBoxX: number = x - dateTextWidth / 2 - paddingX;
+      const dateBoxX: number = mouseX - dateTextWidth / 2 - paddingX;
       const dateBoxY: number = canvasHeight - dateTextHeight - paddingY * 2;
 
       canvasRenderingCtx.fillStyle = 'black';
@@ -569,6 +571,74 @@ export class SqChart {
         newStart = newEnd - totalVisible + 1;
       }
       // Update all chart lines with the same range
+      for (const line of this.chartLines)
+        line.setVisibleRange(newStart, newEnd);
+
+      this.redraw();
+    });
+  }
+
+  private enableXAxisZoom(): void {
+    if (this.canvas == null)
+      return;
+    const canvas: HTMLCanvasElement = this.canvas;
+    canvas.addEventListener('wheel', (event: WheelEvent) => {
+      event.preventDefault();
+
+      if (this.chartLines.length == 0)
+        return;
+
+      const firstLine: ChartLine = this.chartLines[0];
+      const visibleData: UiChartPoint[][] = firstLine.getVisibleData();
+      if (visibleData.length == 0)
+        return;
+
+      const [startIdx, endIdx] = [firstLine.visibleDataStartIdx, firstLine.visibleDataEndIdx]; // get the current Visible Range
+      const totalDataLength = firstLine.getDataSets()[0].length;
+
+      // Get mouse position relative to canvas
+      const rect: DOMRect = canvas.getBoundingClientRect();
+      const mouseX: number = event.clientX - rect.left;
+
+      // Calculate which data index is under the mouse
+      const visibleCount: number = endIdx - startIdx + 1;
+      this.pixelsPerPeriod = canvas.width / visibleCount;
+      const mouseDataIdx: number = startIdx + Math.floor(mouseX / this.pixelsPerPeriod);
+
+      // Determine zoom direction and factor
+      const zoomFactor: number = 1.1; // 10% zoom per wheel step
+      const zoomIn: boolean = event.deltaY < 0;
+
+      // Calculate new visible count
+      let newVisibleCount: number;
+      if (zoomIn)
+        newVisibleCount = Math.max(2, Math.floor(visibleCount / zoomFactor)); // shrink visible window
+      else
+        newVisibleCount = Math.min(totalDataLength, Math.ceil(visibleCount * zoomFactor)); // expand visible window
+
+      // Ensure we don't zoom beyond data bounds and count stays within [2, totalDataLength]
+      newVisibleCount = Math.max(2, Math.min(totalDataLength, newVisibleCount));
+
+      // Calculate new start index to keep mouse position fixed
+      const mousePositionRatio: number = mouseX / canvas.width;
+      let newStart: number = Math.floor(mouseDataIdx - mousePositionRatio * newVisibleCount);
+      let newEnd: number = newStart + newVisibleCount - 1;
+
+      // Reset newStart and newEnd so the view always stays within dataset range
+      if (newStart < 0) {
+        newStart = 0;
+        newEnd = Math.min(totalDataLength - 1, newStart + newVisibleCount - 1);
+      }
+
+      if (newEnd >= totalDataLength) {
+        newEnd = totalDataLength - 1;
+        newStart = Math.max(0, newEnd - newVisibleCount + 1);
+      }
+
+      newVisibleCount = newEnd - newStart + 1; // Recalculate actual visible count
+      this.pixelsPerPeriod = canvas.width / newVisibleCount; // Update pixelsPerPeriod
+
+      // Apply new visible range to all chart lines
       for (const line of this.chartLines)
         line.setVisibleRange(newStart, newEnd);
 

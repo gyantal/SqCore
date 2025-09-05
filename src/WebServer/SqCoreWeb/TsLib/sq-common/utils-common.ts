@@ -81,7 +81,7 @@ export function isValidDay(day: string, date: Date): boolean {
   return day.length == 2 && dayInt >= 1 && dayInt <= maxDays;
 }
 
-export function widthResizer(chartContainerDiv: HTMLElement, resizerDiv: HTMLElement) {
+export function resizeChartWidth(chartContainerDiv: HTMLElement, resizerDiv: HTMLElement) {
   resizerDiv.addEventListener('mousedown', resizingDiv);
   function resizingDiv(event: MouseEvent) {
     const originalMouseX: number = event.pageX;
@@ -102,7 +102,7 @@ export function widthResizer(chartContainerDiv: HTMLElement, resizerDiv: HTMLEle
   }
 }
 
-export function heightResizer(chartContainerDiv: HTMLElement, resizerDiv: HTMLElement) {
+export function resizeChartHeight(chartContainerDiv: HTMLElement, resizerDiv: HTMLElement) {
   resizerDiv.addEventListener('mousedown', resizingDiv);
   function resizingDiv(event: MouseEvent) {
     const originalMouseY: number = event.pageY;

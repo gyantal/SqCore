@@ -7,7 +7,7 @@ import { UltimateChart } from '../../../../TsLib/sq-common/chartUltimate';
 import { SqStatisticsBuilder, StatisticsResults, DetailedStatistics, BacktestDetailedStatistics } from '../../../../TsLib/sq-common/backtestStatistics';
 import { ChrtGenBacktestResult, UiChrtGenPrtfRunResult, CgTimeSeries, SqLog, ChartResolution, UiChartPoint, FolderJs, PortfolioJs, prtfsParseHelper, fldrsParseHelper, TreeViewState, TreeViewItem, createTreeViewData, PrtfItemType, LineStyle, ChartJs, SeasonalityData, getSeasonalityData, getDetailedStats, SqLogLevel } from '../../../../TsLib/sq-common/backtestCommon';
 import { SqTreeViewComponent } from '../../../sq-ng-common/src/lib/sq-tree-view/sq-tree-view.component';
-import { isValidDay, isValidMonth, isValidYear, parseNumberToDate, widthResizer, heightResizer, } from '../../../../TsLib/sq-common/utils-common';
+import { isValidDay, isValidMonth, isValidYear, parseNumberToDate, resizeChartWidth, resizeChartHeight, } from '../../../../TsLib/sq-common/utils-common';
 import { SqChart } from '../../../../TsLib/sq-common/sqChart';
 
 type Nullable<T> = T | null;
@@ -671,7 +671,7 @@ export class AppComponent implements OnInit {
     const endDate: Date = new Date('2023-08-01');
     chart.setViewport(startDate, endDate);
     // resizing
-    widthResizer(chartDiv, widthResizerDiv);
-    heightResizer(chartDiv, heightResizerDiv);
+    resizeChartWidth(chartDiv, widthResizerDiv);
+    resizeChartHeight(chartDiv, heightResizerDiv);
   }
 }
