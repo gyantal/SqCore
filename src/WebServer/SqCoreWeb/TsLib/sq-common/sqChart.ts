@@ -25,17 +25,18 @@ import { UiChartPoint } from './backtestCommon';
 // const endDate = new Date('2025-02-01');
 // chart.setViewport(startDate, endDate);
 
+// 1. Index-based filtering breaks when datasets start at different times.
+// e.g., index 0 in dataset1 (2013–2018, 6000 pts) ≠ index 0 in dataset2 (2015–2017, 2000 pts).
+// 2. Always compute the overall min/max dates across all datasets, since setViewport(start, end) may span ranges that cover multiple datasets.
 
 // Chart line class to manage individual data series
 class ChartLine {
   private dataSets: UiChartPoint[][];
-  public visibleDataStartIdx: number;
-  public visibleDataEndIdx: number;
+  private visibleRanges: { startIdx: number; endIdx: number }[] = [];
 
   constructor(dataSets: UiChartPoint[][] = []) {
     this.dataSets = dataSets;
-    this.visibleDataStartIdx = 0;
-    this.visibleDataEndIdx = dataSets.length > 0 ? dataSets[0].length - 1 : 0;
+    this.resetVisibleRanges();
   }
 
   // Getters
@@ -44,25 +45,40 @@ class ChartLine {
   }
 
   public getVisibleData(): UiChartPoint[][] {
-    return this.dataSets.map((ds) => ds.slice(this.visibleDataStartIdx, this.visibleDataEndIdx + 1));
+    const chartPoints: UiChartPoint[][] = [];
+    // extract the visible part of each dataset based on the current range
+    for (let i = 0; i < this.dataSets.length; i++) {
+      const dataSet: UiChartPoint[] = this.dataSets[i];
+      const range: {startIdx: number; endIdx: number;} = this.visibleRanges[i];
+
+      if (range.endIdx < range.startIdx)
+        chartPoints.push([]);
+      else
+        chartPoints.push(dataSet.slice(range.startIdx, range.endIdx + 1));
+    }
+    return chartPoints;
   }
 
   // Setters
   public setDataSets(dataSets: UiChartPoint[][]): void {
     this.dataSets = dataSets;
-    this.resetVisibleIndices();
+    this.resetVisibleRanges();
   }
 
-  public setVisibleRange(startIdx: number, endIdx: number): void {
-    if (startIdx >= 0 && this.dataSets.length > 0 && endIdx < this.dataSets[0].length && startIdx <= endIdx) {
-      this.visibleDataStartIdx = startIdx;
-      this.visibleDataEndIdx = endIdx;
+  public setVisibleRange(dataSetIndex: number, startIdx: number, endIdx: number): void {
+    if (dataSetIndex >= 0 && dataSetIndex < this.dataSets.length && startIdx >= 0 && endIdx < this.dataSets[dataSetIndex].length && startIdx <= endIdx)
+      this.visibleRanges[dataSetIndex] = { startIdx, endIdx };
+    else
+      this.visibleRanges[dataSetIndex] = { startIdx: 0, endIdx: -1 };
+  }
+
+  private resetVisibleRanges(): void {
+    this.visibleRanges = [];
+
+    for (let i = 0; i < this.dataSets.length; i++) {
+      const dataSet: UiChartPoint[] = this.dataSets[i];
+      this.visibleRanges.push({startIdx: 0, endIdx: dataSet.length - 1,});
     }
-  }
-
-  private resetVisibleIndices(): void {
-    this.visibleDataStartIdx = 0;
-    this.visibleDataEndIdx = this.dataSets.length > 0 ? this.dataSets[0].length - 1 : 0;
   }
 }
 
@@ -70,7 +86,6 @@ class XAxis {
   public minTime: number = 0;
   public maxTime: number = 1;
   public canvasWidth: number = 1;
-
 
   public generateTicks(dataSets: UiChartPoint[][]): { time: number, label: string }[] {
     if (dataSets.length == 0)
@@ -260,8 +275,10 @@ export class SqChart {
 
   // Drag state
   private isDragging = false;
-
-  private pixelsPerPeriod: number = 1; // horizontal zoom level
+  private viewportStartDate: Date | null = null;
+  private viewportEndDate: Date | null = null;
+  private overallMinDate: Date = maxDate;
+  private overallMaxDate: Date = minDate;
 
   public init(chartDiv: HTMLElement): void {
     this.chartDiv = chartDiv;
@@ -282,13 +299,30 @@ export class SqChart {
     this.enableXAxisZoom();
   }
 
-  public addLine(data: UiChartPoint[][]): void {
-    const line = new ChartLine(data);
+  public addLine(dataSets: UiChartPoint[][]): void {
+    const line: ChartLine = new ChartLine(dataSets);
     this.chartLines.push(line);
-    this.redraw();
+    // find the min and max date from all the datasets
+    for (const dataSet of dataSets) {
+      if (dataSet.length > 0) {
+        const minDate = dataSet[0].date;
+        const maxDate = dataSet[dataSet.length - 1].date;
+        if (minDate < this.overallMinDate)
+          this.overallMinDate = minDate;
+
+        if (maxDate > this.overallMaxDate)
+          this.overallMaxDate = maxDate;
+      }
+    }
+    if (this.viewportStartDate == null && this.overallMinDate != maxDate)
+      this.setViewport(this.overallMinDate, this.overallMaxDate);
+    else
+      this.redraw();
   }
 
   public setViewport(startDate: Date, endDate: Date): void {
+    this.viewportStartDate = startDate;
+    this.viewportEndDate = endDate;
     for (const line of this.chartLines) {
       const dataSets: UiChartPoint[][] = line.getDataSets();
 
@@ -311,7 +345,7 @@ export class SqChart {
           }
         }
 
-        line.setVisibleRange(startIdx, endIdx);
+        line.setVisibleRange(i, startIdx, endIdx); // for each dataset the start and end index may or maynot be same
       }
     }
     this.redraw();
@@ -341,12 +375,15 @@ export class SqChart {
     if (visibleDataSets.length == 0)
       return;
 
-    // Basic line drawing logic (simplified)
+    // Update X-axis min, max based on viewport
+    this.xAxis.minTime = this.viewportStartDate?.getTime() ?? this.overallMinDate.getTime();
+    this.xAxis.maxTime = this.viewportEndDate?.getTime() ?? this.overallMaxDate.getTime();
+
+    const xScale = canvasWidth / (this.xAxis.maxTime - this.xAxis.minTime);
+    const yScale = canvasHeight / (this.yAxis.maxValue - this.yAxis.minValue);
     for (const visibleData of visibleDataSets) {
       if (visibleData.length < 2)
         continue;
-      const xScale = canvasWidth / (this.xAxis.maxTime - this.xAxis.minTime);
-      const yScale = canvasHeight / (this.yAxis.maxValue - this.yAxis.minValue);
       canvasRenderingCtx.beginPath();
       let firstVal: boolean = true;
       for (const point of visibleData) {
@@ -541,40 +578,33 @@ export class SqChart {
       const deltaX: number = e.clientX - clientX;
       clientX = e.clientX;
 
-      if (this.chartLines.length == 0)
+      if (this.viewportStartDate == null || this.viewportEndDate == null || this.overallMinDate == maxDate || this.overallMaxDate == minDate)
         return;
 
-      const firstLine: ChartLine = this.chartLines[0];
-      const visibleData: UiChartPoint[][] = firstLine.getVisibleData();
-      if (visibleData.length == 0)
+      const viewportTimeRange: number = this.viewportEndDate.getTime() - this.viewportStartDate.getTime();
+      if (viewportTimeRange <= 0)
         return;
 
-      const totalVisible: number = visibleData[0].length;
-      const pxPerPoint: number = this.canvas!.width / totalVisible; // Compute how many pixels correspond to one data point across the canvas
-      const shiftPoints: number = Math.round(-deltaX / pxPerPoint); // Convert pixel drag distance to number of data points to shift
+      const pixelsPerMs: number = this.canvas!.width / viewportTimeRange;
+      const deltaTime: number = -deltaX / pixelsPerMs;
+      let newStartTime: number = this.viewportStartDate.getTime() + deltaTime;
+      let newEndTime: number = this.viewportEndDate.getTime() + deltaTime;
 
-      // update the visible range
-      const [startIdx, endIdx] = [firstLine.visibleDataStartIdx, firstLine.visibleDataEndIdx]; // get the current Visible Range
-      let newStart: number = startIdx + shiftPoints;
-      let newEnd: number = endIdx + shiftPoints;
-      const totalDataLength = firstLine.getDataSets()[0].length;
+      const minTime: number = this.overallMinDate.getTime();
+      const maxTime: number = this.overallMaxDate.getTime();
 
-      // If the user drags too far left, lock the view to the first chunk of data(e.g, if 50 points fit on screen -> show points 0-49)
-      if (newStart < 0) {
-        newStart = 0;
-        newEnd = totalVisible - 1;
+      // If the user drags too far left, lock the view to the first data point
+      if (newStartTime < minTime) {
+        newStartTime = minTime;
+        newEndTime = newStartTime + viewportTimeRange;
       }
 
-      // If the user drags too far right, lock the view to the last chunk of data(e.g, if 50 points fit on screen and the dataset has 200 points-> show points 150-199)
-      if (newEnd >= totalDataLength) {
-        newEnd = totalDataLength - 1;
-        newStart = newEnd - totalVisible + 1;
+      // If the user drags too far right, lock the view to the last data point
+      if (newEndTime > maxTime) {
+        newEndTime = maxTime;
+        newStartTime = newEndTime - viewportTimeRange;
       }
-      // Update all chart lines with the same range
-      for (const line of this.chartLines)
-        line.setVisibleRange(newStart, newEnd);
-
-      this.redraw();
+      this.setViewport(new Date(newStartTime), new Date(newEndTime));
     });
   }
 
@@ -585,64 +615,47 @@ export class SqChart {
     canvas.addEventListener('wheel', (event: WheelEvent) => {
       event.preventDefault();
 
-      if (this.chartLines.length == 0)
+      if (this.viewportStartDate == null || this.viewportEndDate == null || this.overallMinDate == maxDate || this.overallMaxDate == minDate)
         return;
 
-      const firstLine: ChartLine = this.chartLines[0];
-      const visibleData: UiChartPoint[][] = firstLine.getVisibleData();
-      if (visibleData.length == 0)
+      const viewportTimeRange: number = this.viewportEndDate.getTime() - this.viewportStartDate.getTime();
+      if (viewportTimeRange <= 0)
         return;
 
-      const [startIdx, endIdx] = [firstLine.visibleDataStartIdx, firstLine.visibleDataEndIdx]; // get the current Visible Range
-      const totalDataLength = firstLine.getDataSets()[0].length;
-
-      // Get mouse position relative to canvas
       const rect: DOMRect = canvas.getBoundingClientRect();
       const mouseX: number = event.clientX - rect.left;
-
-      // Calculate which data index is under the mouse
-      const visibleCount: number = endIdx - startIdx + 1;
-      this.pixelsPerPeriod = canvas.width / visibleCount;
-      const mouseDataIdx: number = startIdx + Math.floor(mouseX / this.pixelsPerPeriod);
-
+      const mousePositionRatio: number = mouseX / canvas.width;
+      const mousePosTime: number = this.viewportStartDate.getTime() + mousePositionRatio * viewportTimeRange;
       // Determine zoom direction and factor
       const zoomFactor: number = 1.1; // 10% zoom per wheel step
       const zoomIn: boolean = event.deltaY < 0;
 
-      // Calculate new visible count
-      let newVisibleCount: number;
+      let newViewportTimeRange: number;
       if (zoomIn)
-        newVisibleCount = Math.max(2, Math.floor(visibleCount / zoomFactor)); // shrink visible window
+        newViewportTimeRange = viewportTimeRange / zoomFactor; // shrink visible window
       else
-        newVisibleCount = Math.min(totalDataLength, Math.ceil(visibleCount * zoomFactor)); // expand visible window
+        newViewportTimeRange = viewportTimeRange * zoomFactor; // expand visible window
 
-      // Ensure we don't zoom beyond data bounds and count stays within [2, totalDataLength]
-      newVisibleCount = Math.max(2, Math.min(totalDataLength, newVisibleCount));
+      const maxSpan: number = this.overallMaxDate.getTime() - this.overallMinDate.getTime();
+      newViewportTimeRange = Math.min(maxSpan, newViewportTimeRange);
 
-      // Calculate new start index to keep mouse position fixed
-      const mousePositionRatio: number = mouseX / canvas.width;
-      let newStart: number = Math.floor(mouseDataIdx - mousePositionRatio * newVisibleCount);
-      let newEnd: number = newStart + newVisibleCount - 1;
+      let newStartTime: number = mousePosTime - mousePositionRatio * newViewportTimeRange;
+      let newEndTime: number = mousePosTime + (1 - mousePositionRatio) * newViewportTimeRange;
 
-      // Reset newStart and newEnd so the view always stays within dataset range
-      if (newStart < 0) {
-        newStart = 0;
-        newEnd = Math.min(totalDataLength - 1, newStart + newVisibleCount - 1);
+      const minTime: number = this.overallMinDate.getTime();
+      const maxTime: number = this.overallMaxDate.getTime();
+      // If zoom goes too far left, lock the view to the first data point
+      if (newStartTime < minTime) {
+        newStartTime = minTime;
+        newEndTime = Math.min(maxTime, newStartTime + newViewportTimeRange);
+      }
+      // If zoom goes too far right, lock the view to the last data point
+      if (newEndTime > maxTime) {
+        newEndTime = maxTime;
+        newStartTime = Math.max(minTime, newEndTime - newViewportTimeRange);
       }
 
-      if (newEnd >= totalDataLength) {
-        newEnd = totalDataLength - 1;
-        newStart = Math.max(0, newEnd - newVisibleCount + 1);
-      }
-
-      newVisibleCount = newEnd - newStart + 1; // Recalculate actual visible count
-      this.pixelsPerPeriod = canvas.width / newVisibleCount; // Update pixelsPerPeriod
-
-      // Apply new visible range to all chart lines
-      for (const line of this.chartLines)
-        line.setVisibleRange(newStart, newEnd);
-
-      this.redraw();
+      this.setViewport(new Date(newStartTime), new Date(newEndTime));
     });
   }
 }

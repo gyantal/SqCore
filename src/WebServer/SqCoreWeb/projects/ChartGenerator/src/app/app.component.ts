@@ -100,33 +100,33 @@ export class AppComponent implements OnInit {
   m_hasSqLogErrOrWarn: boolean = false;
 
   // Sample data for sqChart developing
-  chartData: UiChartPoint[][] = [
-    [
-      { date: new Date('2021-01-01'), value: 100 },
-      { date: new Date('2021-02-01'), value: 150 },
-      { date: new Date('2021-03-01'), value: 120 },
-      { date: new Date('2021-04-01'), value: 110 },
-      { date: new Date('2022-03-01'), value: 200 },
-      { date: new Date('2022-04-01'), value: 150 },
-      { date: new Date('2023-05-01'), value: 200 },
-      { date: new Date('2023-06-01'), value: 150 },
-      { date: new Date('2024-07-01'), value: 2000 },
-      { date: new Date('2024-08-01'), value: 100 },
-      { date: new Date('2025-05-01'), value: 175 },
-    ],
-    [
-      { date: new Date('2021-01-01'), value: 105 },
-      { date: new Date('2021-02-01'), value: 155 },
-      { date: new Date('2021-03-01'), value: 125 },
-      { date: new Date('2021-04-01'), value: 115 },
-      { date: new Date('2022-03-01'), value: 205 },
-      { date: new Date('2022-04-01'), value: 155 },
-      { date: new Date('2023-05-01'), value: 205 },
-      { date: new Date('2023-06-01'), value: 155 },
-      { date: new Date('2024-07-01'), value: 205 },
-      { date: new Date('2024-08-01'), value: 105 },
-      { date: new Date('2026-05-01'), value: 180 },
-    ]];
+  //   chartData: UiChartPoint[][] = [
+  //     [
+  //       { date: new Date('2021-01-01'), value: 100 },
+  //       { date: new Date('2021-02-01'), value: 150 },
+  //       { date: new Date('2021-03-01'), value: 120 },
+  //       { date: new Date('2021-04-01'), value: 110 },
+  //       { date: new Date('2022-03-01'), value: 200 },
+  //       { date: new Date('2022-04-01'), value: 150 },
+  //       { date: new Date('2023-05-01'), value: 200 },
+  //       { date: new Date('2023-06-01'), value: 150 },
+  //       { date: new Date('2024-07-01'), value: 2000 },
+  //       { date: new Date('2024-08-01'), value: 100 },
+  //       { date: new Date('2025-05-01'), value: 175 },
+  //     ],
+  //     [
+  //       { date: new Date('2021-01-01'), value: 105 },
+  //       { date: new Date('2021-02-01'), value: 155 },
+  //       { date: new Date('2021-03-01'), value: 125 },
+  //       { date: new Date('2021-04-01'), value: 115 },
+  //       { date: new Date('2022-03-01'), value: 205 },
+  //       { date: new Date('2022-04-01'), value: 155 },
+  //       { date: new Date('2023-05-01'), value: 205 },
+  //       { date: new Date('2023-06-01'), value: 155 },
+  //       { date: new Date('2024-07-01'), value: 205 },
+  //       { date: new Date('2024-08-01'), value: 105 },
+  //       { date: new Date('2026-05-01'), value: 180 },
+  //     ]];
 
   // Constants
   public gPortfolioIdOffset: number = 10000;
@@ -664,14 +664,31 @@ export class AppComponent implements OnInit {
     const chart = new SqChart();
     chart.init(chartDiv);
     // Add a data series
-    chart.addLine(this.chartData);
-    // chart.addLine(this.chartData.dataset2);
+    const chartData: UiChartPoint[][] = this.getSqChartData();
+    chart.addLine(chartData);
     // Set viewport to show data between two dates
-    const startDate: Date = new Date('2021-01-01');
+    const startDate: Date = new Date('2018-01-01');
     const endDate: Date = new Date('2023-08-01');
     chart.setViewport(startDate, endDate);
     // resizing
     resizeChartWidth(chartDiv, widthResizerDiv);
     resizeChartHeight(chartDiv, heightResizerDiv);
+  }
+
+  getSqChartData(): UiChartPoint[][] {
+    const sqChartData: UiChartPoint[][] = [];
+    if (this.m_chrtGenBacktestResults == null)
+      return sqChartData;
+
+    for (const bmrkData of this.m_chrtGenBacktestResults.bmrkHistories) {
+      const bmrkChrtData = bmrkData.chrtData;
+      const seriesData: UiChartPoint[] = [];
+      for (let i = 0; i < bmrkChrtData.dates.length; i++) {
+        const chrtPoint: UiChartPoint = this.createUiChartPointFromChrtData(bmrkChrtData, i);
+        seriesData.push(chrtPoint);
+      }
+      sqChartData.push(seriesData);
+    }
+    return sqChartData;
   }
 }
