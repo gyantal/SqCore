@@ -665,7 +665,8 @@ export class AppComponent implements OnInit {
     chart.init(chartDiv);
     // Add a data series
     const chartData: UiChartPoint[][] = this.getSqChartData();
-    chart.addLine(chartData);
+    for (const chrtData of chartData)
+      chart.addLine(chrtData);
     // Set viewport to show data between two dates
     const startDate: Date = new Date('2018-01-01');
     const endDate: Date = new Date('2023-08-01');

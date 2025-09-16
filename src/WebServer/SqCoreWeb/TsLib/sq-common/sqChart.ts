@@ -31,54 +31,41 @@ import { UiChartPoint } from './backtestCommon';
 
 // Chart line class to manage individual data series
 class ChartLine {
-  private dataSets: UiChartPoint[][];
-  private visibleRanges: { startIdx: number; endIdx: number }[] = [];
+  private dataSet: UiChartPoint[];
+  public visibleDataStartIdx: number;
+  public visibleDataEndIdx: number;
 
-  constructor(dataSets: UiChartPoint[][] = []) {
-    this.dataSets = dataSets;
-    this.resetVisibleRanges();
+  constructor(dataSet: UiChartPoint[] = []) {
+    this.dataSet = dataSet;
+    this.visibleDataStartIdx = 0;
+    this.visibleDataEndIdx = dataSet.length > 0 ? dataSet.length - 1 : 0;
   }
 
   // Getters
-  public getDataSets(): UiChartPoint[][] {
-    return this.dataSets;
+  public getDataSet(): UiChartPoint[] {
+    return this.dataSet;
   }
 
-  public getVisibleData(): UiChartPoint[][] {
-    const chartPoints: UiChartPoint[][] = [];
-    // extract the visible part of each dataset based on the current range
-    for (let i = 0; i < this.dataSets.length; i++) {
-      const dataSet: UiChartPoint[] = this.dataSets[i];
-      const range: {startIdx: number; endIdx: number;} = this.visibleRanges[i];
-
-      if (range.endIdx < range.startIdx)
-        chartPoints.push([]);
-      else
-        chartPoints.push(dataSet.slice(range.startIdx, range.endIdx + 1));
-    }
-    return chartPoints;
+  public getVisibleData(): UiChartPoint[] {
+    return this.dataSet.slice(this.visibleDataStartIdx, this.visibleDataEndIdx + 1);
   }
 
   // Setters
-  public setDataSets(dataSets: UiChartPoint[][]): void {
-    this.dataSets = dataSets;
-    this.resetVisibleRanges();
+  public setDataSet(dataSet: UiChartPoint[]): void {
+    this.dataSet = dataSet;
+    this.resetVisibleIndices();
   }
 
-  public setVisibleRange(dataSetIndex: number, startIdx: number, endIdx: number): void {
-    if (dataSetIndex >= 0 && dataSetIndex < this.dataSets.length && startIdx >= 0 && endIdx < this.dataSets[dataSetIndex].length && startIdx <= endIdx)
-      this.visibleRanges[dataSetIndex] = { startIdx, endIdx };
-    else
-      this.visibleRanges[dataSetIndex] = { startIdx: 0, endIdx: -1 };
-  }
-
-  private resetVisibleRanges(): void {
-    this.visibleRanges = [];
-
-    for (let i = 0; i < this.dataSets.length; i++) {
-      const dataSet: UiChartPoint[] = this.dataSets[i];
-      this.visibleRanges.push({startIdx: 0, endIdx: dataSet.length - 1,});
+  public setVisibleRange(startIdx: number, endIdx: number): void {
+    if (startIdx >= 0 && this.dataSet.length > 0 && endIdx < this.dataSet.length && startIdx <= endIdx) {
+      this.visibleDataStartIdx = startIdx;
+      this.visibleDataEndIdx = endIdx;
     }
+  }
+
+  private resetVisibleIndices(): void {
+    this.visibleDataStartIdx = 0;
+    this.visibleDataEndIdx = this.dataSet.length > 0 ? this.dataSet.length - 1 : 0;
   }
 }
 
@@ -219,8 +206,8 @@ class YAxis {
     return ticks;
   }
 
-  public render(ctx: CanvasRenderingContext2D, canvasHeight: number, data: UiChartPoint[][]): void {
-    if (data.length == 0)
+  public render(ctx: CanvasRenderingContext2D, canvasHeight: number, dataSets: UiChartPoint[][]): void {
+    if (dataSets.length == 0)
       return;
 
     const tickLabelXOffset = 10; // Controls the horizontal position of the tick labels relative to the axis.
@@ -231,7 +218,7 @@ class YAxis {
     ctx.lineTo(0, canvasHeight);
     ctx.stroke();
     // Draw ticks, labels
-    const ticks = this.generateTicks(data);
+    const ticks: number[] = this.generateTicks(dataSets);
 
     // Add 10% padding to min and max to prevent ticks at canvas edges
     const range: number = this.maxValue - this.minValue;
@@ -299,54 +286,56 @@ export class SqChart {
     this.enableXAxisZoom();
   }
 
-  public addLine(dataSets: UiChartPoint[][]): void {
-    const line: ChartLine = new ChartLine(dataSets);
-    this.chartLines.push(line);
-    // find the min and max date from all the datasets
-    for (const dataSet of dataSets) {
-      if (dataSet.length > 0) {
-        const minDate = dataSet[0].date;
-        const maxDate = dataSet[dataSet.length - 1].date;
-        if (minDate < this.overallMinDate)
-          this.overallMinDate = minDate;
+  private getColor(index: number): string {
+    const colors: string[] = ['#0000ff', '#e41a1c', '#4daf4a', '#984ea3', '#ff7f00', '#f781bf', '#808000', '#008000', '#a65628', '#333397', '#800080', '#000000'];
+    return colors[index % colors.length];
+  }
 
-        if (maxDate > this.overallMaxDate)
-          this.overallMaxDate = maxDate;
-      }
+  public addLine(dataSet: UiChartPoint[]): void {
+    const line: ChartLine = new ChartLine(dataSet);
+    this.chartLines.push(line);
+    // update global min/max dates
+    if (dataSet.length > 0) {
+      const firstDate: Date = dataSet[0].date;
+      const lastDate: Date = dataSet[dataSet.length - 1].date;
+
+      if (firstDate < this.overallMinDate)
+        this.overallMinDate = firstDate;
+
+      if (lastDate > this.overallMaxDate)
+        this.overallMaxDate = lastDate;
     }
-    if (this.viewportStartDate == null && this.overallMinDate != maxDate)
-      this.setViewport(this.overallMinDate, this.overallMaxDate);
-    else
-      this.redraw();
+    // initialize viewport on first dataset
+    if (this.viewportStartDate == null || this.viewportEndDate == null) {
+      this.viewportStartDate = this.overallMinDate;
+      this.viewportEndDate = this.overallMaxDate;
+    }
+    this.redraw();
   }
 
   public setViewport(startDate: Date, endDate: Date): void {
     this.viewportStartDate = startDate;
     this.viewportEndDate = endDate;
     for (const line of this.chartLines) {
-      const dataSets: UiChartPoint[][] = line.getDataSets();
+      const dataSet: UiChartPoint[] = line.getDataSet();
+      let startIdx: number = 0;
+      let endIdx: number = dataSet.length - 1;
 
-      for (let i = 0; i < dataSets.length; i++) {
-        const dataSet: UiChartPoint[] = dataSets[i];
-        let startIdx: number = 0;
-        let endIdx: number = dataSet.length - 1;
-
-        for (let j = 0; j < dataSet.length; j++) {
-          if (dataSet[j].date >= startDate) {
-            startIdx = j;
-            break;
-          }
+      for (let j = 0; j < dataSet.length; j++) {
+        if (dataSet[j].date >= startDate) {
+          startIdx = j;
+          break;
         }
-
-        for (let k = dataSet.length - 1; k >= 0; k--) {
-          if (dataSet[k].date <= endDate) {
-            endIdx = k;
-            break;
-          }
-        }
-
-        line.setVisibleRange(i, startIdx, endIdx); // for each dataset the start and end index may or maynot be same
       }
+
+      for (let k = dataSet.length - 1; k >= 0; k--) {
+        if (dataSet[k].date <= endDate) {
+          endIdx = k;
+          break;
+        }
+      }
+
+      line.setVisibleRange(startIdx, endIdx); // for each dataset the start and end index may or maynot be same
     }
     this.redraw();
   }
@@ -368,8 +357,8 @@ export class SqChart {
     // Collect all visible data
     const visibleDataSets: UiChartPoint[][] = [];
     for (const line of this.chartLines) {
-      const visibleData: UiChartPoint[][] = line.getVisibleData();
-      visibleDataSets.push(...visibleData);
+      const visibleData: UiChartPoint[] = line.getVisibleData();
+      visibleDataSets.push(visibleData);
     }
 
     if (visibleDataSets.length == 0)
@@ -381,12 +370,12 @@ export class SqChart {
 
     const xScale = canvasWidth / (this.xAxis.maxTime - this.xAxis.minTime);
     const yScale = canvasHeight / (this.yAxis.maxValue - this.yAxis.minValue);
-    for (const visibleData of visibleDataSets) {
-      if (visibleData.length < 2)
+    for (let i = 0; i < visibleDataSets.length; i++) {
+      if (visibleDataSets.length < 1)
         continue;
       canvasRenderingCtx.beginPath();
       let firstVal: boolean = true;
-      for (const point of visibleData) {
+      for (const point of visibleDataSets[i]) {
         const x: number = (point.date.getTime() - this.xAxis.minTime) * xScale;
         const y: number = canvasHeight - ((point.value - this.yAxis.minValue) * yScale);
         if (firstVal) {
@@ -395,7 +384,7 @@ export class SqChart {
         } else
           canvasRenderingCtx.lineTo(x, y);
       }
-      canvasRenderingCtx.strokeStyle = '#007bff'; // line color
+      canvasRenderingCtx.strokeStyle = this.getColor(i); // line color
       canvasRenderingCtx.stroke();
     }
 
