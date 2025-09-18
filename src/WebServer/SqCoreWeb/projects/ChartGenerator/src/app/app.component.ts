@@ -8,7 +8,7 @@ import { SqStatisticsBuilder, StatisticsResults, DetailedStatistics, BacktestDet
 import { ChrtGenBacktestResult, UiChrtGenPrtfRunResult, CgTimeSeries, SqLog, ChartResolution, UiChartPoint, FolderJs, PortfolioJs, prtfsParseHelper, fldrsParseHelper, TreeViewState, TreeViewItem, createTreeViewData, PrtfItemType, LineStyle, ChartJs, SeasonalityData, getSeasonalityData, getDetailedStats, SqLogLevel } from '../../../../TsLib/sq-common/backtestCommon';
 import { SqTreeViewComponent } from '../../../sq-ng-common/src/lib/sq-tree-view/sq-tree-view.component';
 import { isValidDay, isValidMonth, isValidYear, parseNumberToDate, resizeChartWidth, resizeChartHeight, } from '../../../../TsLib/sq-common/utils-common';
-import { SqChart } from '../../../../TsLib/sq-common/sqChart';
+import { ChartLine, SqChart } from '../../../../TsLib/sq-common/sqChart';
 
 type Nullable<T> = T | null;
 
@@ -665,8 +665,8 @@ export class AppComponent implements OnInit {
     chart.init(chartDiv);
     // Add a data series
     const chartData: UiChartPoint[][] = this.getSqChartData();
-    for (const chrtData of chartData)
-      chart.addLine(chrtData);
+    for (const dataset of chartData)
+      chart.addLine(new ChartLine(dataset));
     // Set viewport to show data between two dates
     const startDate: Date = new Date('2018-01-01');
     const endDate: Date = new Date('2023-08-01');
