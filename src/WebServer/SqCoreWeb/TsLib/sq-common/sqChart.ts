@@ -35,10 +35,12 @@ export class ChartLine {
   public visibleDataStartIdx: number;
   public visibleDataEndIdx: number;
   public color: string | null;
+  public chartStyle: string | null; // line, candle, bar...
 
-  constructor(dataSet: UiChartPoint[] = [], color = null) {
+  constructor(dataSet: UiChartPoint[] = [], color: string | null = null, chartStyle: string | null = null) {
     this.dataSet = dataSet;
     this.color = color;
+    this.chartStyle = chartStyle;
     this.visibleDataStartIdx = 0;
     this.visibleDataEndIdx = dataSet.length > 0 ? dataSet.length - 1 : 0;
   }
@@ -373,19 +375,15 @@ export class SqChart {
       const visibleData: UiChartPoint[] = line.getVisibleData();
       if (visibleData.length == 0)
         continue;
-      canvasRenderingCtx.beginPath();
-      let firstVal: boolean = true;
-      for (const point of visibleData) {
-        const x: number = (point.date.getTime() - this.xAxis.minTime) * xScale;
-        const y: number = canvasHeight - ((point.value - this.yAxis.minValue) * yScale);
-        if (firstVal) {
-          canvasRenderingCtx.moveTo(x, y);
-          firstVal = false;
-        } else
-          canvasRenderingCtx.lineTo(x, y);
+      switch (line.chartStyle) {
+        case 'candle':
+          this.drawCandle(visibleData, canvasRenderingCtx, xScale, yScale, canvasHeight);
+          break;
+        case 'line':
+          this.drawLine(line, visibleData, canvasRenderingCtx, xScale, yScale, canvasHeight);
+          break;
+        // future: area, scatter, etc.
       }
-      canvasRenderingCtx.strokeStyle = line.color!;
-      canvasRenderingCtx.stroke();
     }
 
     this.drawAxes(this.chartLines);
@@ -646,5 +644,45 @@ export class SqChart {
 
       this.setViewport(new Date(newStartTime), new Date(newEndTime));
     });
+  }
+
+  private drawCandle(visibleData: UiChartPoint[], ctx: CanvasRenderingContext2D, xScale: number, yScale: number, canvasHeight: number): void {
+    for (let i = 1; i < visibleData.length; i++) {
+      const prev: UiChartPoint = visibleData[i - 1];
+      const curr: UiChartPoint = visibleData[i];
+
+      const xCurr: number = (curr.date.getTime() - this.xAxis.minTime) * xScale;
+      const yPrev: number = canvasHeight - ((prev.value - this.yAxis.minValue) * yScale);
+      const yCurr: number = canvasHeight - ((curr.value - this.yAxis.minValue) * yScale);
+
+      const top: number = Math.min(yPrev, yCurr);
+      const height: number = Math.abs(yPrev - yCurr);
+
+      // Compute the rectangle width dynamically based on spacing between points
+      let barWidth: number = 5;
+      if (i > 0) {
+        const dx: number = (curr.date.getTime() - prev.date.getTime()) * xScale; // Distance in pixels between curr and prev
+        barWidth = dx * 0.6; // Set bar width (60%) of the available between curr and prev
+      }
+
+      ctx.fillStyle = curr.value >= prev.value ? 'green' : 'red';
+      ctx.fillRect(xCurr - barWidth / 2, top, barWidth, height);
+    }
+  }
+
+  private drawLine(line: ChartLine, visibleData: UiChartPoint[], ctx: CanvasRenderingContext2D, xScale: number, yScale: number, canvasHeight: number): void {
+    ctx.beginPath();
+    let firstVal: boolean = true;
+    for (const point of visibleData) {
+      const x: number = (point.date.getTime() - this.xAxis.minTime) * xScale;
+      const y: number = canvasHeight - ((point.value - this.yAxis.minValue) * yScale);
+      if (firstVal) {
+        ctx.moveTo(x, y);
+        firstVal = false;
+      } else
+        ctx.lineTo(x, y);
+    }
+    ctx.strokeStyle = line.color ?? 'black';
+    ctx.stroke();
   }
 }
