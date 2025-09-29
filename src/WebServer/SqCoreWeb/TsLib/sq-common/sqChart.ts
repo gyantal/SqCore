@@ -376,8 +376,11 @@ export class SqChart {
       if (visibleData.length == 0)
         continue;
       switch (line.chartStyle) {
-        case 'candle':
-          this.drawCandle(visibleData, canvasRenderingCtx, xScale, yScale, canvasHeight);
+        case 'basicCandle': // A simple candle bar
+          this.drawBasicCandle(visibleData, canvasRenderingCtx, xScale, yScale, canvasHeight);
+          break;
+        case 'candleStick': // A full candlestick showing High–Low (wick) and Open–Close (body)
+          this.drawCandleStick(visibleData, canvasRenderingCtx, xScale, yScale, canvasHeight);
           break;
         case 'line':
           this.drawLine(line, visibleData, canvasRenderingCtx, xScale, yScale, canvasHeight);
@@ -646,7 +649,49 @@ export class SqChart {
     });
   }
 
-  private drawCandle(visibleData: UiChartPoint[], ctx: CanvasRenderingContext2D, xScale: number, yScale: number, canvasHeight: number): void {
+  private drawCandleStick(visibleData: UiChartPoint[], ctx: CanvasRenderingContext2D, xScale: number, yScale: number, canvasHeight: number): void {
+    for (let i = 1; i < visibleData.length; i++) {
+      const prev: UiChartPoint = visibleData[i - 1];
+      const curr: UiChartPoint = visibleData[i];
+
+      // Generate a random number between -1 and 1
+      const randomFactor: number = Math.random() * 2 - 1;
+      const priceDelta: number = curr.value - prev.value;
+
+      // Calculate synthetic OHLC values
+      const open: number = curr.value - priceDelta * randomFactor;
+      const high: number = Math.max(curr.value, prev.value) + Math.abs((priceDelta / 2) * randomFactor);
+      const low: number = Math.min(curr.value, prev.value) - Math.abs((priceDelta / 2) * randomFactor);
+      const close: number = curr.value;
+
+      // Convert prices to Y-coordinates
+      const yOpen: number = canvasHeight - ((open - this.yAxis.minValue) * yScale);
+      const yHigh: number = canvasHeight - ((high - this.yAxis.minValue) * yScale);
+      const yLow: number = canvasHeight - ((low - this.yAxis.minValue) * yScale);
+      const yClose: number = canvasHeight - ((close - this.yAxis.minValue) * yScale);
+
+      const xCurr: number = (curr.date.getTime() - this.xAxis.minTime) * xScale;
+
+      // Compute the rectangle width dynamically based on spacing between points
+      const dx: number = (curr.date.getTime() - prev.date.getTime()) * xScale; // Distance in pixels between curr and prev
+      const barWidth = dx * 0.6; // Set bar width (60%) of the available between curr and prev
+
+      // Wick (High–Low line)
+      ctx.strokeStyle = close >= open ? 'green' : 'red';
+      ctx.beginPath();
+      ctx.moveTo(xCurr, yHigh);
+      ctx.lineTo(xCurr, yLow);
+      ctx.stroke();
+
+      // Candle body (Open–Close)
+      const candleTop: number = Math.min(yOpen, yClose);
+      const candleBodyHeight: number = Math.abs(yOpen - yClose);
+      ctx.fillStyle = close >= open ? 'green' : 'red';
+      ctx.fillRect(xCurr - barWidth / 2, candleTop, barWidth, candleBodyHeight);
+    }
+  }
+
+  private drawBasicCandle(visibleData: UiChartPoint[], ctx: CanvasRenderingContext2D, xScale: number, yScale: number, canvasHeight: number): void {
     for (let i = 1; i < visibleData.length; i++) {
       const prev: UiChartPoint = visibleData[i - 1];
       const curr: UiChartPoint = visibleData[i];
@@ -659,11 +704,8 @@ export class SqChart {
       const height: number = Math.abs(yPrev - yCurr);
 
       // Compute the rectangle width dynamically based on spacing between points
-      let barWidth: number = 5;
-      if (i > 0) {
-        const dx: number = (curr.date.getTime() - prev.date.getTime()) * xScale; // Distance in pixels between curr and prev
-        barWidth = dx * 0.6; // Set bar width (60%) of the available between curr and prev
-      }
+      const dx: number = (curr.date.getTime() - prev.date.getTime()) * xScale; // Distance in pixels between curr and prev
+      const barWidth = dx * 0.6; // Set bar width (60%) of the available between curr and prev
 
       ctx.fillStyle = curr.value >= prev.value ? 'green' : 'red';
       ctx.fillRect(xCurr - barWidth / 2, top, barWidth, height);
