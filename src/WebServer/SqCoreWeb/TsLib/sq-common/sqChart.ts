@@ -71,6 +71,23 @@ export class ChartLine {
     this.visibleDataStartIdx = 0;
     this.visibleDataEndIdx = this.dataSet.length > 0 ? this.dataSet.length - 1 : 0;
   }
+
+  public generateRandomOhlc(): void {
+    for (let i = 1; i < this.dataSet.length; i++) {
+      const prev: UiChartPoint = this.dataSet[i - 1];
+      const curr: UiChartPoint = this.dataSet[i];
+
+      // Generate random factor [-1, 1]
+      const randomFactor: number = Math.random() * 2 - 1;
+      const priceDelta: number = curr.value - prev.value;
+
+      // Synthetic OHLC
+      curr.open = curr.value - priceDelta * randomFactor;
+      curr.high = Math.max(curr.value, prev.value) + Math.abs((priceDelta / 2) * randomFactor);
+      curr.low = Math.min(curr.value, prev.value) - Math.abs((priceDelta / 2) * randomFactor);
+      curr.close = curr.value;
+    }
+  }
 }
 
 class XAxis {
@@ -299,9 +316,18 @@ export class SqChart {
   public addLine(chartLine: ChartLine): void {
     if (chartLine.color == null)
       chartLine.color = this.getColor(this.chartLines.length);
+    const dataSet: UiChartPoint[] = chartLine.getDataSet();
+
+    // If it's a candlestick chart and OHLC values are not present, generate random data
+    if (chartLine.chartStyle == 'candleStick' && dataSet.length > 0) {
+      const chrtPoint: UiChartPoint = dataSet[0];
+      const hasValidOhlcData: boolean = !isNaN(chrtPoint.open) && !isNaN(chrtPoint.high) && !isNaN(chrtPoint.low) && !isNaN(chrtPoint.close);
+
+      if (!hasValidOhlcData)
+        chartLine.generateRandomOhlc();
+    }
 
     this.chartLines.push(chartLine);
-    const dataSet: UiChartPoint[] = chartLine.getDataSet();
     // update global min/max dates
     if (dataSet.length > 0) {
       const firstDate: Date = dataSet[0].date;
@@ -654,21 +680,11 @@ export class SqChart {
       const prev: UiChartPoint = visibleData[i - 1];
       const curr: UiChartPoint = visibleData[i];
 
-      // Generate a random number between -1 and 1
-      const randomFactor: number = Math.random() * 2 - 1;
-      const priceDelta: number = curr.value - prev.value;
-
-      // Calculate synthetic OHLC values
-      const open: number = curr.value - priceDelta * randomFactor;
-      const high: number = Math.max(curr.value, prev.value) + Math.abs((priceDelta / 2) * randomFactor);
-      const low: number = Math.min(curr.value, prev.value) - Math.abs((priceDelta / 2) * randomFactor);
-      const close: number = curr.value;
-
       // Convert prices to Y-coordinates
-      const yOpen: number = canvasHeight - ((open - this.yAxis.minValue) * yScale);
-      const yHigh: number = canvasHeight - ((high - this.yAxis.minValue) * yScale);
-      const yLow: number = canvasHeight - ((low - this.yAxis.minValue) * yScale);
-      const yClose: number = canvasHeight - ((close - this.yAxis.minValue) * yScale);
+      const yOpen: number = canvasHeight - ((curr.open - this.yAxis.minValue) * yScale);
+      const yHigh: number = canvasHeight - ((curr.high - this.yAxis.minValue) * yScale);
+      const yLow: number = canvasHeight - ((curr.low - this.yAxis.minValue) * yScale);
+      const yClose: number = canvasHeight - ((curr.close - this.yAxis.minValue) * yScale);
 
       const xCurr: number = (curr.date.getTime() - this.xAxis.minTime) * xScale;
 
@@ -677,7 +693,7 @@ export class SqChart {
       const barWidth = dx * 0.6; // Set bar width (60%) of the available between curr and prev
 
       // Wick (High–Low line)
-      ctx.strokeStyle = close >= open ? 'green' : 'red';
+      ctx.strokeStyle = curr.close >= curr.open ? 'green' : 'red';
       ctx.beginPath();
       ctx.moveTo(xCurr, yHigh);
       ctx.lineTo(xCurr, yLow);
@@ -686,7 +702,7 @@ export class SqChart {
       // Candle body (Open–Close)
       const candleTop: number = Math.min(yOpen, yClose);
       const candleBodyHeight: number = Math.abs(yOpen - yClose);
-      ctx.fillStyle = close >= open ? 'green' : 'red';
+      ctx.fillStyle = curr.close >= curr.open ? 'green' : 'red';
       ctx.fillRect(xCurr - barWidth / 2, candleTop, barWidth, candleBodyHeight);
     }
   }

@@ -118,8 +118,12 @@ then it is impossible to find this losing position IF we only look at the End of
 
 // chart values
 export class UiChartPoint {
-  public date = new Date();
-  public value = NaN;
+  public date: Date = new Date();
+  public value: number = NaN;
+  public open: number = NaN;
+  public high: number = NaN;
+  public low: number = NaN;
+  public close: number = NaN;
 }
 
 export class CgTimeSeries {
