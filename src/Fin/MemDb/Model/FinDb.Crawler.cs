@@ -54,6 +54,7 @@ public class FinDbCrawlerExecution : SqExecution
 
 public partial class FinDb
 {
+    private static bool g_isCheckHistoricalDataIntegrity = true;
     public static void ScheduleDailyCrawlerTask()
     {
         SqTask? sqTask = new()
@@ -184,13 +185,93 @@ public partial class FinDb
         QuantConnect.Lean.Engine.DataFeeds.TextSubscriptionDataSourceReader.BaseDataSourceCache.Clear();
         gFinDb.MapFileProvider.ClearCache();
         gFinDb.FactorFileProvider.ClearCache();
+        CheckIfOverallDataIntegrityProblemOccuredAndSendEmail();
 
         return true;
+    }
+
+    private static void CheckIfOverallDataIntegrityProblemOccuredAndSendEmail()
+    {
+        if (!g_isCheckHistoricalDataIntegrity)
+            return;
+        // Email alert for suspicious (non-recent) data discrepancies across all tickers. Check the dataChanges<Today>.csv file.
+        try
+            {
+                string dataChangesDir = Path.Combine(Utils.FinDataFolderPath, "equity/usa/data_changes_log");
+                if (!Directory.Exists(dataChangesDir))
+                    return;
+
+                string[] files = Directory.GetFiles(dataChangesDir, $"dataChanges{DateTime.UtcNow:yyMMdd}.csv");
+                string todayFile = (files.Length > 0) ? files[0] : string.Empty;
+                if (!File.Exists(todayFile))
+                    return;
+
+                string[] lines = File.ReadAllLines(todayFile);
+                if (lines.Length > 1)
+                {
+                    DateTime sevenDaysAgo = DateTime.UtcNow.Date.AddDays(-7);
+                    List<string> suspiciousDiffs = new();
+
+                    // start from line index 1 to skip header
+                    for (int i = 1; i < lines.Length; i++)
+                    {
+                        string line = lines[i];
+                        // Expected format: RunDate;Ticker;FileType;EventDate;ChangeType;Field;OldValue;NewValue
+                        string[] parts = line.Split(';');
+                        if (parts.Length < 6)
+                            continue;
+
+                        string eventDateStr = parts[3];
+                        if (!DateTime.TryParseExact(eventDateStr, "yyyyMMdd", null, System.Globalization.DateTimeStyles.None, out DateTime eventDate))
+                            continue;
+
+                        bool isRecent = eventDate >= sevenDaysAgo;
+
+                        // Alert for any change affecting data older than 7 days
+                        if (!isRecent)
+                            suspiciousDiffs.Add(line);
+                    }
+
+                    if (suspiciousDiffs.Count > 0)
+                    {
+                        // Construct email body manually (limit to 200 lines)
+                        StringBuilder sb = new StringBuilder();
+                        sb.AppendLine($"Found {suspiciousDiffs.Count} old data discrepancies (older than 7 days):");
+                        sb.AppendLine();
+
+                        int maxLines = Math.Min(200, suspiciousDiffs.Count);
+                        for (int i = 0; i < maxLines; i++)
+                            sb.AppendLine(suspiciousDiffs[i]);
+
+                        if (suspiciousDiffs.Count > 200)
+                            sb.AppendLine("... (truncated)");
+
+                        new Email()
+                        {
+                            Body = sb.ToString(),
+                            IsBodyHtml = false,
+                            Subject = $"FinDb Data Integrity Alert — {suspiciousDiffs.Count} anomalies detected",
+                            ToAddresses = Utils.Configuration["Emails:Balazs"]!
+                        }.Send();
+
+                        Utils.Logger.Warn($"FinDb.CrawlData(): Sent integrity alert with {suspiciousDiffs.Count} discrepancies.");
+                    }
+                    else
+                    {
+                        Utils.Logger.Info("FinDb.CrawlData(): No old data discrepancies found. No email alert sent.");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Utils.Logger.Error(ex, "Error while sending FinDb aggregated data integrity email.");
+            }
     }
 
     public static async Task<bool> CrawlPriceData(string p_ticker, string p_finDataDir, DateTime p_startDate, DateTime p_endDate)
     {
         int nPotentialProblems = 0;
+        string todayDateStr = DateTime.UtcNow.ToString("yyyyMMdd"); // e.g., "20250429"
 
         // Fetch data using the IHistPrice interface with all necessary flags for OHLCV, dividends, and splits.
         var histResult = await HistPrice.g_HistPrice.GetHistAsync(p_ticker, HpDataNeed.AdjClose | HpDataNeed.Split | HpDataNeed.Dividend | HpDataNeed.OHLCV, p_startDate, p_endDate);
@@ -260,12 +341,90 @@ public partial class FinDb
             }
         }
 
-        // Create a zip file. But before that, check that if there is already a zip for this ticker, then archive it with the first three characters of today.
-        string dayOfWeek = DateTime.UtcNow.AddDays(-1).DayOfWeek.ToString()[..3].ToLower();
         string zipFilePath = Path.GetFullPath(p_finDataDir + $"daily{Path.DirectorySeparatorChar}{p_ticker.ToLower()}.zip");
+        List<string> priceChangeLogs = new();
+        if (g_isCheckHistoricalDataIntegrity)
+        {
+            // Data validation and consistency checks, if g_isCheckHistoricalDataIntegrity:
+            // The code compares newly fetched price and event data against previously stored files to detect any discrepancies.
+            // It logs changes in OHLCV values, dividends, and splits (new, removed, or modified records) to daily change logs file: e.g. (all tickers into one file) dataChanges251007.csv
+            // A comparison utililty function, CompareEventFiles(),  can also diff archived event files between two exact dates for manual validation.
+            // Missing factor file's reference prices or suspicious gaps are flagged as potential data quality issues.
+
+            // HistoricalDataIntegrityCheck, Step1: Read the previous price file (if exists) for comparison
+            Dictionary<DateTime, SqPrice> oldPriceData = new();
+            if (File.Exists(zipFilePath))
+            {
+                string oldCsvContent = ReadCsvFromZip(zipFilePath, $"{p_ticker.ToLower()}.csv");
+                using StringReader reader = new(oldCsvContent);
+                string? line;
+                while ((line = reader.ReadLine()) != null)
+                {
+                    string[] parts = line.Split(',');
+                    if (parts.Length >= 6 && DateTime.TryParseExact(parts[0], "yyyyMMdd HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime date))
+                    {
+                        oldPriceData[date] = new SqPrice
+                        {
+                            ReferenceDate = date,
+                            Open = float.Parse(parts[1]) / 10000f,
+                            High = float.Parse(parts[2]) / 10000f,
+                            Low = float.Parse(parts[3]) / 10000f,
+                            Close = float.Parse(parts[4]) / 10000f,
+                            Volume = long.Parse(parts[5])
+                        };
+                    }
+                }
+            }
+
+            // Compare new price data with old price data
+            HashSet<DateTime> newPriceDates = new();
+
+            // Collect new price dates into HashSet
+            for (int i = 0; i < rawClosesFromYfList.Count; i++)
+            {
+                newPriceDates.Add(rawClosesFromYfList[i].ReferenceDate);
+            }
+
+            // Check for existing, but modified prices (existing dates in both old and new data)
+            for (int i = 0; i < rawClosesFromYfList.Count; i++)
+            {
+                SqPrice newPrice = rawClosesFromYfList[i];
+                if (oldPriceData.TryGetValue(newPrice.ReferenceDate, out SqPrice? oldPrice))
+                {
+                    if (Math.Abs(newPrice.Open - oldPrice.Open) >= 1e-2)
+                        priceChangeLogs.Add($"{todayDateStr};{p_ticker};Price;{newPrice.ReferenceDate:yyyyMMdd};PriceChange;Open;{oldPrice.Open};{newPrice.Open}");
+                    if (Math.Abs(newPrice.High - oldPrice.High) >= 1e-2)
+                        priceChangeLogs.Add($"{todayDateStr};{p_ticker};Price;{newPrice.ReferenceDate:yyyyMMdd};PriceChange;High;{oldPrice.High};{newPrice.High}");
+                    if (Math.Abs(newPrice.Low - oldPrice.Low) >= 1e-2)
+                        priceChangeLogs.Add($"{todayDateStr};{p_ticker};Price;{newPrice.ReferenceDate:yyyyMMdd};PriceChange;Low;{oldPrice.Low};{newPrice.Low}");
+                    if (Math.Abs(newPrice.Close - oldPrice.Close) >= 1e-2)
+                        priceChangeLogs.Add($"{todayDateStr};{p_ticker};Price;{newPrice.ReferenceDate:yyyyMMdd};PriceChange;Close;{oldPrice.Close};{newPrice.Close}");
+                    if (oldPrice.Volume > 0 && Math.Abs(newPrice.Volume - oldPrice.Volume) / oldPrice.Volume > 0.05)
+                        priceChangeLogs.Add($"{todayDateStr};{p_ticker};Price;{newPrice.ReferenceDate:yyyyMMdd};PriceChange;Volume;{oldPrice.Volume};{newPrice.Volume}");
+                }
+            }
+
+            // Check for removed prices (dates in old data but not in new data)
+            foreach (KeyValuePair<DateTime, SqPrice> oldPriceEntry in oldPriceData)
+            {
+                if (!newPriceDates.Contains(oldPriceEntry.Key))
+                {
+                    SqPrice oldPrice = oldPriceEntry.Value;
+                    priceChangeLogs.Add($"{todayDateStr};{p_ticker};Price;{oldPriceEntry.Key:yyyyMMdd};RemovedPrice;Open;{oldPrice.Open};0");
+                    priceChangeLogs.Add($"{todayDateStr};{p_ticker};Price;{oldPriceEntry.Key:yyyyMMdd};RemovedPrice;High;{oldPrice.High};0");
+                    priceChangeLogs.Add($"{todayDateStr};{p_ticker};Price;{oldPriceEntry.Key:yyyyMMdd};RemovedPrice;Low;{oldPrice.Low};0");
+                    priceChangeLogs.Add($"{todayDateStr};{p_ticker};Price;{oldPriceEntry.Key:yyyyMMdd};RemovedPrice;Close;{oldPrice.Close};0");
+                    priceChangeLogs.Add($"{todayDateStr};{p_ticker};Price;{oldPriceEntry.Key:yyyyMMdd};RemovedPrice;Volume;{oldPrice.Volume};0");
+                }
+            }
+        } // g_isCheckHistoricalDataIntegrity
+
+        // Create a zip file. But before that, check that if there is already a zip for this ticker, then archive it with the first three characters of today.
+        // TEMP: save all price/event files forever temporarily. In the future 7 archive files using day-of-the-week will be enough.
+        // string dayOfWeek = DateTime.UtcNow.AddDays(-1).DayOfWeek.ToString()[..3].ToLower();
         if (File.Exists(zipFilePath))
         {
-            string backupFileName = p_finDataDir + $"daily{Path.DirectorySeparatorChar}{p_ticker.ToLower()}_{dayOfWeek}.zip";
+            string backupFileName = p_finDataDir + $"daily{Path.DirectorySeparatorChar}{p_ticker.ToLower()}_{todayDateStr}.zip";
             File.Move(zipFilePath, backupFileName, true);
         }
         // Create a dictionary of SqPrices to find dates faster.
@@ -355,6 +514,95 @@ public partial class FinDb
 
         divSplitHistoryList.Sort((SqDivSplit x, SqDivSplit y) => x.ReferenceDate.CompareTo(y.ReferenceDate));
 
+        List<string> eventChangeLogs = new();
+        if (g_isCheckHistoricalDataIntegrity)
+        {
+            // HistoricalDataIntegrityCheck, Step2: Read the previous event file (if exists) for comparison
+            string tickerEventFilePath = p_finDataDir + $"event_files{Path.DirectorySeparatorChar}{p_ticker.ToLower()}_events.csv";
+            List<SqDivSplit> oldEventData = new();
+            if (File.Exists(tickerEventFilePath))
+            {
+                string[] lines = File.ReadAllLines(tickerEventFilePath);
+                for (int i = 1; i < lines.Length; i++) // Skip header
+                {
+                    string[] parts = lines[i].Split(',');
+                    if (parts.Length >= 4 && DateTime.TryParseExact(parts[0], "yyyyMMdd", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime date))
+                    {
+                        oldEventData.Add(new SqDivSplit
+                        {
+                            ReferenceDate = date,
+                            DividendValue = double.Parse(parts[1]),
+                            SplitFactor = double.Parse(parts[2]),
+                            ReferenceRawPrice = float.Parse(parts[3])
+                        });
+                    }
+                }
+            }
+
+            // Create event file with pure (not comulative) dividend and split data
+            if (!Directory.Exists(p_finDataDir + "event_files"))
+                Directory.CreateDirectory(p_finDataDir + "event_files");
+
+            if (File.Exists(tickerEventFilePath))
+            {
+                string backupFileName = p_finDataDir + $"event_files{Path.DirectorySeparatorChar}{p_ticker.ToLower()}_events_{todayDateStr}.csv";
+                File.Move(tickerEventFilePath, backupFileName, true);
+            }
+
+            using TextWriter eventFileTextWriter = new StreamWriter(tickerEventFilePath);
+            eventFileTextWriter.WriteLine($"# QueryDate: {todayDateStr}");
+            eventFileTextWriter.WriteLine("Date,DividendValue,SplitFactor,ReferenceRawPrice");
+            foreach (SqDivSplit divSplit in divSplitHistoryList)
+            {
+                string line = $"{divSplit.ReferenceDate:yyyyMMdd},{divSplit.DividendValue},{divSplit.SplitFactor},{divSplit.ReferenceRawPrice}";
+                eventFileTextWriter.WriteLine(line);
+            }
+            eventFileTextWriter.Close();
+
+            // Compare new event data with old event data
+            Dictionary<DateTime, SqDivSplit> oldEventDict = new();
+            foreach (SqDivSplit eventData in oldEventData)
+            {
+                oldEventDict.Add(eventData.ReferenceDate, eventData);
+            }
+
+            // Check for new or modified events
+            foreach (SqDivSplit newEvent in divSplitHistoryList)
+            {
+                if (oldEventDict.TryGetValue(newEvent.ReferenceDate, out SqDivSplit? oldEvent))
+                {
+                    if (Math.Abs(newEvent.DividendValue - oldEvent.DividendValue) > 1e-3)
+                        eventChangeLogs.Add($"{todayDateStr};{p_ticker};Event;{newEvent.ReferenceDate:yyyyMMdd};EventChange;DividendValue;{oldEvent.DividendValue};{newEvent.DividendValue}");
+                    if (Math.Abs(newEvent.SplitFactor - oldEvent.SplitFactor) > 1e-3)
+                        eventChangeLogs.Add($"{todayDateStr};{p_ticker};Event;{newEvent.ReferenceDate:yyyyMMdd};EventChange;SplitFactor;{oldEvent.SplitFactor};{newEvent.SplitFactor}");
+                    if (Math.Abs(newEvent.ReferenceRawPrice - oldEvent.ReferenceRawPrice) > 1e-2)
+                        eventChangeLogs.Add($"{todayDateStr};{p_ticker};Event;{newEvent.ReferenceDate:yyyyMMdd};EventChange;ReferenceRawPrice;{oldEvent.ReferenceRawPrice};{newEvent.ReferenceRawPrice}");
+                }
+                else
+                {
+                    eventChangeLogs.Add($"{todayDateStr};{p_ticker};Event;{newEvent.ReferenceDate:yyyyMMdd};NewEvent;DividendValue;0;{newEvent.DividendValue}");
+                    eventChangeLogs.Add($"{todayDateStr};{p_ticker};Event;{newEvent.ReferenceDate:yyyyMMdd};NewEvent;SplitFactor;0;{newEvent.SplitFactor}");
+                    eventChangeLogs.Add($"{todayDateStr};{p_ticker};Event;{newEvent.ReferenceDate:yyyyMMdd};NewEvent;ReferenceRawPrice;0;{newEvent.ReferenceRawPrice}");
+                }
+            }
+
+            // Check for removed events
+            HashSet<DateTime> newEventDates = new HashSet<DateTime>();
+            foreach (SqDivSplit newEvent in divSplitHistoryList)
+            {
+                newEventDates.Add(newEvent.ReferenceDate);
+            }
+            foreach (SqDivSplit oldEvent in oldEventData)
+            {
+                if (!newEventDates.Contains(oldEvent.ReferenceDate))
+                {
+                    eventChangeLogs.Add($"{todayDateStr};{p_ticker};Event;{oldEvent.ReferenceDate:yyyyMMdd};RemovedEvent;DividendValue;{oldEvent.DividendValue};0");
+                    eventChangeLogs.Add($"{todayDateStr};{p_ticker};Event;{oldEvent.ReferenceDate:yyyyMMdd};RemovedEvent;SplitFactor;{oldEvent.SplitFactor};0");
+                    eventChangeLogs.Add($"{todayDateStr};{p_ticker};Event;{oldEvent.ReferenceDate:yyyyMMdd};RemovedEvent;ReferenceRawPrice;{oldEvent.ReferenceRawPrice};0");
+                }
+            }
+        } // g_isCheckHistoricalDataIntegrity
+
         // Accumulate splits and dividends for factor file. Dividends have to be reverse adjusted with splits!
         List<FactorFileDivSplit> divSplitHistoryCumList = new();
         double cumDivFact = 1.0;
@@ -375,7 +623,7 @@ public partial class FinDb
         string tickerFactorFilePath = p_finDataDir + $"factor_files{Path.DirectorySeparatorChar}{p_ticker.ToLower()}.csv";
         if (File.Exists(tickerFactorFilePath))
         {
-            string backupFileName = p_finDataDir + $"factor_files{Path.DirectorySeparatorChar}{p_ticker.ToLower()}_{dayOfWeek}.csv";
+            string backupFileName = p_finDataDir + $"factor_files{Path.DirectorySeparatorChar}{p_ticker.ToLower()}_{todayDateStr.Substring(2, 6)}.csv";
             File.Move(tickerFactorFilePath, backupFileName, true);
         }
 
@@ -398,6 +646,39 @@ public partial class FinDb
         if (nPotentialProblems > 0)
             Utils.Logger.Error($"CrawlPriceData() #{nPotentialProblems} potential problems for {p_ticker}. Investigate!");
 
+        if (g_isCheckHistoricalDataIntegrity)
+        {
+            // HistoricalDataIntegrityCheck, Step3:  Write data integrity check results to log file
+            if (!Directory.Exists(p_finDataDir + "data_changes_log"))
+                Directory.CreateDirectory(p_finDataDir + "data_changes_log");
+            string logFilePath = Path.Combine(p_finDataDir, $"data_changes_log{Path.DirectorySeparatorChar}dataChanges{DateTime.UtcNow:yyMMdd}.csv"); // e.g., "dataChanges250505.csv"
+            string logCompareDir = Path.Combine(p_finDataDir, "data_changes_log");
+
+            // Create log file with header if it doesn't exist
+            if (!File.Exists(logFilePath))
+                File.WriteAllText(logFilePath, "RunDate;Ticker;FileType;EventDate;ChangeType;Field;OldValue;NewValue" + Environment.NewLine);
+
+            List<string> allChangeLogs = new();
+            foreach (string priceLog in priceChangeLogs)
+            {
+                allChangeLogs.Add(priceLog);
+            }
+            foreach (string eventLog in eventChangeLogs)
+            {
+                allChangeLogs.Add(eventLog);
+            }
+
+            if (allChangeLogs.Count > 0)
+            {
+                File.AppendAllLines(logFilePath, allChangeLogs);
+                Utils.Logger.Info($"Logged {allChangeLogs.Count} changes for {p_ticker} in {logFilePath}");
+            }
+
+            if (nPotentialProblems > 0)
+                Utils.Logger.Error($"CrawlPriceData() #{nPotentialProblems} potential problems for {p_ticker}. Investigate!");
+
+            // CompareEventFiles(p_ticker, p_finDataDir, "20250929", "20250930", logCompareFilePath); // Helps identify differences between two event files for specific dates.
+        } // g_isCheckHistoricalDataIntegrity
         return true;
     }
 
@@ -572,77 +853,135 @@ public partial class FinDb
             throw new FileNotFoundException($"The '{p_csvFileName}' file is not found in the '{p_zipFilePath}' archive.");
     }
 
-    static (List<SqDivSplit> Dividends, List<SqDivSplit> Splits) ReverseEngineerCSV(string factorFilePath)
+    // Utility function to compare 2 dates event files for a specific ticker
+    public static void CompareEventFiles(string p_ticker, string p_finDataDir, string p_date1, string p_date2, string p_outputDir)
     {
-        List<SqDivSplit> dividends = new();
-        List<SqDivSplit> splits = new();
+        // Construct file paths for the two event files
+        string eventFilePath1 = Path.Combine(p_finDataDir, $"event_files{Path.DirectorySeparatorChar}{p_ticker.ToLower()}_events_{p_date1}.csv");
+        string eventFilePath2 = Path.Combine(p_finDataDir, $"event_files{Path.DirectorySeparatorChar}{p_ticker.ToLower()}_events_{p_date2}.csv");
 
-        string[] lines = File.ReadAllLines(factorFilePath);
-        double cumulativeDividend = 1.0;
-        double cumulativeSplit = 1.0;
-
-        for (int i = lines.Length - 2; i >= 1; i--) // Skip the header and last line
+        // Check if both files exist
+        if (!File.Exists(eventFilePath1) || !File.Exists(eventFilePath2))
         {
-            string[] lineParts = lines[i].Split(',');
-            DateTime date = DateTime.ParseExact(lineParts[0], "yyyyMMdd", CultureInfo.InvariantCulture);
-            double currentDividendFactor = double.Parse(lineParts[1]);
-            double currentSplitFactor = double.Parse(lineParts[2]);
-
-            double dailyDividend = (cumulativeDividend - currentDividendFactor) * cumulativeSplit;
-            double dailySplit = cumulativeSplit / currentSplitFactor;
-
-            if (Math.Abs(dailyDividend) > 1e-8) // Add only significant dividends
-                dividends.Add(new SqDivSplit { ReferenceDate = date, DividendValue = dailyDividend });
-            if (Math.Abs(dailySplit - 1.0) > 1e-8) // Add only significant splits
-                splits.Add(new SqDivSplit { ReferenceDate = date, SplitFactor = dailySplit });
-
-            cumulativeDividend = currentDividendFactor;
-            cumulativeSplit = currentSplitFactor;
+            Utils.Logger.Error($"One or both event files not found: {eventFilePath1}, {eventFilePath2}");
+            return;
         }
 
-        return (dividends, splits);
-    }
-
-    static List<FactorFileDivSplit> DiffFunction(List<FactorFileDivSplit> oldData, List<FactorFileDivSplit> newData)
-    {
-        List<FactorFileDivSplit> finalData = new();
-
-        int oldIndex = 0;
-        int newIndex = 0;
-
-        while (oldIndex < oldData.Count && newIndex < newData.Count)
+        // Read the first event file
+        List<SqDivSplit> eventData1 = new();
+        string[] lines1 = File.ReadAllLines(eventFilePath1);
+        for (int i = 2; i < lines1.Length; i++) // Skip header
         {
-            FactorFileDivSplit oldEntry = oldData[oldIndex];
-            FactorFileDivSplit newEntry = newData[newIndex];
-
-            if (oldEntry.ReferenceDate < newEntry.ReferenceDate)
+            string[] parts = lines1[i].Split(',');
+            if (parts.Length >= 4 && DateTime.TryParseExact(parts[0], "yyyyMMdd", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime date))
             {
-                finalData.Add(oldEntry); // Keep the old data
-                oldIndex++;
-            }
-            else if (oldEntry.ReferenceDate > newEntry.ReferenceDate)
-            {
-                finalData.Add(newEntry); // Add new data
-                newIndex++;
+                try
+                {
+                    eventData1.Add(new SqDivSplit
+                    {
+                        ReferenceDate = date,
+                        DividendValue = double.Parse(parts[1]),
+                        SplitFactor = double.Parse(parts[2]),
+                        ReferenceRawPrice = float.Parse(parts[3])
+                    });
+                }
+                catch (Exception e)
+                {
+                    Utils.Logger.Error($"Error parsing event file {eventFilePath1}, line {i + 1}: {lines1[i]}. Exception: {e.Message}");
+                }
             }
             else
             {
-                // Compare the factors
-                if (Math.Abs(oldEntry.DividendFactorCum - newEntry.DividendFactorCum) > 1e-8 || Math.Abs(oldEntry.SplitFactorCum - newEntry.SplitFactorCum) > 1e-8)
-                    Console.WriteLine($"Conflict at {oldEntry.ReferenceDate}: old={oldEntry}, new={newEntry}"); // Log or handle the conflict
-
-                finalData.Add(newEntry); // Use the new entry, but could merge if needed
-                oldIndex++;
-                newIndex++;
+                Utils.Logger.Error($"Invalid format in event file {eventFilePath1}, line {i + 1}: {lines1[i]}");
             }
         }
 
-        // Add any remaining data
-        while (oldIndex < oldData.Count)
-            finalData.Add(oldData[oldIndex++]);
-        while (newIndex < newData.Count)
-            finalData.Add(newData[newIndex++]);
+        // Read the second event file
+        List<SqDivSplit> eventData2 = new();
+        string[] lines2 = File.ReadAllLines(eventFilePath2);
+        for (int i = 2; i < lines2.Length; i++) // Skip header
+        {
+            string[] parts = lines2[i].Split(',');
+            if (parts.Length >= 4 && DateTime.TryParseExact(parts[0], "yyyyMMdd", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime date))
+            {
+                try
+                {
+                    eventData2.Add(new SqDivSplit
+                    {
+                        ReferenceDate = date,
+                        DividendValue = double.Parse(parts[1]),
+                        SplitFactor = double.Parse(parts[2]),
+                        ReferenceRawPrice = float.Parse(parts[3])
+                    });
+                }
+                catch (Exception e)
+                {
+                    Utils.Logger.Error($"Error parsing event file {eventFilePath2}, line {i + 1}: {lines2[i]}. Exception: {e.Message}");
+                }
+            }
+            else
+            {
+                Utils.Logger.Error($"Invalid format in event file {eventFilePath2}, line {i + 1}: {lines2[i]}");
+            }
+        }
 
-        return finalData;
+        // Prepare for comparison and logging
+        List<string> changeLogs = new();
+        Dictionary<DateTime, SqDivSplit> eventDict1 = new();
+        for (int i = 0; i < eventData1.Count; i++)
+        {
+            eventDict1.Add(eventData1[i].ReferenceDate, eventData1[i]);
+        }
+
+        // Check for new or modified events (based on eventData2)
+        for (int i = 0; i < eventData2.Count; i++)
+        {
+            SqDivSplit event2 = eventData2[i];
+            if (eventDict1.TryGetValue(event2.ReferenceDate, out SqDivSplit? event1))
+            {
+                if (Math.Abs(event2.DividendValue - event1.DividendValue) > 1e-3)
+                    changeLogs.Add($"{p_date1};{p_date2};{p_ticker};Event;{event2.ReferenceDate:yyyyMMdd};EventChange;DividendValue;{event1.DividendValue};{event2.DividendValue}");
+                if (Math.Abs(event2.SplitFactor - event1.SplitFactor) > 1e-3)
+                    changeLogs.Add($"{p_date1};{p_date2};{p_ticker};Event;{event2.ReferenceDate:yyyyMMdd};EventChange;SplitFactor;{event1.SplitFactor};{event2.SplitFactor}");
+                if (Math.Abs(event2.ReferenceRawPrice - event1.ReferenceRawPrice) > 1e-2)
+                    changeLogs.Add($"{p_date1};{p_date2};{p_ticker};Event;{event2.ReferenceDate:yyyyMMdd};EventChange;ReferenceRawPrice;{event1.ReferenceRawPrice};{event2.ReferenceRawPrice}");
+            }
+            else
+            {
+                changeLogs.Add($"{p_date1};{p_date2};{p_ticker};Event;{event2.ReferenceDate:yyyyMMdd};NewEvent;DividendValue;0;{event2.DividendValue}");
+                changeLogs.Add($"{p_date1};{p_date2};{p_ticker};Event;{event2.ReferenceDate:yyyyMMdd};NewEvent;SplitFactor;0;{event2.SplitFactor}");
+                changeLogs.Add($"{p_date1};{p_date2};{p_ticker};Event;{event2.ReferenceDate:yyyyMMdd};NewEvent;ReferenceRawPrice;0;{event2.ReferenceRawPrice}");
+            }
+        }
+
+        // Check for removed events (based on eventData1)
+        HashSet<DateTime> eventDates2 = new();
+        for (int i = 0; i < eventData2.Count; i++)
+        {
+            eventDates2.Add(eventData2[i].ReferenceDate);
+        }
+        for (int i = 0; i < eventData1.Count; i++)
+        {
+            SqDivSplit event1 = eventData1[i];
+            if (!eventDates2.Contains(event1.ReferenceDate))
+            {
+                changeLogs.Add($"{p_date1};{p_date2};{p_ticker};Event;{event1.ReferenceDate:yyyyMMdd};RemovedEvent;DividendValue;{event1.DividendValue};0");
+                changeLogs.Add($"{p_date1};{p_date2};{p_ticker};Event;{event1.ReferenceDate:yyyyMMdd};RemovedEvent;SplitFactor;{event1.SplitFactor};0");
+                changeLogs.Add($"{p_date1};{p_date2};{p_ticker};Event;{event1.ReferenceDate:yyyyMMdd};RemovedEvent;ReferenceRawPrice;{event1.ReferenceRawPrice};0");
+            }
+        }
+
+        // Write the log if there are differences
+        if (changeLogs.Count > 0)
+        {
+            // Construct the output file name using the two dates
+            string logFileName = $"event_diff_{p_ticker}_{p_date1}_{p_date2}.csv";
+            string fullLogFilePath = Path.Combine(p_outputDir, logFileName);
+
+            if (!File.Exists(fullLogFilePath))
+                File.WriteAllText(fullLogFilePath, "Date1;Date2;Ticker;FileType;EventDate;ChangeType;Field;OldValue;NewValue" + Environment.NewLine);
+            File.AppendAllLines(fullLogFilePath, changeLogs);
+            Utils.Logger.Info($"Logged {changeLogs.Count} differences between {eventFilePath1} and {eventFilePath2} in {fullLogFilePath}");
+        }
     }
 }

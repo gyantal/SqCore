@@ -114,6 +114,9 @@ Cargo.lock
 !**/Fin/Data/equity/usa/fundamental/fine/googl/20040819.zip
 !**/Fin/Data/equity/usa/fundamental/fine/googl/20151002.zip
 
+**/Fin/Data/equity/usa/event_files/**
+**/Fin/Data/equity/usa/data_changes_log/**
+
 # Ignore Python cache folders
 __pycache__/
 
