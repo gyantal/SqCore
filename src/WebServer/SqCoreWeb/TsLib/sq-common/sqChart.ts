@@ -94,40 +94,44 @@ class XAxis {
   public minTime: number = 0;
   public maxTime: number = 1;
   public canvasWidth: number = 1;
+  public allDates: Date[] = [];
 
-  public generateTicks(chartLines: ChartLine[]): { time: number, label: string }[] {
+  public generateTicks(chartLines: ChartLine[]): { label: string, dataIndex: number }[] {
     if (chartLines.length == 0)
       return [];
 
-    let minStartDate: Date = maxDate;
-    let maxEndDate: Date = minDate;
-    // Find start and end dates from the datasets
-    for (let i = 0; i < chartLines.length; i++) {
-      const dataset: UiChartPoint[] = chartLines[i].getVisibleData();
-      if (dataset.length == 0)
-        continue;
-
-      const startDate: Date = dataset[0].date;
-      const endDate: Date = dataset[dataset.length - 1].date;
-      if (startDate < minStartDate)
-        minStartDate = startDate;
-
-      if (endDate > maxEndDate)
-        maxEndDate = endDate;
+    // Collect unique dates using an object
+    const datesObj: { [key: string]: Date } = {};
+    for (const chartLine of chartLines) {
+      const visibleData: UiChartPoint[] = chartLine.getVisibleData();
+      for (const point of visibleData) {
+        const dateKey: string = point.date.toISOString().split('T')[0];
+        datesObj[dateKey] = point.date;
+      }
     }
 
-    this.minTime = minStartDate.getTime();
-    this.maxTime = maxEndDate.getTime();
+    this.allDates = Object.values(datesObj).sort((a, b) => a.getTime() - b.getTime()); // Convert to array of Date objects and sort
+    if (this.allDates.length == 0)
+      return [];
+    this.minTime = this.allDates[0].getTime();
+    this.maxTime = this.allDates[this.allDates.length - 1].getTime();
+    const ticks: { label: string, dataIndex: number }[] = [];
 
-    const current: Date = new Date(minStartDate);
-    current.setDate(1); // Align to first of the month
-    const ticks: { time: number, label: string }[] = [];
-    while (current <= maxEndDate) {
-      const month: number = current.getMonth();
-      const label: string = month === 0 ? current.getFullYear().toString() : current.toLocaleDateString('en-US', { month: 'short' }); // Feb, Mar, etc.
+    // Add ticks at month/year boundaries
+    let prevMonth = -1;
+    let prevYear = -1;
+    for (let i = 0; i < this.allDates.length; i++) {
+      const dataPoint = this.allDates[i];
+      const month: number = dataPoint.getMonth();
+      const year: number = dataPoint.getFullYear();
 
-      ticks.push({ time: current.getTime(), label });
-      current.setMonth(current.getMonth() + 1);
+      // Only add a tick when month or year changes
+      if (month != prevMonth || year != prevYear) {
+        const label: string = month === 0 ? year.toString() : dataPoint.toLocaleDateString('en-US', { month: 'short' }); // Year label if January, else month label (Feb, Mar, etc).
+        ticks.push({ label: label, dataIndex: i });
+        prevMonth = month;
+        prevYear = year;
+      }
     }
 
     return ticks;
@@ -146,14 +150,10 @@ class XAxis {
     this.canvasWidth = canvasWidth;
 
     // Draw ticks and labels
-    const ticks: { time: number; label: string; }[] = this.generateTicks(chartLines);
-    const timeRange: number = this.maxTime - this.minTime || 1; // Avoid division by zero
-    const xScale: number = canvasWidth / timeRange;
-
-    for (let i = 0; i < ticks.length; i++) {
-      const { time, label } = ticks[i];
-      const x: number = (time - this.minTime) * xScale;
-
+    const ticks: { label: string, dataIndex: number }[] = this.generateTicks(chartLines);
+    const visibleCount = this.allDates.length > 1 ? this.allDates.length - 1 : 1;
+    for (const tick of ticks) {
+      const x: number = (tick.dataIndex / visibleCount) * canvasWidth; // Calculate x position based on index
       // Draw tick mark
       ctx.beginPath();
       ctx.moveTo(x, 0);
@@ -161,15 +161,16 @@ class XAxis {
       ctx.stroke();
 
       // Draw tick label
-      const textWidth: number = ctx.measureText(label).width;
+      const textWidth: number = ctx.measureText(tick.label).width;
       ctx.fillStyle = 'black';
-      ctx.fillText(label, x - textWidth / 2, 15);
+      ctx.fillText(tick.label, x - textWidth / 2, 15);
     }
   }
 
-  public scaleXToTime(xPixel: number): Date { // Converts a horizontal pixel coordinate on the canvas to a Date.
-    const time: number = this.minTime + (xPixel / this.canvasWidth) * (this.maxTime - this.minTime);
-    return new Date(time);
+  public scaleXToTime(xPixel: number): Date { // Converts a horizontal pixel to data index first, then to time
+    const dataIndex = Math.floor((xPixel / this.canvasWidth) * (this.allDates.length - 1));
+    const clampedIndex = Math.max(0, Math.min(dataIndex, this.allDates.length - 1)); // Ensures the index never goes out of range
+    return this.allDates[clampedIndex];
   }
 }
 
@@ -676,9 +677,16 @@ export class SqChart {
   }
 
   private drawCandleStick(visibleData: UiChartPoint[], ctx: CanvasRenderingContext2D, xScale: number, yScale: number, canvasHeight: number): void {
-    for (let i = 1; i < visibleData.length; i++) {
-      const prev: UiChartPoint = visibleData[i - 1];
+    if (visibleData.length == 0)
+      return;
+
+    const visibleCount: number = visibleData.length - 1;
+    const totalDataPoints: number = Math.max(visibleCount, 1);
+    const barWidth: number = Math.max(2, (this.xAxis.canvasWidth / totalDataPoints) * 0.8); // Calculate bar width based on available space between data points
+
+    for (let i = 0; i < visibleData.length; i++) {
       const curr: UiChartPoint = visibleData[i];
+      const xCurr: number = (i / totalDataPoints) * this.xAxis.canvasWidth;
 
       // Convert prices to Y-coordinates
       const yOpen: number = canvasHeight - ((curr.open - this.yAxis.minValue) * yScale);
@@ -686,14 +694,11 @@ export class SqChart {
       const yLow: number = canvasHeight - ((curr.low - this.yAxis.minValue) * yScale);
       const yClose: number = canvasHeight - ((curr.close - this.yAxis.minValue) * yScale);
 
-      const xCurr: number = (curr.date.getTime() - this.xAxis.minTime) * xScale;
-
-      // Compute the rectangle width dynamically based on spacing between points
-      const dx: number = (curr.date.getTime() - prev.date.getTime()) * xScale; // Distance in pixels between curr and prev
-      const barWidth = dx * 0.6; // Set bar width (60%) of the available between curr and prev
+      const isBullish: boolean = curr.close >= curr.open;
+      const color: string = isBullish ? 'green' : 'red';
 
       // Wick (High–Low line)
-      ctx.strokeStyle = curr.close >= curr.open ? 'green' : 'red';
+      ctx.strokeStyle = color;
       ctx.beginPath();
       ctx.moveTo(xCurr, yHigh);
       ctx.lineTo(xCurr, yLow);
@@ -702,7 +707,7 @@ export class SqChart {
       // Candle body (Open–Close)
       const candleTop: number = Math.min(yOpen, yClose);
       const candleBodyHeight: number = Math.abs(yOpen - yClose);
-      ctx.fillStyle = curr.close >= curr.open ? 'green' : 'red';
+      ctx.fillStyle = color;
       ctx.fillRect(xCurr - barWidth / 2, candleTop, barWidth, candleBodyHeight);
     }
   }
