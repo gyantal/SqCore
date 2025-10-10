@@ -94,39 +94,40 @@ class XAxis {
   public minTime: number = 0;
   public maxTime: number = 1;
   public canvasWidth: number = 1;
-  public dataPoints: UiChartPoint[] = [];
+  public allDates: Date[] = [];
 
   public generateTicks(chartLines: ChartLine[]): { label: string, dataIndex: number }[] {
     if (chartLines.length == 0)
       return [];
 
-    // Collect all visible data points
-    this.dataPoints = [];
+    // Collect unique dates using an object
+    const datesObj: { [key: string]: Date } = {};
     for (const chartLine of chartLines) {
-      const visibleData = chartLine.getVisibleData();
-      if (visibleData.length > 0)
-        this.dataPoints.push(...visibleData);
+      const visibleData: UiChartPoint[] = chartLine.getVisibleData();
+      for (const point of visibleData) {
+        const dateKey: string = point.date.toISOString().split('T')[0];
+        datesObj[dateKey] = point.date;
+      }
     }
 
-    if (this.dataPoints.length == 0)
+    this.allDates = Object.values(datesObj).sort((a, b) => a.getTime() - b.getTime()); // Convert to array of Date objects and sort
+    if (this.allDates.length == 0)
       return [];
-
-    this.dataPoints.sort((a, b) => a.date.getTime() - b.date.getTime());
-    this.minTime = this.dataPoints[0].date.getTime();
-    this.maxTime = this.dataPoints[this.dataPoints.length - 1].date.getTime();
+    this.minTime = this.allDates[0].getTime();
+    this.maxTime = this.allDates[this.allDates.length - 1].getTime();
     const ticks: { label: string, dataIndex: number }[] = [];
 
     // Add ticks at month/year boundaries
     let prevMonth = -1;
     let prevYear = -1;
-    for (let i = 0; i < this.dataPoints.length; i++) {
-      const dataPoint = this.dataPoints[i];
-      const month: number = dataPoint.date.getMonth();
-      const year: number = dataPoint.date.getFullYear();
+    for (let i = 0; i < this.allDates.length; i++) {
+      const dataPoint = this.allDates[i];
+      const month: number = dataPoint.getMonth();
+      const year: number = dataPoint.getFullYear();
 
       // Only add a tick when month or year changes
       if (month != prevMonth || year != prevYear) {
-        const label: string = month === 0 ? year.toString() : dataPoint.date.toLocaleDateString('en-US', { month: 'short' }); // Year label if January, else month label (Feb, Mar, etc).
+        const label: string = month === 0 ? year.toString() : dataPoint.toLocaleDateString('en-US', { month: 'short' }); // Year label if January, else month label (Feb, Mar, etc).
         ticks.push({ label: label, dataIndex: i });
         prevMonth = month;
         prevYear = year;
@@ -150,7 +151,7 @@ class XAxis {
 
     // Draw ticks and labels
     const ticks: { label: string, dataIndex: number }[] = this.generateTicks(chartLines);
-    const visibleCount = this.dataPoints.length > 1 ? this.dataPoints.length - 1 : 1;
+    const visibleCount = this.allDates.length > 1 ? this.allDates.length - 1 : 1;
     for (const tick of ticks) {
       const x: number = (tick.dataIndex / visibleCount) * canvasWidth; // Calculate x position based on index
       // Draw tick mark
@@ -167,9 +168,9 @@ class XAxis {
   }
 
   public scaleXToTime(xPixel: number): Date { // Converts a horizontal pixel to data index first, then to time
-    const dataIndex = Math.floor((xPixel / this.canvasWidth) * (this.dataPoints.length - 1));
-    const clampedIndex = Math.max(0, Math.min(dataIndex, this.dataPoints.length - 1)); // Ensures the index never goes out of range
-    return this.dataPoints[clampedIndex].date;
+    const dataIndex = Math.floor((xPixel / this.canvasWidth) * (this.allDates.length - 1));
+    const clampedIndex = Math.max(0, Math.min(dataIndex, this.allDates.length - 1)); // Ensures the index never goes out of range
+    return this.allDates[clampedIndex];
   }
 }
 
@@ -679,9 +680,9 @@ export class SqChart {
     if (visibleData.length == 0)
       return;
 
-    visibleData.sort((a, b) => a.date.getTime() - b.date.getTime());
     const visibleCount: number = visibleData.length - 1;
     const totalDataPoints: number = Math.max(visibleCount, 1);
+    const barWidth: number = Math.max(2, (this.xAxis.canvasWidth / totalDataPoints) * 0.8); // Calculate bar width based on available space between data points
 
     for (let i = 0; i < visibleData.length; i++) {
       const curr: UiChartPoint = visibleData[i];
@@ -693,7 +694,6 @@ export class SqChart {
       const yLow: number = canvasHeight - ((curr.low - this.yAxis.minValue) * yScale);
       const yClose: number = canvasHeight - ((curr.close - this.yAxis.minValue) * yScale);
 
-      const barWidth: number = Math.max(2, (this.xAxis.canvasWidth / totalDataPoints) * 0.8); // Calculate bar width based on available space between data points
       const isBullish: boolean = curr.close >= curr.open;
       const color: string = isBullish ? 'green' : 'red';
 
