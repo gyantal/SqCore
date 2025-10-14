@@ -99,6 +99,9 @@ export class AppComponent implements OnInit {
   m_userWarning: string | null = null;
   m_hasSqLogErrOrWarn: boolean = false;
 
+  m_sqChart: SqChart | null = null;
+  m_selectedChartType : string = 'line';
+
   // Sample data for sqChart developing
   //   chartData: UiChartPoint[][] = [
   //     [
@@ -655,22 +658,36 @@ export class AppComponent implements OnInit {
     this.onUserChangedStartOrEndDateWidgets();
   }
 
+  onChangeChartType(event: Event) {
+    this.m_selectedChartType = (event.target as HTMLInputElement).value;
+    this.drawSqChart();
+  }
+
   drawSqChart() {
     // Get the chart container
     const chartDiv: HTMLElement = document.getElementById('chartContainer') as HTMLElement;
     const widthResizerDiv: HTMLElement = document.getElementById('widthResizer') as HTMLElement;
     const heightResizerDiv: HTMLElement = document.getElementById('heightResizer') as HTMLElement;
+
+    // Clean up existing chart container
+    if (this.m_sqChart != null) {
+      const oldCanvas: HTMLCanvasElement | null = chartDiv.querySelector('canvas');
+      if (oldCanvas != null)
+        oldCanvas.remove(); // Remove existing canvas
+      this.m_sqChart = null;
+    }
+
     // Create and initialize the chart
-    const chart = new SqChart();
-    chart.init(chartDiv);
+    this.m_sqChart = new SqChart();
+    this.m_sqChart.init(chartDiv);
     // Add a data series
     const chartData: UiChartPoint[][] = this.getSqChartData();
     for (const dataset of chartData)
-      chart.addLine(new ChartLine(dataset, null, 'candleStick'));
+      this.m_sqChart.addLine(new ChartLine(dataset, null, this.m_selectedChartType));
     // Set viewport to show data between two dates
     const startDate: Date = new Date('2018-01-01');
     const endDate: Date = new Date('2023-08-01');
-    chart.setViewport(startDate, endDate);
+    this.m_sqChart.setViewport(startDate, endDate);
     // resizing
     resizeChartWidth(chartDiv, widthResizerDiv);
     resizeChartHeight(chartDiv, heightResizerDiv);

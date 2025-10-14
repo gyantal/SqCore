@@ -110,6 +110,12 @@
     </div>
   </div><br>
   SqChart for Demo/Testing
+  ChartType:
+    <select name="model" (change)="onChangeChartType($event)">
+        <option value="line">line</option>
+        <option value="basicCandle">basicCandle</option>
+        <option value="candleStick">candleStick</option>
+    </select>
     <div id="chartContainer">
         <div id="widthResizer"></div>
         <div id="heightResizer"></div>
