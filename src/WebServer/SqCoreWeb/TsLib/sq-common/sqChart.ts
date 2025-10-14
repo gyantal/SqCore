@@ -117,20 +117,27 @@ class XAxis {
     this.maxTime = this.allDates[this.allDates.length - 1].getTime();
     const ticks: { label: string, dataIndex: number }[] = [];
 
+    const visibleRangeDays: number = (this.maxTime - this.minTime) / (1000 * 60 * 60 * 24); // used to adjust ticks labeling.
     // Add ticks at month/year boundaries
-    let prevMonth = -1;
-    let prevYear = -1;
+    let prevMonth: number = -1;
+    let prevYear: number = -1;
     for (let i = 0; i < this.allDates.length; i++) {
       const dataPoint = this.allDates[i];
+      const day: number = dataPoint.getDate();
       const month: number = dataPoint.getMonth();
       const year: number = dataPoint.getFullYear();
 
-      // Only add a tick when month or year changes
-      if (month != prevMonth || year != prevYear) {
-        const label: string = month === 0 ? year.toString() : dataPoint.toLocaleDateString('en-US', { month: 'short' }); // Year label if January, else month label (Feb, Mar, etc).
+      if (visibleRangeDays <= 60) {
+        const label: string = (month != prevMonth) ? dataPoint.toLocaleDateString('en-US', { month: 'short' }) : day.toString(); // Display the month name at the start of each month; use day number for other dates
         ticks.push({ label: label, dataIndex: i });
         prevMonth = month;
-        prevYear = year;
+      } else {
+        if (month != prevMonth || year != prevYear) {
+          const label: string = month === 0 ? year.toString() : dataPoint.toLocaleDateString('en-US', { month: 'short' }); // Year label if January, else month label (Feb, Mar, etc).
+          ticks.push({ label: label, dataIndex: i });
+          prevMonth = month;
+          prevYear = year;
+        }
       }
     }
 
