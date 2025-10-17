@@ -117,7 +117,7 @@ class XAxis {
     this.maxTime = this.allDates[this.allDates.length - 1].getTime();
     const ticks: { label: string, dataIndex: number }[] = [];
 
-    const visibleRangeDays: number = (this.maxTime - this.minTime) / (1000 * 60 * 60 * 24); // used to adjust ticks labeling.
+    const visibleRangeDays: number = ((this.maxTime - this.minTime) / (1000 * 60 * 60 * 24)) + 1; // Include both start and end days in the visible range (e.g., if the difference is 1 day, display both days)
     // Add ticks at month/year boundaries
     let prevMonth: number = -1;
     let prevYear: number = -1;
@@ -519,6 +519,7 @@ export class SqChart {
     if (canvasRenderingCtx == null)
       return;
 
+    const self = this; // for access inside event handler
     chartDiv.addEventListener('mousemove', function(event) {
       canvasRenderingCtx.clearRect(0, 0, canvasWidth, canvasHeight); // Clear canvas
 
@@ -574,7 +575,49 @@ export class SqChart {
 
       canvasRenderingCtx.fillStyle = 'white';
       canvasRenderingCtx.fillText(dateStr, dateBoxX + paddingX, dateBoxY + dateTextHeight + paddingY / 2);
+
+      // Get index of hovered date from xAxis
+      const hoverIndex: number = Math.floor((mouseX / xAxis.canvasWidth) * (xAxis.allDates.length - 1));
+      const hoveredPoints: { point: UiChartPoint; chartType: string }[] = [];
+      // Collect hovered points from all chart lines
+      for (const line of self.chartLines) {
+        const visibleData: UiChartPoint[] = line.getVisibleData();
+        const chartType: string = line.chartStyle!;
+
+        if (hoverIndex < visibleData.length) {
+          const point = visibleData[hoverIndex];
+          hoveredPoints.push({ point, chartType });
+        }
+      }
+
+      // Draw OHLC or value info for all hovered points (stacked)
+      if (hoveredPoints.length > 0) {
+        const fontSize: number = 13;
+        const startX: number = 10;
+        let currentY: number = 16;
+
+        canvasRenderingCtx.font = `${fontSize}px sans-serif`;
+        canvasRenderingCtx.textAlign = 'left';
+        canvasRenderingCtx.fillStyle = 'black';
+
+        for (let i = 0; i < hoveredPoints.length; i++) {
+          const { point, chartType } = hoveredPoints[i];
+          let hoveredValue: string = '';
+
+          if (chartType == 'candleStick') {
+            const ohlcStrings: string[] = [`O: ${point.open?.toFixed(2) ?? '-'}`, `H: ${point.high?.toFixed(2) ?? '-'}`, `L: ${point.low?.toFixed(2) ?? '-'}`, `C: ${point.close?.toFixed(2) ?? '-'}`,];
+            hoveredValue = ohlcStrings.join('   ');
+          } else {
+            const valueStr: string = isNaN(point.value) ? '-' : point.value.toFixed(2);
+            hoveredValue = `Close: ${valueStr}`;
+          }
+
+          canvasRenderingCtx.fillText(hoveredValue, startX, currentY);
+          currentY += fontSize + 4; // move down for next line
+        }
+      }
     });
+
 
     // Clear crosshair when mouse leaves chart
     chartDiv.addEventListener('mouseleave', () => {
