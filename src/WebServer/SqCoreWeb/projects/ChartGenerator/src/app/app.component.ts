@@ -212,7 +212,7 @@ export class AppComponent implements OnInit {
               }
             }
           }
-          this.drawSqChart();
+          this.createSqChart();
           break;
         case 'BacktestResults':
           // "await sleep(5000); // simulate slow C# server backtest" - in case we need to Debug something around this in the future.
@@ -660,10 +660,12 @@ export class AppComponent implements OnInit {
 
   onChangeChartType(event: Event) {
     this.m_selectedChartType = (event.target as HTMLInputElement).value;
-    this.drawSqChart();
+
+    if (this.m_sqChart) // update the existing chart
+      this.m_sqChart.setChartTypeToAllChartLines(this.m_selectedChartType);
   }
 
-  drawSqChart() {
+  createSqChart() {
     // Get the chart container
     const chartDiv: HTMLElement = document.getElementById('chartContainer') as HTMLElement;
     const widthResizerDiv: HTMLElement = document.getElementById('widthResizer') as HTMLElement;

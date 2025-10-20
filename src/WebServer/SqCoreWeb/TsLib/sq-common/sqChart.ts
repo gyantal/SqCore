@@ -35,12 +35,12 @@ export class ChartLine {
   public visibleDataStartIdx: number;
   public visibleDataEndIdx: number;
   public color: string | null;
-  public chartStyle: string | null; // line, candle, bar...
+  public chartType: string | null; // line, candle, bar...
 
-  constructor(dataSet: UiChartPoint[] = [], color: string | null = null, chartStyle: string | null = null) {
+  constructor(dataSet: UiChartPoint[] = [], color: string | null = null, chartType: string | null = null) {
     this.dataSet = dataSet;
     this.color = color;
-    this.chartStyle = chartStyle;
+    this.chartType = chartType;
     this.visibleDataStartIdx = 0;
     this.visibleDataEndIdx = dataSet.length > 0 ? dataSet.length - 1 : 0;
   }
@@ -70,6 +70,10 @@ export class ChartLine {
   private resetVisibleIndices(): void {
     this.visibleDataStartIdx = 0;
     this.visibleDataEndIdx = this.dataSet.length > 0 ? this.dataSet.length - 1 : 0;
+  }
+
+  public setChartType(chartType: string): void {
+    this.chartType = chartType;
   }
 
   public generateRandomOhlc(): void {
@@ -326,14 +330,6 @@ export class SqChart {
       chartLine.color = this.getColor(this.chartLines.length);
     const dataSet: UiChartPoint[] = chartLine.getDataSet();
 
-    // If it's a candlestick chart and OHLC values are not present, generate random data
-    if (chartLine.chartStyle == 'candleStick' && dataSet.length > 0) {
-      const chrtPoint: UiChartPoint = dataSet[0];
-      const hasValidOhlcData: boolean = !isNaN(chrtPoint.open) && !isNaN(chrtPoint.high) && !isNaN(chrtPoint.low) && !isNaN(chrtPoint.close);
-
-      if (!hasValidOhlcData)
-        chartLine.generateRandomOhlc();
-    }
 
     this.chartLines.push(chartLine);
     // update global min/max dates
@@ -353,6 +349,13 @@ export class SqChart {
       this.viewportEndDate = this.overallMaxDate;
     }
     this.redraw();
+  }
+
+  public setChartTypeToAllChartLines(chartType: string): void {
+    for (let i = 0; i < this.chartLines.length; i++)
+      this.chartLines[i].setChartType(chartType);
+
+    this.redraw(); // update the chartStyle
   }
 
   public setViewport(startDate: Date, endDate: Date): void {
@@ -409,11 +412,19 @@ export class SqChart {
       const visibleData: UiChartPoint[] = line.getVisibleData();
       if (visibleData.length == 0)
         continue;
-      switch (line.chartStyle) {
+      switch (line.chartType) {
         case 'basicCandle': // A simple candle bar
           this.drawBasicCandle(visibleData, canvasRenderingCtx, xScale, yScale, canvasHeight);
           break;
         case 'candleStick': // A full candlestick showing High–Low (wick) and Open–Close (body)
+        // If it's a candlestick chart and OHLC values are not present, generate random data
+          if ( visibleData.length > 0) {
+            const chrtPoint: UiChartPoint = visibleData[0];
+            const hasValidOhlcData: boolean = !isNaN(chrtPoint.open) && !isNaN(chrtPoint.high) && !isNaN(chrtPoint.low) && !isNaN(chrtPoint.close);
+
+            if (!hasValidOhlcData)
+              line.generateRandomOhlc();
+          }
           this.drawCandleStick(visibleData, canvasRenderingCtx, xScale, yScale, canvasHeight);
           break;
         case 'line':
@@ -582,7 +593,7 @@ export class SqChart {
       // Collect hovered points from all chart lines
       for (const line of self.chartLines) {
         const visibleData: UiChartPoint[] = line.getVisibleData();
-        const chartType: string = line.chartStyle!;
+        const chartType: string = line.chartType!;
 
         if (hoverIndex < visibleData.length) {
           const point = visibleData[hoverIndex];
@@ -605,8 +616,11 @@ export class SqChart {
           let hoveredValue: string = '';
 
           if (chartType == 'candleStick') {
-            const ohlcStrings: string[] = [`O: ${point.open?.toFixed(2) ?? '-'}`, `H: ${point.high?.toFixed(2) ?? '-'}`, `L: ${point.low?.toFixed(2) ?? '-'}`, `C: ${point.close?.toFixed(2) ?? '-'}`,];
-            hoveredValue = ohlcStrings.join('   ');
+            const open: string = point.open?.toFixed(2) ?? '-';
+            const high: string = point.high?.toFixed(2) ?? '-';
+            const low: string = point.low?.toFixed(2) ?? '-';
+            const close: string = point.close?.toFixed(2) ?? '-';
+            hoveredValue = `O: ${open}   H: ${high}   L: ${low}   C: ${close}`;
           } else {
             const valueStr: string = isNaN(point.value) ? '-' : point.value.toFixed(2);
             hoveredValue = `Close: ${valueStr}`;
