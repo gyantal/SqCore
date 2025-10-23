@@ -212,12 +212,12 @@ export class AppComponent implements OnInit {
               }
             }
           }
-          this.createSqChart();
           break;
         case 'BacktestResults':
           // "await sleep(5000); // simulate slow C# server backtest" - in case we need to Debug something around this in the future.
           console.log('ChrtGen.BacktestResults:' + msgObjStr);
           this.onCompleteBacktests(msgObjStr);
+          this.createSqChart();
           break;
         case 'ErrorToUser':
           console.log('ChrtGen.ErrorToUser:' + msgObjStr);

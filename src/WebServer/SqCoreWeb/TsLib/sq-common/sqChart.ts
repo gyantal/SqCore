@@ -135,6 +135,12 @@ class XAxis {
         const label: string = (month != prevMonth) ? dataPoint.toLocaleDateString('en-US', { month: 'short' }) : day.toString(); // Display the month name at the start of each month; use day number for other dates
         ticks.push({ label: label, dataIndex: i });
         prevMonth = month;
+      } else if (visibleRangeDays >= 1825) { // Display the year, if the user select the visible range >= to 5 years
+        if (year !== prevYear) {
+          const label: string = year.toString(); // Show only the year
+          ticks.push({ label: label, dataIndex: i });
+          prevYear = year;
+        }
       } else {
         if (month != prevMonth || year != prevYear) {
           const label: string = month === 0 ? year.toString() : dataPoint.toLocaleDateString('en-US', { month: 'short' }); // Year label if January, else month label (Feb, Mar, etc).
