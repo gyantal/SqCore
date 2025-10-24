@@ -36,6 +36,7 @@ export class ChartLine {
   public visibleDataEndIdx: number;
   public color: string | null;
   public chartType: string | null; // line, candle, bar...
+  public visBaseRefValue: number = NaN; // The first visible data point’s value, used as the base reference when converting visible data into percentage values
 
   constructor(dataSet: UiChartPoint[] = [], color: string | null = null, chartType: string | null = null) {
     this.dataSet = dataSet;
@@ -43,6 +44,7 @@ export class ChartLine {
     this.chartType = chartType;
     this.visibleDataStartIdx = 0;
     this.visibleDataEndIdx = dataSet.length > 0 ? dataSet.length - 1 : 0;
+    this.updateVisibleBaseRefVal();
   }
 
   // Getters
@@ -64,6 +66,7 @@ export class ChartLine {
     if (startIdx >= 0 && this.dataSet.length > 0 && endIdx < this.dataSet.length && startIdx <= endIdx) {
       this.visibleDataStartIdx = startIdx;
       this.visibleDataEndIdx = endIdx;
+      this.updateVisibleBaseRefVal(); // update base when range changes
     }
   }
 
@@ -74,6 +77,12 @@ export class ChartLine {
 
   public setChartType(chartType: string): void {
     this.chartType = chartType;
+  }
+
+  // Update baseline when visible range changes
+  public updateVisibleBaseRefVal(): void {
+    const visibleData: UiChartPoint[] = this.getVisibleData();
+    this.visBaseRefValue = (visibleData.length > 0 && !isNaN(visibleData[0].value)) ? visibleData[0].value : NaN;
   }
 
   public generateRandomOhlc(): void {
@@ -206,11 +215,16 @@ class YAxis {
     // Find min and max value
     for (const line of chartLines) {
       const dataset: UiChartPoint[] = line.getVisibleData();
+      const firstValue: number = line.visBaseRefValue;
+      if (firstValue == 0 || isNaN(firstValue))
+        continue; // avoid divide by zero or invalid first value
+
       for (const point of dataset) {
-        if (point.value < this.minValue)
-          this.minValue = point.value;
-        if (point.value > this.maxValue)
-          this.maxValue = point.value;
+        const normalizedVal: number = (point.value / firstValue) * 100;
+        if (normalizedVal < this.minValue)
+          this.minValue = normalizedVal;
+        if (normalizedVal > this.maxValue)
+          this.maxValue = normalizedVal;
       }
     }
 
@@ -420,7 +434,7 @@ export class SqChart {
         continue;
       switch (line.chartType) {
         case 'basicCandle': // A simple candle bar
-          this.drawBasicCandle(visibleData, canvasRenderingCtx, xScale, yScale, canvasHeight);
+          this.drawBasicCandle(line, visibleData, canvasRenderingCtx, xScale, yScale, canvasHeight);
           break;
         case 'candleStick': // A full candlestick showing High–Low (wick) and Open–Close (body)
         // If it's a candlestick chart and OHLC values are not present, generate random data
@@ -431,7 +445,7 @@ export class SqChart {
             if (!hasValidOhlcData)
               line.generateRandomOhlc();
           }
-          this.drawCandleStick(visibleData, canvasRenderingCtx, xScale, yScale, canvasHeight);
+          this.drawCandleStick(line, visibleData, canvasRenderingCtx, xScale, yScale, canvasHeight);
           break;
         case 'line':
           this.drawLine(line, visibleData, canvasRenderingCtx, xScale, yScale, canvasHeight);
@@ -746,10 +760,12 @@ export class SqChart {
     });
   }
 
-  private drawCandleStick(visibleData: UiChartPoint[], ctx: CanvasRenderingContext2D, xScale: number, yScale: number, canvasHeight: number): void {
+  private drawCandleStick(line: ChartLine, visibleData: UiChartPoint[], ctx: CanvasRenderingContext2D, xScale: number, yScale: number, canvasHeight: number): void {
     if (visibleData.length == 0)
       return;
-
+    const visBaseRefValue: number = line.visBaseRefValue;
+    if (isNaN(visBaseRefValue) || visBaseRefValue == 0)
+      return;
     const visibleCount: number = visibleData.length - 1;
     const totalDataPoints: number = Math.max(visibleCount, 1);
     const barWidth: number = Math.max(2, (this.xAxis.canvasWidth / totalDataPoints) * 0.8); // Calculate bar width based on available space between data points
@@ -757,12 +773,15 @@ export class SqChart {
     for (let i = 0; i < visibleData.length; i++) {
       const curr: UiChartPoint = visibleData[i];
       const xCurr: number = (i / totalDataPoints) * this.xAxis.canvasWidth;
-
+      const open: number = (curr.open / visBaseRefValue) * 100;
+      const high: number = (curr.high / visBaseRefValue) * 100;
+      const low: number = (curr.low / visBaseRefValue) * 100;
+      const close: number = (curr.close / visBaseRefValue) * 100;
       // Convert prices to Y-coordinates
-      const yOpen: number = canvasHeight - ((curr.open - this.yAxis.minValue) * yScale);
-      const yHigh: number = canvasHeight - ((curr.high - this.yAxis.minValue) * yScale);
-      const yLow: number = canvasHeight - ((curr.low - this.yAxis.minValue) * yScale);
-      const yClose: number = canvasHeight - ((curr.close - this.yAxis.minValue) * yScale);
+      const yOpen: number = canvasHeight - ((open - this.yAxis.minValue) * yScale);
+      const yHigh: number = canvasHeight - ((high - this.yAxis.minValue) * yScale);
+      const yLow: number = canvasHeight - ((low - this.yAxis.minValue) * yScale);
+      const yClose: number = canvasHeight - ((close - this.yAxis.minValue) * yScale);
 
       const isBullish: boolean = curr.close >= curr.open;
       const color: string = isBullish ? 'green' : 'red';
@@ -782,14 +801,17 @@ export class SqChart {
     }
   }
 
-  private drawBasicCandle(visibleData: UiChartPoint[], ctx: CanvasRenderingContext2D, xScale: number, yScale: number, canvasHeight: number): void {
+  private drawBasicCandle(line: ChartLine, visibleData: UiChartPoint[], ctx: CanvasRenderingContext2D, xScale: number, yScale: number, canvasHeight: number): void {
+    const visBaseRefValue: number = line.visBaseRefValue;
+    if (isNaN(visBaseRefValue) || visBaseRefValue == 0)
+      return;
     for (let i = 1; i < visibleData.length; i++) {
       const prev: UiChartPoint = visibleData[i - 1];
       const curr: UiChartPoint = visibleData[i];
 
       const xCurr: number = (curr.date.getTime() - this.xAxis.minTime) * xScale;
-      const yPrev: number = canvasHeight - ((prev.value - this.yAxis.minValue) * yScale);
-      const yCurr: number = canvasHeight - ((curr.value - this.yAxis.minValue) * yScale);
+      const yPrev: number = canvasHeight - (((prev.value / visBaseRefValue) * 100 - this.yAxis.minValue) * yScale);
+      const yCurr: number = canvasHeight - (((curr.value / visBaseRefValue) * 100 - this.yAxis.minValue) * yScale);
 
       const top: number = Math.min(yPrev, yCurr);
       const height: number = Math.abs(yPrev - yCurr);
@@ -808,7 +830,8 @@ export class SqChart {
     let firstVal: boolean = true;
     for (const point of visibleData) {
       const x: number = (point.date.getTime() - this.xAxis.minTime) * xScale;
-      const y: number = canvasHeight - ((point.value - this.yAxis.minValue) * yScale);
+      const percentValue: number = (point.value / line.visBaseRefValue) * 100; // Convert value to percentage
+      const y: number = canvasHeight - ((percentValue - this.yAxis.minValue) * yScale);
       if (firstVal) {
         ctx.moveTo(x, y);
         firstVal = false;
