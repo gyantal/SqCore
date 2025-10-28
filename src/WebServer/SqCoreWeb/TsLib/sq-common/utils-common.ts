@@ -81,9 +81,13 @@ export function isValidDay(day: string, date: Date): boolean {
   return day.length == 2 && dayInt >= 1 && dayInt <= maxDays;
 }
 
-export function resizeChartWidth(chartContainerDiv: HTMLElement, resizerDiv: HTMLElement) {
-  resizerDiv.addEventListener('mousedown', resizingDiv);
-  function resizingDiv(event: MouseEvent) {
+export function addEventListenerResizeWidth(chartContainerDiv: HTMLElement) {
+  const widthResizerDiv: HTMLElement | null = document.getElementById('widthResizer');
+  if (widthResizerDiv == null)
+    return;
+
+  widthResizerDiv.addEventListener('mousedown', onMouseDownResizeWidth);
+  function onMouseDownResizeWidth(event: MouseEvent) {
     const originalMouseX: number = event.pageX;
     const chartDivDomRect: DOMRect = chartContainerDiv.getBoundingClientRect();
 
@@ -102,9 +106,13 @@ export function resizeChartWidth(chartContainerDiv: HTMLElement, resizerDiv: HTM
   }
 }
 
-export function resizeChartHeight(chartContainerDiv: HTMLElement, resizerDiv: HTMLElement) {
-  resizerDiv.addEventListener('mousedown', resizingDiv);
-  function resizingDiv(event: MouseEvent) {
+export function addEventListenerResizeHeight(chartContainerDiv: HTMLElement) {
+  const heightResizerDiv: HTMLElement | null = document.getElementById('heightResizer');
+  if (heightResizerDiv == null)
+    return;
+
+  heightResizerDiv.addEventListener('mousedown', onMouseDownResizeHeight);
+  function onMouseDownResizeHeight(event: MouseEvent) {
     const originalMouseY: number = event.pageY;
     const chartDivDomRect: DOMRect = chartContainerDiv.getBoundingClientRect();
 
