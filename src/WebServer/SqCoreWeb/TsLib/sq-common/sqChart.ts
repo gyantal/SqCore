@@ -177,9 +177,10 @@ class XAxis {
 
     // Draw ticks and labels
     const ticks: { label: string, dataIndex: number }[] = this.generateTicks(chartLines);
-    const visibleCount = this.allDates.length > 1 ? this.allDates.length - 1 : 1;
+    const visibleCount = this.allDates.length > 1 ? this.allDates.length : 1;
+    const slotWidth = canvasWidth / visibleCount; // allocate equal space for each data point
     for (const tick of ticks) {
-      const x: number = (tick.dataIndex / visibleCount) * canvasWidth; // Calculate x position based on index
+      const x: number = (tick.dataIndex + 0.5) * slotWidth; // Place tick at the center of its allocated slot
       // Draw tick mark
       ctx.beginPath();
       ctx.moveTo(x, 0);
@@ -194,8 +195,8 @@ class XAxis {
   }
 
   public scaleXToTime(xPixel: number): Date { // Converts a horizontal pixel to data index first, then to time
-    const dataIndex = Math.floor((xPixel / this.canvasWidth) * (this.allDates.length - 1));
-    const clampedIndex = Math.max(0, Math.min(dataIndex, this.allDates.length - 1)); // Ensures the index never goes out of range
+    const dataIndex = Math.floor((xPixel / this.canvasWidth) * (this.allDates.length));
+    const clampedIndex = Math.max(0, Math.min(dataIndex, this.allDates.length)); // Ensures the index never goes out of range
     return this.allDates[clampedIndex];
   }
 }
@@ -608,7 +609,7 @@ export class SqChart {
       canvasRenderingCtx.fillText(dateStr, dateBoxX + paddingX, dateBoxY + dateTextHeight + paddingY / 2);
 
       // Get index of hovered date from xAxis
-      const hoverIndex: number = Math.floor((mouseX / xAxis.canvasWidth) * (xAxis.allDates.length - 1));
+      const hoverIndex: number = Math.floor((mouseX / xAxis.canvasWidth) * (xAxis.allDates.length));
       const hoveredPoints: { point: UiChartPoint; chartType: string }[] = [];
       // Collect hovered points from all chart lines
       for (const line of self.chartLines) {
@@ -766,13 +767,15 @@ export class SqChart {
     const visBaseRefValue: number = line.visBaseRefValue;
     if (isNaN(visBaseRefValue) || visBaseRefValue == 0)
       return;
-    const visibleCount: number = visibleData.length - 1;
+    const visibleCount: number = visibleData.length;
     const totalDataPoints: number = Math.max(visibleCount, 1);
-    const barWidth: number = Math.max(2, (this.xAxis.canvasWidth / totalDataPoints) * 0.8); // Calculate bar width based on available space between data points
+    // Calculate bar width for each data point based on the total canvas width.
+    const slotWidth: number = this.xAxis.canvasWidth / totalDataPoints;
+    const barWidth: number = Math.max(2, slotWidth * 0.6);
 
     for (let i = 0; i < visibleData.length; i++) {
       const curr: UiChartPoint = visibleData[i];
-      const xCurr: number = (i / totalDataPoints) * this.xAxis.canvasWidth;
+      const xCurr: number = (i + 0.5) * slotWidth;
       const open: number = (curr.open / visBaseRefValue) * 100;
       const high: number = (curr.high / visBaseRefValue) * 100;
       const low: number = (curr.low / visBaseRefValue) * 100;
@@ -805,20 +808,20 @@ export class SqChart {
     const visBaseRefValue: number = line.visBaseRefValue;
     if (isNaN(visBaseRefValue) || visBaseRefValue == 0)
       return;
+    const totalDataPoints = Math.max(visibleData.length, 1);
+    // Calculate bar width for each data point based on the total canvas width.
+    const slotWidth = this.xAxis.canvasWidth / totalDataPoints;
+    const barWidth = slotWidth * 0.6;
     for (let i = 1; i < visibleData.length; i++) {
       const prev: UiChartPoint = visibleData[i - 1];
       const curr: UiChartPoint = visibleData[i];
 
-      const xCurr: number = (curr.date.getTime() - this.xAxis.minTime) * xScale;
+      const xCurr: number = (i + 0.5) * slotWidth;
       const yPrev: number = canvasHeight - (((prev.value / visBaseRefValue) * 100 - this.yAxis.minValue) * yScale);
       const yCurr: number = canvasHeight - (((curr.value / visBaseRefValue) * 100 - this.yAxis.minValue) * yScale);
 
       const top: number = Math.min(yPrev, yCurr);
       const height: number = Math.abs(yPrev - yCurr);
-
-      // Compute the rectangle width dynamically based on spacing between points
-      const dx: number = (curr.date.getTime() - prev.date.getTime()) * xScale; // Distance in pixels between curr and prev
-      const barWidth = dx * 0.6; // Set bar width (60%) of the available between curr and prev
 
       ctx.fillStyle = curr.value >= prev.value ? 'green' : 'red';
       ctx.fillRect(xCurr - barWidth / 2, top, barWidth, height);
@@ -826,16 +829,20 @@ export class SqChart {
   }
 
   private drawLine(line: ChartLine, visibleData: UiChartPoint[], ctx: CanvasRenderingContext2D, xScale: number, yScale: number, canvasHeight: number): void {
+    if (visibleData.length == 0)
+      return;
+
     ctx.beginPath();
-    let firstVal: boolean = true;
-    for (const point of visibleData) {
-      const x: number = (point.date.getTime() - this.xAxis.minTime) * xScale;
-      const percentValue: number = (point.value / line.visBaseRefValue) * 100; // Convert value to percentage
+    const totalDataPoints: number = Math.max(visibleData.length, 1);
+    const slotWidth: number = this.xAxis.canvasWidth / totalDataPoints;
+    for (let i = 0; i < visibleData.length; i++) {
+      const point: UiChartPoint = visibleData[i];
+      const x: number = (i + 0.5) * slotWidth;
+      const percentValue: number = (point.value / line.visBaseRefValue) * 100;
       const y: number = canvasHeight - ((percentValue - this.yAxis.minValue) * yScale);
-      if (firstVal) {
+      if (i == 0)
         ctx.moveTo(x, y);
-        firstVal = false;
-      } else
+      else
         ctx.lineTo(x, y);
     }
     ctx.strokeStyle = line.color ?? 'black';
