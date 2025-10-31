@@ -198,6 +198,7 @@ class YAxis {
   public minValue: number = Number.MAX_VALUE; // Initialize with a large value;
   public maxValue: number = Number.MIN_VALUE; // Initialize with a small value
   public canvasHeight: number = 1;
+  public ticks: number[] = [];
 
   public generateTicks(chartLines: ChartLine[]): number[] {
     if (chartLines.length == 0)
@@ -226,6 +227,10 @@ class YAxis {
       return [];
 
     const valueRange: number = this.maxValue - this.minValue;
+    // Add 5% padding to min and max to prevent ticks at canvas edges
+    const padding: number = valueRange * 0.05;
+    this.minValue -= padding;
+    this.maxValue += padding;
     // Determine an appropriate step size (similar to D3's "nice" ticks https://github.com/d3/d3-scale/blob/main/src/linear.js)
     const targetTickCount: number = 10; // default number of ticks
     const rawStep: number = valueRange / targetTickCount; // Calculate an initial raw step between ticks
@@ -247,11 +252,11 @@ class YAxis {
     const roundedMax: number = Math.ceil(this.maxValue / niceStep) * niceStep;
 
     // Generate ticks from roundedMin to roundedMax
-    const ticks: number[] = [];
+    this.ticks = [];
     for (let tick = roundedMin; tick <= roundedMax; tick += niceStep)
-      ticks.push(tick);
+      this.ticks.push(tick);
 
-    return ticks;
+    return this.ticks;
   }
 
   public render(ctx: CanvasRenderingContext2D, canvasHeight: number, chartLines: ChartLine[]): void {
@@ -265,19 +270,12 @@ class YAxis {
     ctx.moveTo(0, 0);
     ctx.lineTo(0, canvasHeight);
     ctx.stroke();
-    // Draw ticks, labels
-    const ticks: number[] = this.generateTicks(chartLines);
 
-    // Add 10% padding to min and max to prevent ticks at canvas edges
-    const range: number = this.maxValue - this.minValue;
-    const padding: number = range * 0.01;
-    this.minValue -= padding;
-    this.maxValue += padding;
     this.canvasHeight = canvasHeight;
     const yScale = this.maxValue > this.minValue ? canvasHeight / (this.maxValue - this.minValue) : 1;
 
-    for (let i = 0; i < ticks.length; i++) {
-      const tick: number = ticks[i];
+    for (let i = 0; i < this.ticks.length; i++) {
+      const tick: number = this.ticks[i];
       const y: number = canvasHeight - (tick - this.minValue) * yScale;
 
       // Draw tick mark
@@ -419,6 +417,7 @@ export class SqChart {
     // Update X-axis min, max based on viewport
     this.xAxis.minTime = this.viewportStartDate?.getTime() ?? this.overallMinDate.getTime();
     this.xAxis.maxTime = this.viewportEndDate?.getTime() ?? this.overallMaxDate.getTime();
+    this.yAxis.ticks = this.yAxis.generateTicks(this.chartLines); // dynamically rescale and update ticks based on the visible range
 
     const xScale = canvasWidth / (this.xAxis.maxTime - this.xAxis.minTime);
     const yScale = canvasHeight / (this.yAxis.maxValue - this.yAxis.minValue);

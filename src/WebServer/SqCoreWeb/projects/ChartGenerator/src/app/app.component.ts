@@ -366,6 +366,7 @@ export class AppComponent implements OnInit {
     this.m_backtestStatsResults = this.m_sqStatisticsbuilder.statsResults(this.m_startDate, this.m_endDate);
     console.log('onStartOrEndDateChanged: this._sqStatisticsbuilder', this.m_backtestStatsResults.length);
     this.m_ultimateChrt.Redraw(this.m_startDate, this.m_endDate, this.m_pvChrtWidth, this.m_pvChrtHeight);
+    this.m_sqChart?.setViewport(this.m_startDate, this.m_endDate);
   }
 
   async onStartBacktests() {
@@ -685,9 +686,7 @@ export class AppComponent implements OnInit {
     for (const dataset of chartData)
       this.m_sqChart.addLine(new ChartLine(dataset, null, this.m_selectedChartType));
     // Set viewport to show data between two dates
-    const startDate: Date = new Date('2018-01-01');
-    const endDate: Date = new Date('2023-08-01');
-    this.m_sqChart.setViewport(startDate, endDate);
+    this.m_sqChart.setViewport(this.m_startDate, this.m_endDate);
     // resizing
     addEventListenerResizeWidth(chartDiv);
     addEventListenerResizeHeight(chartDiv);
