@@ -82,7 +82,7 @@ export function isValidDay(day: string, date: Date): boolean {
 }
 
 export function addEventListenerResizeWidth(chartContainerDiv: HTMLElement) {
-  const widthResizerDiv: HTMLElement | null = chartContainerDiv.querySelector('.widthResizer');
+  const widthResizerDiv: HTMLElement | null = chartContainerDiv.querySelector('#widthResizer');
   if (widthResizerDiv == null)
     return;
 
@@ -107,7 +107,7 @@ export function addEventListenerResizeWidth(chartContainerDiv: HTMLElement) {
 }
 
 export function addEventListenerResizeHeight(chartContainerDiv: HTMLElement) {
-  const heightResizerDiv: HTMLElement | null = chartContainerDiv.querySelector('.heightResizer');
+  const heightResizerDiv: HTMLElement | null = chartContainerDiv.querySelector('#heightResizer');
   if (heightResizerDiv == null)
     return;
 

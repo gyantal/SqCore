@@ -74,52 +74,55 @@
     Tech Indicators / Others
   </span>
 <br>
-  <span>
-    <span class="range">Range:
-      <div class="selectionDropDown">
-        <input id="histPeriodInput" class="highlightInputbox rangeInputWidth" type="text" oninput="this.value = this.value.toUpperCase()" [(ngModel)]="m_histRangeSelected" (change)="onUserChangedHistDateRange(m_histRangeSelected)">
-        <div class="listDropDown">
-          <option class="optionDropDown" *ngFor="let item of m_rangeSelection" [value]="item" (click)="onUserChangedHistDateRange(item)">{{item}}</option>
-        </div>
-      </div>
-    </span>&nbsp;
-    <span>Start:&nbsp;
-      <input #startYearInput type="text" class="commonDateInput sqIsoDateInputYYYY" placeholder="YYYY" (change)="onChangeDatePart('year', startYearInput, startMonthInput, startDayInput, startCalendarInput, m_startDateObj)"/>
-      <input #startMonthInput type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="MM" (change)="onChangeDatePart('month', startYearInput, startMonthInput, startDayInput, startCalendarInput, m_startDateObj)"/>
-      <input #startDayInput type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="DD" (change)="onChangeDatePart('day', startYearInput, startMonthInput, startDayInput, startCalendarInput, m_startDateObj)"/>
-      <input #startCalendarInput type="date" class="commonDateInput sqIsoCalendar" [value]="m_startDateObj.dateStr" (change)="onChangeDateFromCalendarPicker(startCalendarInput, startYearInput, startMonthInput, startDayInput, m_startDateObj)"/>
-    </span>&nbsp;
-    <span>End:&nbsp;
-      <input #endYearInput type="text" class="commonDateInput sqIsoDateInputYYYY" placeholder="YYYY" (change)="onChangeDatePart('year', endYearInput, endMonthInput, endDayInput, endCalendarInput, m_endDateObj)"/>
-      <input #endMonthInput type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="MM" (change)="onChangeDatePart('month', endYearInput, endMonthInput, endDayInput, endCalendarInput, m_endDateObj)"/>
-      <input #endDayInput type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="DD" (change)="onChangeDatePart('day', endYearInput, endMonthInput, endDayInput, endCalendarInput, m_endDateObj)"/>
-      <input #endCalendarInput type="date" class="commonDateInput sqIsoCalendar" [value]="m_endDateObj.dateStr" (change)="onChangeDateFromCalendarPicker(endCalendarInput, endYearInput, endMonthInput, endDayInput, m_endDateObj)"/>
-    </span>&nbsp;
-    <button class="backtestBtn btnCommon" (click)="onStartBacktestsClicked()">Start Server Backtest</button><br>
-  </span><br>
-  <span>Portfolio Value Chart</span>
-  <div id="backtestPvChrt">
+<span>Portfolio Value Chart</span>
+<div id="backtestPvChrt">
     <div id="pfRunResultChrt"></div>
     <div id='tooltipChart'></div>
-  </div><br>
-  <div *ngFor="let item of m_uiChrtGenPrtfRunResults">
+</div><br>
+<div *ngFor="let item of m_uiChrtGenPrtfRunResults">
     <div *ngIf="item.sqLogs.length > 0" [ngClass]="m_hasSqLogErrOrWarn ? 'sqErrOrWarnLog' : 'sqInfoLog'">! Backtest Warning/Error/Info logs.
         <div class="sqLogTooltipText">
             <p *ngFor="let log of item.sqLogs">{{log.message}}</p>
         </div>
     </div>
-  </div><br>
-  SqChart for Demo/Testing
-  ChartType:
-    <select name="model" (change)="onChangeChartType($event)">
-        <option value="line">line</option>
-        <option value="basicCandle">basicCandle</option>
-        <option value="candleStick">candleStick</option>
+</div><br>
+<div id="chartPanel">
+  <div id="chartToolbar">
+    <label for="chartTypeSelect">Chart Type:</label>
+    <select id="chartTypeSelect" name="model" (change)="onChangeChartType($event)">
+      <option value="line">Line</option>
+      <option value="basicCandle">Basic Candle</option>
+      <option value="candleStick">Candle Stick</option>
     </select>
-    <div id="chartContainer">
-        <div id="widthResizer"></div>
-        <div id="heightResizer"></div>
-    </div><br>
+    <span>&nbsp;
+        <span class="range">Range:
+            <div class="selectionDropDown">
+                <input id="histPeriodInput" class="highlightInputbox rangeInputWidth" type="text" oninput="this.value = this.value.toUpperCase()" [(ngModel)]="m_histRangeSelected" (change)="onUserChangedHistDateRange(m_histRangeSelected)">
+                <div class="listDropDown">
+                <option class="optionDropDown" *ngFor="let item of m_rangeSelection" [value]="item" (click)="onUserChangedHistDateRange(item)">{{item}}</option>
+                </div>
+            </div>
+        </span>&nbsp;
+        <span>Start:&nbsp;
+            <input #startYearInput type="text" class="commonDateInput sqIsoDateInputYYYY" placeholder="YYYY" (change)="onChangeDatePart('year', startYearInput, startMonthInput, startDayInput, startCalendarInput, m_startDateObj)"/>
+            <input #startMonthInput type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="MM" (change)="onChangeDatePart('month', startYearInput, startMonthInput, startDayInput, startCalendarInput, m_startDateObj)"/>
+            <input #startDayInput type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="DD" (change)="onChangeDatePart('day', startYearInput, startMonthInput, startDayInput, startCalendarInput, m_startDateObj)"/>
+            <input #startCalendarInput type="date" class="commonDateInput sqIsoCalendar" [value]="m_startDateObj.dateStr" (change)="onChangeDateFromCalendarPicker(startCalendarInput, startYearInput, startMonthInput, startDayInput, m_startDateObj)"/>
+        </span>&nbsp;
+        <span>End:&nbsp;
+            <input #endYearInput type="text" class="commonDateInput sqIsoDateInputYYYY" placeholder="YYYY" (change)="onChangeDatePart('year', endYearInput, endMonthInput, endDayInput, endCalendarInput, m_endDateObj)"/>
+            <input #endMonthInput type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="MM" (change)="onChangeDatePart('month', endYearInput, endMonthInput, endDayInput, endCalendarInput, m_endDateObj)"/>
+            <input #endDayInput type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="DD" (change)="onChangeDatePart('day', endYearInput, endMonthInput, endDayInput, endCalendarInput, m_endDateObj)"/>
+            <input #endCalendarInput type="date" class="commonDateInput sqIsoCalendar" [value]="m_endDateObj.dateStr" (change)="onChangeDateFromCalendarPicker(endCalendarInput, endYearInput, endMonthInput, endDayInput, m_endDateObj)"/>
+        </span>&nbsp;
+        <button class="backtestBtn btnCommon" (click)="onStartBacktestsClicked()">Start Server Backtest</button><br>
+    </span>
+  </div>
+  <div id="chartContainer">
+    <div id="widthResizer"></div>
+    <div id="heightResizer"></div>
+  </div>
+</div><br>
   <div class="statsTbl">
     <table>
       <thead>

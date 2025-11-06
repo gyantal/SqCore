@@ -278,6 +278,16 @@ thead {
   color: #FF0000;
 }
 
+#chartToolbar {
+  width: 99.5%;
+  align-items: center;
+  background-color: whitesmoke;
+  font-size: 0.9rem;
+  float: left;
+  border-bottom: 0.01rem solid #ccc;
+  box-sizing: border-box;
+}
+
 #chartContainer {
   position: relative;
   float: left;
