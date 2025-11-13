@@ -74,6 +74,29 @@
     Tech Indicators / Others
   </span>
 <br>
+<span>
+    <span class="range">Range:
+      <div class="selectionDropDown">
+        <input id="histPeriodInput" class="highlightInputbox rangeInputWidth" type="text" oninput="this.value = this.value.toUpperCase()" [(ngModel)]="m_histRangeSelected" (change)="onUserChangedHistDateRange(m_histRangeSelected)">
+        <div class="listDropDown">
+          <option class="optionDropDown" *ngFor="let item of m_rangeSelection" [value]="item" (click)="onUserChangedHistDateRange(item)">{{item}}</option>
+        </div>
+      </div>
+    </span>&nbsp;
+    <span>Start:&nbsp;
+      <input #startYearInput type="text" class="commonDateInput sqIsoDateInputYYYY" placeholder="YYYY" (change)="onChangeDatePart('year', startYearInput, startMonthInput, startDayInput, startCalendarInput, m_startDateObj, false)"/>
+      <input #startMonthInput type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="MM" (change)="onChangeDatePart('month', startYearInput, startMonthInput, startDayInput, startCalendarInput, m_startDateObj, false)"/>
+      <input #startDayInput type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="DD" (change)="onChangeDatePart('day', startYearInput, startMonthInput, startDayInput, startCalendarInput, m_startDateObj, false)"/>
+      <input #startCalendarInput type="date" class="commonDateInput sqIsoCalendar" [value]="m_startDateObj.dateStr" (change)="onChangeDateFromCalendarPicker(startCalendarInput, startYearInput, startMonthInput, startDayInput, m_startDateObj, false)"/>
+    </span>&nbsp;
+    <span>End:&nbsp;
+      <input #endYearInput type="text" class="commonDateInput sqIsoDateInputYYYY" placeholder="YYYY" (change)="onChangeDatePart('year', endYearInput, endMonthInput, endDayInput, endCalendarInput, m_endDateObj, false)"/>
+      <input #endMonthInput type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="MM" (change)="onChangeDatePart('month', endYearInput, endMonthInput, endDayInput, endCalendarInput, m_endDateObj, false)"/>
+      <input #endDayInput type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="DD" (change)="onChangeDatePart('day', endYearInput, endMonthInput, endDayInput, endCalendarInput, m_endDateObj, false)"/>
+      <input #endCalendarInput type="date" class="commonDateInput sqIsoCalendar" [value]="m_endDateObj.dateStr" (change)="onChangeDateFromCalendarPicker(endCalendarInput, endYearInput, endMonthInput, endDayInput, m_endDateObj, false)"/>
+    </span>&nbsp;
+    <button class="backtestBtn btnCommon" (click)="onStartBacktestsClicked()">Start Server Backtest</button><br>
+  </span><br>
 <span>Portfolio Value Chart</span>
 <div id="backtestPvChrt">
     <div id="pfRunResultChrt"></div>
@@ -95,27 +118,18 @@
       <option value="candleStick">Candle Stick</option>
     </select>
     <span>&nbsp;
-        <span class="range">Range:
-            <div class="selectionDropDown">
-                <input id="histPeriodInput" class="highlightInputbox rangeInputWidth" type="text" oninput="this.value = this.value.toUpperCase()" [(ngModel)]="m_histRangeSelected" (change)="onUserChangedHistDateRange(m_histRangeSelected)">
-                <div class="listDropDown">
-                <option class="optionDropDown" *ngFor="let item of m_rangeSelection" [value]="item" (click)="onUserChangedHistDateRange(item)">{{item}}</option>
-                </div>
-            </div>
+        <span>VizStart:&nbsp;
+            <input #startYearInput2 type="text" class="commonDateInput sqIsoDateInputYYYY" placeholder="YYYY" (change)="onChangeDatePart('year', startYearInput2, startMonthInput2, startDayInput2, startCalendarInput2, m_vizStartDateObj, true)"/>
+            <input #startMonthInput2 type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="MM" (change)="onChangeDatePart('month', startYearInput2, startMonthInput2, startDayInput2, startCalendarInput2, m_vizStartDateObj, true)"/>
+            <input #startDayInput2 type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="DD" (change)="onChangeDatePart('day', startYearInput2, startMonthInput2, startDayInput2, startCalendarInput2, m_vizStartDateObj, true)"/>
+            <input #startCalendarInput2 type="date" class="commonDateInput sqIsoCalendar" [value]="m_vizStartDateObj.dateStr" (change)="onChangeDateFromCalendarPicker(startCalendarInput2, startYearInput2, startMonthInput2, startDayInput2, m_vizStartDateObj, true)"/>
         </span>&nbsp;
-        <span>Start:&nbsp;
-            <input #startYearInput type="text" class="commonDateInput sqIsoDateInputYYYY" placeholder="YYYY" (change)="onChangeDatePart('year', startYearInput, startMonthInput, startDayInput, startCalendarInput, m_startDateObj)"/>
-            <input #startMonthInput type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="MM" (change)="onChangeDatePart('month', startYearInput, startMonthInput, startDayInput, startCalendarInput, m_startDateObj)"/>
-            <input #startDayInput type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="DD" (change)="onChangeDatePart('day', startYearInput, startMonthInput, startDayInput, startCalendarInput, m_startDateObj)"/>
-            <input #startCalendarInput type="date" class="commonDateInput sqIsoCalendar" [value]="m_startDateObj.dateStr" (change)="onChangeDateFromCalendarPicker(startCalendarInput, startYearInput, startMonthInput, startDayInput, m_startDateObj)"/>
-        </span>&nbsp;
-        <span>End:&nbsp;
-            <input #endYearInput type="text" class="commonDateInput sqIsoDateInputYYYY" placeholder="YYYY" (change)="onChangeDatePart('year', endYearInput, endMonthInput, endDayInput, endCalendarInput, m_endDateObj)"/>
-            <input #endMonthInput type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="MM" (change)="onChangeDatePart('month', endYearInput, endMonthInput, endDayInput, endCalendarInput, m_endDateObj)"/>
-            <input #endDayInput type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="DD" (change)="onChangeDatePart('day', endYearInput, endMonthInput, endDayInput, endCalendarInput, m_endDateObj)"/>
-            <input #endCalendarInput type="date" class="commonDateInput sqIsoCalendar" [value]="m_endDateObj.dateStr" (change)="onChangeDateFromCalendarPicker(endCalendarInput, endYearInput, endMonthInput, endDayInput, m_endDateObj)"/>
-        </span>&nbsp;
-        <button class="backtestBtn btnCommon" (click)="onStartBacktestsClicked()">Start Server Backtest</button><br>
+        <span>VizEnd:&nbsp;
+            <input #endYearInput2 type="text" class="commonDateInput sqIsoDateInputYYYY" placeholder="YYYY" (change)="onChangeDatePart('year', endYearInput2, endMonthInput2, endDayInput2, endCalendarInput2, m_vizEndDateObj, true)"/>
+            <input #endMonthInput2 type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="MM" (change)="onChangeDatePart('month', endYearInput2, endMonthInput2, endDayInput2, endCalendarInput2, m_vizEndDateObj, true)"/>
+            <input #endDayInput2 type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="DD" (change)="onChangeDatePart('day', endYearInput2, endMonthInput2, endDayInput2, endCalendarInput2, m_vizEndDateObj, true)"/>
+            <input #endCalendarInput2 type="date" class="commonDateInput sqIsoCalendar" [value]="m_vizEndDateObj.dateStr" (change)="onChangeDateFromCalendarPicker(endCalendarInput2, endYearInput2, endMonthInput2, endDayInput2, m_vizEndDateObj, true)"/>
+        </span>&nbsp;<br>
     </span>
   </div>
   <div id="chartContainer">

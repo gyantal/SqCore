@@ -62,6 +62,7 @@ html { // this is the Shadow DOM root of the big main App component. The :hosts 
   padding: 0.3rem;
   font-size: 0.8rem;
   left: 3%;
+  z-index: 1;
 }
 
 .sqErrOrWarnLog:hover .sqLogTooltipText, .sqInfoLog:hover .sqLogTooltipText {

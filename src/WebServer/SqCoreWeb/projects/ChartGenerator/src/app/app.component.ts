@@ -58,6 +58,16 @@ export class AppComponent implements OnInit {
   @ViewChild('endMonthInput') endMonthInput!: ElementRef<HTMLInputElement>;
   @ViewChild('endDayInput') endDayInput!: ElementRef<HTMLInputElement>;
 
+  @ViewChild('startCalendarInput2') startCalendarInput2!: ElementRef<HTMLInputElement>;
+  @ViewChild('startYearInput2') startYearInput2!: ElementRef<HTMLInputElement>;
+  @ViewChild('startMonthInput2') startMonthInput2!: ElementRef<HTMLInputElement>;
+  @ViewChild('startDayInput2') startDayInput2!: ElementRef<HTMLInputElement>;
+
+  @ViewChild('endCalendarInput2') endCalendarInput2!: ElementRef<HTMLInputElement>;
+  @ViewChild('endYearInput2') endYearInput2!: ElementRef<HTMLInputElement>;
+  @ViewChild('endMonthInput2') endMonthInput2!: ElementRef<HTMLInputElement>;
+  @ViewChild('endDayInput2') endDayInput2!: ElementRef<HTMLInputElement>;
+
   // Portfolios & BenchMark Sections
   m_treeViewState: TreeViewState = new TreeViewState();
   m_uiNestedPrtfTreeViewItems: TreeViewItem[] = [];
@@ -101,6 +111,11 @@ export class AppComponent implements OnInit {
 
   m_sqChart: SqChart | null = null;
   m_selectedChartType : string = 'line';
+  // sqChart visible range - selected by user
+  m_vizStartDateObj: { dateStr: string } = { dateStr: '' };
+  m_vizEndDateObj: { dateStr: string } = { dateStr: '' };
+  m_vizStartDate: Date = new Date();
+  m_vizEndDate: Date = new Date();
 
   // Sample data for sqChart developing
   //   chartData: UiChartPoint[][] = [
@@ -305,15 +320,17 @@ export class AppComponent implements OnInit {
     const prtfAndBmrkChrtData: CgTimeSeries[] = uiChrtGenPrtfRunResults[0].prtfChrtValues.concat(uiChrtGenPrtfRunResults[0].bmrkChrtValues);
     const lineChrtTooltip = document.getElementById('tooltipChart') as HTMLElement;
 
-    this.m_startDate = this.m_minStartDate;
-    this.m_endDate = this.m_maxEndDate;
+    this.m_startDate = this.m_vizStartDate = this.m_minStartDate;
+    this.m_endDate = this.m_vizEndDate = this.m_maxEndDate;
     this.m_startDateObj.dateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(this.m_startDate);
     this.m_endDateObj.dateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(this.m_endDate);
+    this.m_vizStartDateObj.dateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(this.m_vizStartDate);
+    this.m_vizEndDateObj.dateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(this.m_vizEndDate);
     this.initializeSqIsoDateInputs();
     this.m_histRangeSelected = 'ALL';
     this.m_ultimateChrt.Init(lineChrtDiv, lineChrtTooltip, prtfAndBmrkChrtData);
     this.m_sqStatisticsbuilder.Init(prtfAndBmrkChrtData);
-    this.onStartOrEndDateChanged(); // will recalculate CAGR and redraw chart
+    this.onStartOrEndDateChanged1(); // will recalculate CAGR and redraw chart
   }
 
   // Common function for both portfolios and bmrks to create UiChartPiont data from chartdata and index
@@ -361,12 +378,15 @@ export class AppComponent implements OnInit {
       this.m_maxEndDate = maxDate;
   }
 
-  onStartOrEndDateChanged() {
+  onStartOrEndDateChanged1() {
     // Recalculate the totalReturn and CAGR here
     this.m_backtestStatsResults = this.m_sqStatisticsbuilder.statsResults(this.m_startDate, this.m_endDate);
     console.log('onStartOrEndDateChanged: this._sqStatisticsbuilder', this.m_backtestStatsResults.length);
     this.m_ultimateChrt.Redraw(this.m_startDate, this.m_endDate, this.m_pvChrtWidth, this.m_pvChrtHeight);
-    this.m_sqChart?.setViewport(this.m_startDate, this.m_endDate);
+  }
+
+  onStartOrEndDateChanged2() {
+    this.m_sqChart?.setVisibleDataSet(this.m_vizStartDate, this.m_vizEndDate);
   }
 
   async onStartBacktests() {
@@ -459,13 +479,19 @@ export class AppComponent implements OnInit {
     this.m_endDateObj.dateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(this.m_maxEndDate); // Interestingly, when we change this which is bind to the date input html element, then the onChangeStartOrEndDate() is not called.
     this.m_endDate = this.m_maxEndDate;
     this.initializeSqIsoDateInputs();
-    this.onStartOrEndDateChanged();
+    this.onStartOrEndDateChanged1();
   }
 
-  onUserChangedStartOrEndDateWidgets() { // User entry in the input field
-    this.m_startDate = new Date(this.m_startDateObj.dateStr);
-    this.m_endDate = new Date(this.m_endDateObj.dateStr);
-    this.onStartOrEndDateChanged();
+  onUserChangedStartOrEndDateWidgets(isVisibleRangeUpdate: boolean): void {
+    if (isVisibleRangeUpdate) {
+      this.m_vizStartDate = new Date(this.m_vizStartDateObj.dateStr);
+      this.m_vizEndDate = new Date(this.m_vizEndDateObj.dateStr);
+      this.onStartOrEndDateChanged2();
+    } else {
+      this.m_startDate = new Date(this.m_startDateObj.dateStr);
+      this.m_endDate = new Date(this.m_endDateObj.dateStr);
+      this.onStartOrEndDateChanged1();
+    }
   }
 
   onClickClearBacktestedPortfolios() { // clear the user selected backtested portfolios
@@ -598,19 +624,29 @@ export class AppComponent implements OnInit {
     this.endMonthInput.nativeElement.value = endMonth;
     this.endDayInput.nativeElement.value = endDay;
     this.endCalendarInput.nativeElement.value = this.m_endDateObj.dateStr;
+
+    this.startYearInput2.nativeElement.value = startYear;
+    this.startMonthInput2.nativeElement.value = startMonth;
+    this.startDayInput2.nativeElement.value = startDay;
+    this.startCalendarInput2.nativeElement.value = this.m_vizStartDateObj.dateStr;
+
+    this.endYearInput2.nativeElement.value = endYear;
+    this.endMonthInput2.nativeElement.value = endMonth;
+    this.endDayInput2.nativeElement.value = endDay;
+    this.endCalendarInput2.nativeElement.value = this.m_vizEndDateObj.dateStr;
   }
 
-  onChangeDateFromCalendarPicker(calendarInput: HTMLInputElement, yearInput: HTMLInputElement, monthInput: HTMLInputElement, dayInput: HTMLInputElement, dateObj: { dateStr: string }): void {
+  onChangeDateFromCalendarPicker(calendarInput: HTMLInputElement, yearInput: HTMLInputElement, monthInput: HTMLInputElement, dayInput: HTMLInputElement, dateObj: { dateStr: string }, isVisibleRangeUpdate: boolean): void {
     const [year, month, day] = calendarInput.value.split('-');
     // Update the year, month, and day inputs based on the date selected by the user from the calendar
     yearInput.value = year;
     monthInput.value = month;
     dayInput.value = day;
     dateObj.dateStr = calendarInput.value;
-    this.onUserChangedStartOrEndDateWidgets();
+    this.onUserChangedStartOrEndDateWidgets(isVisibleRangeUpdate);
   }
 
-  onChangeDatePart(type: 'year' | 'month' | 'day', yearInput: HTMLInputElement, monthInput: HTMLInputElement, dayInput: HTMLInputElement, calendarInput: HTMLInputElement, dateObj: { dateStr: string }) {
+  onChangeDatePart(type: 'year' | 'month' | 'day', yearInput: HTMLInputElement, monthInput: HTMLInputElement, dayInput: HTMLInputElement, calendarInput: HTMLInputElement, dateObj: { dateStr: string }, isVisibleRangeUpdate: boolean) {
     const usedDate: Date = new Date(calendarInput.value);
 
     switch (type) {
@@ -656,7 +692,7 @@ export class AppComponent implements OnInit {
     // Also, assigning it in HTML ((change)="m_startDateStr = onChangeDateFromCalendarPicker(...)" wouldn't help, because that is too late.
     // The only thing that would help is to Wrap m_startDateStr in an Object:
     // m_startDateObj = { dateStr: '' }; // Wrap the string in an object, then you can pass that object in HTML template function as a reference (not value)
-    this.onUserChangedStartOrEndDateWidgets();
+    this.onUserChangedStartOrEndDateWidgets(isVisibleRangeUpdate);
   }
 
   onChangeChartType(event: Event) {
@@ -686,7 +722,7 @@ export class AppComponent implements OnInit {
     for (const dataset of chartData)
       this.m_sqChart.addLine(new ChartLine(dataset, null, this.m_selectedChartType));
     // Set viewport to show data between two dates
-    this.m_sqChart.setViewport(this.m_startDate, this.m_endDate);
+    this.m_sqChart.setViewport(this.m_vizStartDate, this.m_vizEndDate);
     // resizing
     addEventListenerResizeWidth(chartDiv);
     addEventListenerResizeHeight(chartDiv);

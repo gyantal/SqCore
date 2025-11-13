@@ -370,31 +370,51 @@ export class SqChart {
     this.redraw(); // update the chartStyle
   }
 
+  public setVisibleDataSet(startDate: Date, endDate: Date): void {
+    // Update min/max with the user selected date range
+    this.overallMinDate = startDate;
+    this.overallMaxDate = endDate;
+    let visibleDataset: UiChartPoint[] = [];
+    for (let i = 0; i < this.chartLines.length; i++) {
+      const chartLine = this.chartLines[i];
+      const dataSet: UiChartPoint[] = chartLine.getDataSet();
+      const { startIdx, endIdx } = this.getVisibleDatasetIndices(dataSet, startDate, endDate);
+      visibleDataset = dataSet.slice(startIdx, endIdx + 1);
+      chartLine.setDataSet(visibleDataset); // Update the chart line dataset with the user selected date range
+    }
+    this.setViewport(startDate, endDate);
+  }
+
   public setViewport(startDate: Date, endDate: Date): void {
     this.viewportStartDate = startDate;
     this.viewportEndDate = endDate;
     for (const chartLine of this.chartLines) {
       const dataSet: UiChartPoint[] = chartLine.getDataSet();
-      let startIdx: number = 0;
-      let endIdx: number = dataSet.length - 1;
-
-      for (let j = 0; j < dataSet.length; j++) {
-        if (dataSet[j].date >= startDate) {
-          startIdx = j;
-          break;
-        }
-      }
-
-      for (let k = dataSet.length - 1; k >= 0; k--) {
-        if (dataSet[k].date <= endDate) {
-          endIdx = k;
-          break;
-        }
-      }
-
+      const { startIdx, endIdx } = this.getVisibleDatasetIndices(dataSet, startDate, endDate);
       chartLine.setVisibleRange(startIdx, endIdx); // for each dataset the start and end index may or maynot be same
     }
     this.redraw();
+  }
+
+  private getVisibleDatasetIndices(dataSet: UiChartPoint[], startDate: Date, endDate: Date): { startIdx: number; endIdx: number } {
+    let startIdx: number = 0;
+    let endIdx: number = dataSet.length - 1;
+
+    for (let j = 0; j < dataSet.length; j++) {
+      if (dataSet[j].date >= startDate) {
+        startIdx = j;
+        break;
+      }
+    }
+
+    for (let k = dataSet.length - 1; k >= 0; k--) {
+      if (dataSet[k].date <= endDate) {
+        endIdx = k;
+        break;
+      }
+    }
+
+    return { startIdx, endIdx };
   }
 
   public redraw(): void {
