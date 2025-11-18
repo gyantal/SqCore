@@ -55,10 +55,32 @@ export class ChartLine {
   }
 
   // Setters
-  public setDataSet(dataSet: UiChartPoint[]): void {
-    this.dataSet = dataSet;
-    this.resetVisibleIndices();
+  public setDataSet(startDate: Date, endDate: Date): void {
+    const { startIdx, endIdx } = ChartLine.getVisibleDatasetIndices(this.dataSet, startDate, endDate);
+    this.setVisibleRange(startIdx, endIdx);
   }
+
+  static getVisibleDatasetIndices(dataSet: UiChartPoint[], startDate: Date, endDate: Date): { startIdx: number; endIdx: number } {
+    let startIdx: number = 0;
+    let endIdx: number = dataSet.length - 1;
+
+    for (let j = 0; j < dataSet.length; j++) {
+      if (dataSet[j].date >= startDate) {
+        startIdx = j;
+        break;
+      }
+    }
+
+    for (let k = dataSet.length - 1; k >= 0; k--) {
+      if (dataSet[k].date <= endDate) {
+        endIdx = k;
+        break;
+      }
+    }
+
+    return { startIdx, endIdx };
+  }
+
 
   public setVisibleRange(startIdx: number, endIdx: number): void {
     if (startIdx >= 0 && this.dataSet.length > 0 && endIdx < this.dataSet.length && startIdx <= endIdx) {
@@ -69,10 +91,6 @@ export class ChartLine {
     }
   }
 
-  private resetVisibleIndices(): void {
-    this.visibleDataStartIdx = 0;
-    this.visibleDataEndIdx = this.dataSet.length > 0 ? this.dataSet.length - 1 : 0;
-  }
 
   public setChartType(chartType: string): void {
     this.chartType = chartType;
@@ -374,47 +392,16 @@ export class SqChart {
     // Update min/max with the user selected date range
     this.overallMinDate = startDate;
     this.overallMaxDate = endDate;
-    let visibleDataset: UiChartPoint[] = [];
-    for (let i = 0; i < this.chartLines.length; i++) {
-      const chartLine = this.chartLines[i];
-      const dataSet: UiChartPoint[] = chartLine.getDataSet();
-      const { startIdx, endIdx } = this.getVisibleDatasetIndices(dataSet, startDate, endDate);
-      visibleDataset = dataSet.slice(startIdx, endIdx + 1);
-      chartLine.setDataSet(visibleDataset); // Update the chart line dataset with the user selected date range
-    }
     this.setViewport(startDate, endDate);
   }
 
   public setViewport(startDate: Date, endDate: Date): void {
     this.viewportStartDate = startDate;
     this.viewportEndDate = endDate;
-    for (const chartLine of this.chartLines) {
-      const dataSet: UiChartPoint[] = chartLine.getDataSet();
-      const { startIdx, endIdx } = this.getVisibleDatasetIndices(dataSet, startDate, endDate);
-      chartLine.setVisibleRange(startIdx, endIdx); // for each dataset the start and end index may or maynot be same
-    }
+    for (const chartLine of this.chartLines)
+      chartLine.setDataSet(startDate, endDate);
+
     this.redraw();
-  }
-
-  private getVisibleDatasetIndices(dataSet: UiChartPoint[], startDate: Date, endDate: Date): { startIdx: number; endIdx: number } {
-    let startIdx: number = 0;
-    let endIdx: number = dataSet.length - 1;
-
-    for (let j = 0; j < dataSet.length; j++) {
-      if (dataSet[j].date >= startDate) {
-        startIdx = j;
-        break;
-      }
-    }
-
-    for (let k = dataSet.length - 1; k >= 0; k--) {
-      if (dataSet[k].date <= endDate) {
-        endIdx = k;
-        break;
-      }
-    }
-
-    return { startIdx, endIdx };
   }
 
   public redraw(): void {
@@ -488,9 +475,13 @@ export class SqChart {
       return;
 
     const chartDivRect: DOMRect = this.chartDiv.getBoundingClientRect();
-    this.canvas.width = chartDivRect.width * this.canvasWidthPercent;
-    this.canvas.height = chartDivRect.height * this.canvasHeightPercent;
-
+    const newCanvasWidth: number = chartDivRect.width * this.canvasWidthPercent;
+    const newCanvasHeight: number = chartDivRect.height * this.canvasHeightPercent;
+    this.canvas.width = newCanvasWidth;
+    this.canvas.height = newCanvasHeight;
+    // update the xAxis and yAxis
+    this.xAxis.canvasWidth = newCanvasWidth;
+    this.yAxis.canvasHeight = newCanvasHeight;
     this.redraw(); // Redraw chart with new canvas size
   }
 

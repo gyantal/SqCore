@@ -330,7 +330,7 @@ export class AppComponent implements OnInit {
     this.m_histRangeSelected = 'ALL';
     this.m_ultimateChrt.Init(lineChrtDiv, lineChrtTooltip, prtfAndBmrkChrtData);
     this.m_sqStatisticsbuilder.Init(prtfAndBmrkChrtData);
-    this.onStartOrEndDateChanged1(); // will recalculate CAGR and redraw chart
+    this.onBacktestDatesChanged(); // will recalculate CAGR and redraw chart
   }
 
   // Common function for both portfolios and bmrks to create UiChartPiont data from chartdata and index
@@ -378,14 +378,14 @@ export class AppComponent implements OnInit {
       this.m_maxEndDate = maxDate;
   }
 
-  onStartOrEndDateChanged1() {
+  onBacktestDatesChanged() {
     // Recalculate the totalReturn and CAGR here
     this.m_backtestStatsResults = this.m_sqStatisticsbuilder.statsResults(this.m_startDate, this.m_endDate);
     console.log('onStartOrEndDateChanged: this._sqStatisticsbuilder', this.m_backtestStatsResults.length);
     this.m_ultimateChrt.Redraw(this.m_startDate, this.m_endDate, this.m_pvChrtWidth, this.m_pvChrtHeight);
   }
 
-  onStartOrEndDateChanged2() {
+  onVisibleDatesChanged() {
     this.m_sqChart?.setVisibleDataSet(this.m_vizStartDate, this.m_vizEndDate);
   }
 
@@ -479,18 +479,18 @@ export class AppComponent implements OnInit {
     this.m_endDateObj.dateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(this.m_maxEndDate); // Interestingly, when we change this which is bind to the date input html element, then the onChangeStartOrEndDate() is not called.
     this.m_endDate = this.m_maxEndDate;
     this.initializeSqIsoDateInputs();
-    this.onStartOrEndDateChanged1();
+    this.onBacktestDatesChanged();
   }
 
   onUserChangedStartOrEndDateWidgets(isVisibleRangeUpdate: boolean): void {
     if (isVisibleRangeUpdate) {
       this.m_vizStartDate = new Date(this.m_vizStartDateObj.dateStr);
       this.m_vizEndDate = new Date(this.m_vizEndDateObj.dateStr);
-      this.onStartOrEndDateChanged2();
+      this.onVisibleDatesChanged();
     } else {
       this.m_startDate = new Date(this.m_startDateObj.dateStr);
       this.m_endDate = new Date(this.m_endDateObj.dateStr);
-      this.onStartOrEndDateChanged1();
+      this.onBacktestDatesChanged();
     }
   }
 
