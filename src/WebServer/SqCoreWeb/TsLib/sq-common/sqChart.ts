@@ -35,11 +35,11 @@ export class ChartLine {
   public visibleDataStartIdx: number;
   public visibleDataEndIdx: number;
   public color: string | null;
-  public chartType: string | null; // line, candle, bar...
+  public chartType: string; // line, candle, bar...
   public visBaseRefValue: number = NaN; // The first visible data point’s value, used as the base reference when converting visible data into percentage values
   public dataSetVisible: UiChartPoint[];
 
-  constructor(dataSet: UiChartPoint[] = [], color: string | null = null, chartType: string | null = null) {
+  constructor(dataSet: UiChartPoint[] = [], color: string | null = null, chartType: string) {
     this.dataSet = dataSet;
     this.color = color;
     this.chartType = chartType;
@@ -119,6 +119,7 @@ class XAxis {
   public maxTime: number = 1;
   public canvasWidth: number = 1;
   public allDates: Date[] = [];
+  public ticks: { label: string, dataIndex: number }[] = [];
 
   public generateTicks(chartLines: ChartLine[]): { label: string, dataIndex: number }[] {
     if (chartLines.length == 0)
@@ -187,10 +188,9 @@ class XAxis {
     this.canvasWidth = canvasWidth;
 
     // Draw ticks and labels
-    const ticks: { label: string, dataIndex: number }[] = this.generateTicks(chartLines);
-    const visibleCount = this.allDates.length > 1 ? this.allDates.length : 1;
-    const slotWidth = canvasWidth / visibleCount; // allocate equal space for each data point
-    for (const tick of ticks) {
+    const visibleCount: number = this.allDates.length > 1 ? this.allDates.length : 1;
+    const slotWidth: number = canvasWidth / visibleCount; // allocate equal space for each data point
+    for (const tick of this.ticks) {
       const x: number = (tick.dataIndex + 0.5) * slotWidth; // Place tick at the center of its allocated slot
       // Draw tick mark
       ctx.beginPath();
@@ -319,13 +319,13 @@ export class SqChart {
   private chartLines: ChartLine[] = [];
   private chartDiv: HTMLElement | null = null;
   private canvas: HTMLCanvasElement | null = null;
-  private canvasWidthPercent = 0.97;
-  private canvasHeightPercent = 0.9;
+  private canvasWidthPercent: number = 0.97;
+  private canvasHeightPercent: number = 0.9;
   private xAxis: XAxis = new XAxis();
   private yAxis: YAxis = new YAxis();
 
   // Drag state
-  private isDragging = false;
+  private isDragging: boolean = false;
   private viewportStartDate: Date | null = null;
   private viewportEndDate: Date | null = null;
   private overallMinDate: Date = maxDate;
@@ -421,9 +421,7 @@ export class SqChart {
     if (this.chartLines.length == 0)
       return;
 
-    // Update X-axis min, max based on viewport
-    this.xAxis.minTime = this.viewportStartDate?.getTime() ?? this.overallMinDate.getTime();
-    this.xAxis.maxTime = this.viewportEndDate?.getTime() ?? this.overallMaxDate.getTime();
+    this.xAxis.ticks = this.xAxis.generateTicks(this.chartLines);
     this.yAxis.ticks = this.yAxis.generateTicks(this.chartLines); // dynamically rescale and update ticks based on the visible range
 
     const xScale = canvasWidth / (this.xAxis.maxTime - this.xAxis.minTime);
@@ -612,15 +610,12 @@ export class SqChart {
       // Get index of hovered date from xAxis
       const hoverIndex: number = Math.floor((mouseX / xAxis.canvasWidth) * (xAxis.allDates.length));
       const hoveredPoints: { point: UiChartPoint; chartType: string }[] = [];
+      const hoveredDate: Date = xAxis.allDates[hoverIndex];
       // Collect hovered points from all chart lines
       for (const chartLine of self.chartLines) {
-        const visibleData: UiChartPoint[] = chartLine.dataSetVisible;
-        const chartType: string = chartLine.chartType!;
-
-        if (hoverIndex < visibleData.length) {
-          const point = visibleData[hoverIndex];
-          hoveredPoints.push({ point, chartType });
-        }
+        const point: UiChartPoint | undefined = chartLine.dataSetVisible.find((p) => p.date.getTime() == hoveredDate.getTime());
+        if (point != undefined)
+          hoveredPoints.push({ point, chartType: chartLine.chartType });
       }
 
       // Draw OHLC or value info for all hovered points (stacked)
@@ -770,26 +765,25 @@ export class SqChart {
     const visBaseRefValue: number = chartLine.visBaseRefValue;
     if (isNaN(visBaseRefValue) || visBaseRefValue == 0)
       return;
-    const visibleCount: number = visibleData.length;
-    const totalDataPoints: number = Math.max(visibleCount, 1);
+    const totalDataPoints: number = this.xAxis.allDates.length || 1; // Use the merged dates list to compute slotWidth to avoid misalignment when datasets have different date ranges.
     // Calculate bar width for each data point based on the total canvas width.
     const slotWidth: number = this.xAxis.canvasWidth / totalDataPoints;
     const barWidth: number = Math.max(2, slotWidth * 0.6);
 
-    for (let i = 0; i < visibleData.length; i++) {
-      const curr: UiChartPoint = visibleData[i];
-      const xCurr: number = (i + 0.5) * slotWidth;
-      const open: number = (curr.open / visBaseRefValue) * 100;
-      const high: number = (curr.high / visBaseRefValue) * 100;
-      const low: number = (curr.low / visBaseRefValue) * 100;
-      const close: number = (curr.close / visBaseRefValue) * 100;
+    for (const point of visibleData) {
+      const dateIndex: number = this.xAxis.allDates.findIndex((d) => d.getTime() == point.date.getTime()); // Find current date index.
+      const xCurr: number = (dateIndex + 0.5) * slotWidth;
+      const open: number = (point.open / visBaseRefValue) * 100;
+      const high: number = (point.high / visBaseRefValue) * 100;
+      const low: number = (point.low / visBaseRefValue) * 100;
+      const close: number = (point.close / visBaseRefValue) * 100;
       // Convert prices to Y-coordinates
       const yOpen: number = canvasHeight - ((open - this.yAxis.minValue) * yScale);
       const yHigh: number = canvasHeight - ((high - this.yAxis.minValue) * yScale);
       const yLow: number = canvasHeight - ((low - this.yAxis.minValue) * yScale);
       const yClose: number = canvasHeight - ((close - this.yAxis.minValue) * yScale);
 
-      const isBullish: boolean = curr.close >= curr.open;
+      const isBullish: boolean = point.close >= point.open;
       const color: string = isBullish ? 'green' : 'red';
 
       // Wick (High–Low line)
@@ -815,15 +809,14 @@ export class SqChart {
     const visBaseRefValue: number = chartLine.visBaseRefValue;
     if (isNaN(visBaseRefValue) || visBaseRefValue == 0)
       return;
-    const totalDataPoints = Math.max(visibleData.length, 1);
-    // Calculate bar width for each data point based on the total canvas width.
-    const slotWidth = this.xAxis.canvasWidth / totalDataPoints;
-    const barWidth = slotWidth * 0.6;
+    const totalDataPoints: number = this.xAxis.allDates.length || 1; // Use the merged dates list to compute slotWidth to avoid misalignment when datasets have different date ranges.
+    const slotWidth: number = this.xAxis.canvasWidth / totalDataPoints;
+    const barWidth: number = slotWidth * 0.6;
     for (let i = 1; i < visibleData.length; i++) {
       const prev: UiChartPoint = visibleData[i - 1];
       const curr: UiChartPoint = visibleData[i];
-
-      const xCurr: number = (i + 0.5) * slotWidth;
+      const dateIndex: number = this.xAxis.allDates.findIndex((d) => d.getTime() == curr.date.getTime()); // Find current date index.
+      const xCurr: number = (dateIndex + 0.5) * slotWidth;
       const yPrev: number = canvasHeight - (((prev.value / visBaseRefValue) * 100 - this.yAxis.minValue) * yScale);
       const yCurr: number = canvasHeight - (((curr.value / visBaseRefValue) * 100 - this.yAxis.minValue) * yScale);
 
@@ -839,18 +832,19 @@ export class SqChart {
     const visibleData: UiChartPoint[] = chartLine.dataSetVisible;
     if (visibleData.length == 0)
       return;
-
-    ctx.beginPath();
-    const totalDataPoints: number = Math.max(visibleData.length, 1);
+    const totalDataPoints: number = this.xAxis.allDates.length || 1; // Use the merged dates list to compute slotWidth to avoid misalignment when datasets have different date ranges.
     const slotWidth: number = this.xAxis.canvasWidth / totalDataPoints;
-    for (let i = 0; i < visibleData.length; i++) {
-      const point: UiChartPoint = visibleData[i];
-      const x: number = (i + 0.5) * slotWidth;
+    ctx.beginPath();
+    let firstPoint: boolean = true;
+    for (const point of visibleData) {
+      const dateIndex: number = this.xAxis.allDates.findIndex((d) => d.getTime() == point.date.getTime()); // Find current date index.
+      const x: number = (dateIndex + 0.5) * slotWidth;
       const percentValue: number = (point.value / chartLine.visBaseRefValue) * 100;
       const y: number = canvasHeight - ((percentValue - this.yAxis.minValue) * yScale);
-      if (i == 0)
+      if (firstPoint) {
         ctx.moveTo(x, y);
-      else
+        firstPoint = false;
+      } else
         ctx.lineTo(x, y);
     }
     ctx.strokeStyle = chartLine.color ?? 'black';
