@@ -83,13 +83,13 @@
         </div>
       </div>
     </span>&nbsp;
-    <span>Start:&nbsp;
+    <span title="StartTime: 08:00 UTC (about 03:00 ET)">Start:&nbsp;
       <input #startYearInput type="text" class="commonDateInput sqIsoDateInputYYYY" placeholder="YYYY" (change)="onChangeDatePart('year', startYearInput, startMonthInput, startDayInput, startCalendarInput, m_startDateObj, false)"/>
       <input #startMonthInput type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="MM" (change)="onChangeDatePart('month', startYearInput, startMonthInput, startDayInput, startCalendarInput, m_startDateObj, false)"/>
       <input #startDayInput type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="DD" (change)="onChangeDatePart('day', startYearInput, startMonthInput, startDayInput, startCalendarInput, m_startDateObj, false)"/>
       <input #startCalendarInput type="date" class="commonDateInput sqIsoCalendar" [value]="m_startDateObj.dateStr" (change)="onChangeDateFromCalendarPicker(startCalendarInput, startYearInput, startMonthInput, startDayInput, m_startDateObj, false)"/>
     </span>&nbsp;
-    <span>End:&nbsp;
+    <span title="EndTime: 23:59 UTC (about 19:00 ET)">End:&nbsp;
       <input #endYearInput type="text" class="commonDateInput sqIsoDateInputYYYY" placeholder="YYYY" (change)="onChangeDatePart('year', endYearInput, endMonthInput, endDayInput, endCalendarInput, m_endDateObj, false)"/>
       <input #endMonthInput type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="MM" (change)="onChangeDatePart('month', endYearInput, endMonthInput, endDayInput, endCalendarInput, m_endDateObj, false)"/>
       <input #endDayInput type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="DD" (change)="onChangeDatePart('day', endYearInput, endMonthInput, endDayInput, endCalendarInput, m_endDateObj, false)"/>

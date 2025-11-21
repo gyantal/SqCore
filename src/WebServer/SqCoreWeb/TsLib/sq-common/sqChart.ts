@@ -55,7 +55,7 @@ export class ChartLine {
   }
 
   // Setters
-  public setDataSet(startDate: Date, endDate: Date): void {
+  public setVisibleDateRange(startDate: Date, endDate: Date): void {
     const { startIdx, endIdx } = ChartLine.getVisibleDatasetIndices(this.dataSet, startDate, endDate);
     this.setVisibleRange(startIdx, endIdx);
   }
@@ -119,11 +119,11 @@ class XAxis {
   public maxTime: number = 1;
   public canvasWidth: number = 1;
   public allDates: Date[] = [];
-  public ticks: { label: string, dataIndex: number }[] = [];
+  private ticks: { label: string, dataIndex: number }[] = [];
 
-  public generateTicks(chartLines: ChartLine[]): { label: string, dataIndex: number }[] {
+  public generateTicks(chartLines: ChartLine[]): void {
     if (chartLines.length == 0)
-      return [];
+      return;
 
     // Collect unique dates using an object
     const datesObj: { [key: string]: Date } = {};
@@ -137,10 +137,10 @@ class XAxis {
 
     this.allDates = Object.values(datesObj).sort((a, b) => a.getTime() - b.getTime()); // Convert to array of Date objects and sort
     if (this.allDates.length == 0)
-      return [];
+      return;
     this.minTime = this.allDates[0].getTime();
     this.maxTime = this.allDates[this.allDates.length - 1].getTime();
-    const ticks: { label: string, dataIndex: number }[] = [];
+    this.ticks = [];
 
     const visibleRangeDays: number = ((this.maxTime - this.minTime) / (1000 * 60 * 60 * 24)) + 1; // Include both start and end days in the visible range (e.g., if the difference is 1 day, display both days)
     // Add ticks at month/year boundaries
@@ -154,25 +154,23 @@ class XAxis {
 
       if (visibleRangeDays <= 60) {
         const label: string = (month != prevMonth) ? dataPoint.toLocaleDateString('en-US', { month: 'short' }) : day.toString(); // Display the month name at the start of each month; use day number for other dates
-        ticks.push({ label: label, dataIndex: i });
+        this.ticks.push({ label: label, dataIndex: i });
         prevMonth = month;
       } else if (visibleRangeDays >= 1825) { // Display the year, if the user select the visible range >= to 5 years
         if (year !== prevYear) {
           const label: string = year.toString(); // Show only the year
-          ticks.push({ label: label, dataIndex: i });
+          this.ticks.push({ label: label, dataIndex: i });
           prevYear = year;
         }
       } else {
         if (month != prevMonth || year != prevYear) {
           const label: string = month === 0 ? year.toString() : dataPoint.toLocaleDateString('en-US', { month: 'short' }); // Year label if January, else month label (Feb, Mar, etc).
-          ticks.push({ label: label, dataIndex: i });
+          this.ticks.push({ label: label, dataIndex: i });
           prevMonth = month;
           prevYear = year;
         }
       }
     }
-
-    return ticks;
   }
 
   public render(ctx: CanvasRenderingContext2D, canvasWidth: number, chartLines: ChartLine[]): void {
@@ -216,11 +214,11 @@ class YAxis {
   public minValue: number = Number.MAX_VALUE; // Initialize with a large value;
   public maxValue: number = Number.MIN_VALUE; // Initialize with a small value
   public canvasHeight: number = 1;
-  public ticks: number[] = [];
+  private ticks: number[] = [];
 
-  public generateTicks(chartLines: ChartLine[]): number[] {
+  public generateTicks(chartLines: ChartLine[]): void {
     if (chartLines.length == 0)
-      return [];
+      return;
     // Reset
     this.minValue = Number.MAX_VALUE;
     this.maxValue = -Number.MAX_VALUE;
@@ -242,7 +240,7 @@ class YAxis {
     }
 
     if (this.minValue == Number.MAX_VALUE || this.maxValue == -Number.MAX_VALUE)
-      return [];
+      return;
 
     const valueRange: number = this.maxValue - this.minValue;
     // Add 5% padding to min and max to prevent ticks at canvas edges
@@ -273,8 +271,6 @@ class YAxis {
     this.ticks = [];
     for (let tick = roundedMin; tick <= roundedMax; tick += niceStep)
       this.ticks.push(tick);
-
-    return this.ticks;
   }
 
   public render(ctx: CanvasRenderingContext2D, canvasHeight: number, chartLines: ChartLine[]): void {
@@ -399,7 +395,7 @@ export class SqChart {
     this.viewportStartDate = startDate;
     this.viewportEndDate = endDate;
     for (const chartLine of this.chartLines)
-      chartLine.setDataSet(startDate, endDate);
+      chartLine.setVisibleDateRange(startDate, endDate);
 
     this.redraw();
   }
@@ -421,8 +417,8 @@ export class SqChart {
     if (this.chartLines.length == 0)
       return;
 
-    this.xAxis.ticks = this.xAxis.generateTicks(this.chartLines);
-    this.yAxis.ticks = this.yAxis.generateTicks(this.chartLines); // dynamically rescale and update ticks based on the visible range
+    this.xAxis.generateTicks(this.chartLines);
+    this.yAxis.generateTicks(this.chartLines); // dynamically rescale and update ticks based on the visible range
 
     const xScale = canvasWidth / (this.xAxis.maxTime - this.xAxis.minTime);
     const yScale = canvasHeight / (this.yAxis.maxValue - this.yAxis.minValue);
