@@ -206,3 +206,21 @@ thead {
   font-style: italic;
   color: darkgrey;
 }
+
+#chartToolbar {
+  width: 99.5%;
+  align-items: center;
+  background-color: white;
+  font-size: 0.9rem;
+  float: left;
+  border-bottom: 0.01rem solid #ccc;
+  box-sizing: border-box;
+}
+
+#chartContainer {
+  position: relative;
+  float: left;
+  background-color: white;
+  width: 99.5%;
+  height: 42.5vh;
+}

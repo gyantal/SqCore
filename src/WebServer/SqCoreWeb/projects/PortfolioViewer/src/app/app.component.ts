@@ -1,10 +1,11 @@
 import { Component, ElementRef, ViewChild } from '@angular/core';
-import { PortfolioJs, PrtfRunResultJs, UiPrtfRunResult, prtfsParseHelper, statsParseHelper, updateUiWithPrtfRunResult, TradeAction, AssetType, CurrencyId, ExchangeId, fundamentalDataParseHelper, TickerClosePrice, SeasonalityData, getSeasonalityData, UiSeasonalityChartPoint, getDetailedStats, ChartResolution, updateUiWithPrtfRunResultUntilDate, SqLogLevel } from '../../../../TsLib/sq-common/backtestCommon';
+import { PortfolioJs, PrtfRunResultJs, UiPrtfRunResult, prtfsParseHelper, statsParseHelper, updateUiWithPrtfRunResult, TradeAction, AssetType, CurrencyId, ExchangeId, fundamentalDataParseHelper, TickerClosePrice, SeasonalityData, getSeasonalityData, UiSeasonalityChartPoint, getDetailedStats, ChartResolution, updateUiWithPrtfRunResultUntilDate, SqLogLevel, UiChartPoint, convertToDateBasedOnDateFormat } from '../../../../TsLib/sq-common/backtestCommon';
 import { minDate, SqNgCommonUtilsTime } from '../../../sq-ng-common/src/lib/sq-ng-common.utils_time';
 import { drawBarChartFromSeasonalityData } from '../../../../TsLib/sq-common/chartSimple';
 import { BacktestDetailedStatistics } from '../../../../TsLib/sq-common/backtestStatistics';
 import { isValidDay, isValidMonth, isValidYear } from '../../../../TsLib/sq-common/utils-common';
 import * as d3 from 'd3';
+import { ChartLine, SqChart } from '../../../../TsLib/sq-common/sqChart';
 
 class HandshakeMessage {
   public email = '';
@@ -124,6 +125,9 @@ export class AppComponent {
   m_seasonalityData: SeasonalityData = new SeasonalityData();
   m_detailedStatistics: BacktestDetailedStatistics = new BacktestDetailedStatistics();
 
+  m_sqChart: SqChart | null = null;
+  m_selectedChartType : string = 'line';
+
   // Trades tabpage: internal data
   m_trades: TradeUi[] = [];
   m_editedTrade: TradeJs = new TradeJs();
@@ -199,6 +203,7 @@ export class AppComponent {
           console.log('PrtfVwr.PrtfRunResult:' + msgObjStr);
           this.processPortfolioRunResult(msgObjStr);
           this.m_isEditedTradeDirty = false;
+          this.createSqChart();
           break;
         case 'PrtfVwr.PrtfRunResultUntilDate':
           console.log('PrtfVwr.PrtfRunResultUntilDate:' + msgObjStr);
@@ -893,5 +898,52 @@ export class AppComponent {
     this.m_histPosEndDateObj.dateStr = newDate.toISOString().substring(0, 10);
     this.initializeSqIsoDateInput();
     this.onHistPeriodChangeClicked();
+  }
+
+  onChangeChartType(event: Event) {
+    this.m_selectedChartType = (event.target as HTMLInputElement).value;
+
+    if (this.m_sqChart) // update the existing chart
+      this.m_sqChart.setChartTypeToAllChartLines(this.m_selectedChartType);
+  }
+
+  createSqChart() {
+    // Get the chart container
+    const chartDiv: HTMLElement = document.getElementById('chartContainer') as HTMLElement;
+
+    // Clean up existing chart container
+    if (this.m_sqChart != null) {
+      const oldCanvas: HTMLCanvasElement | null = chartDiv.querySelector('canvas');
+      if (oldCanvas != null)
+        oldCanvas.remove(); // Remove existing canvas
+      this.m_sqChart = null;
+    }
+
+    // Create and initialize the chart
+    this.m_sqChart = new SqChart();
+    this.m_sqChart.init(chartDiv);
+    // Add a data series
+    const chartData: UiChartPoint[][] = this.getSqChartData();
+    for (const dataset of chartData)
+      this.m_sqChart.addLine(new ChartLine(dataset, null, this.m_selectedChartType));
+      // Set viewport to show data between two dates
+    // this.m_sqChart.setViewport(this.m_vizStartDate, this.m_vizEndDate);
+  }
+
+  getSqChartData(): UiChartPoint[][] {
+    const sqChartData: UiChartPoint[][] = [];
+    if (this.m_prtfRunResult == null)
+      return sqChartData;
+
+    const seriesData: UiChartPoint[] = [];
+    for (let i = 0; i < this.m_prtfRunResult.chrtData.dates.length; i++) {
+      const chartPoint = new UiChartPoint();
+      chartPoint.date = convertToDateBasedOnDateFormat(this.m_prtfRunResult.chrtData.dates[i], this.m_prtfRunResult.chrtData.dateTimeFormat);
+      chartPoint.value = this.m_prtfRunResult.chrtData.values[i];
+      seriesData.push(chartPoint);
+    }
+
+    sqChartData.push(seriesData);
+    return sqChartData;
   }
 }

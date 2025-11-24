@@ -767,7 +767,7 @@ export function getDetailedStats(chartData: ChartJs, name: string): BacktestDeta
   return detailedStats;
 }
 
-function convertToDateBasedOnDateFormat(date: number, dateFormat: string): Date {
+export function convertToDateBasedOnDateFormat(date: number, dateFormat: string): Date {
   if (dateFormat == 'YYYYMMDD')
     return parseNumberToDate(date);
   else if (dateFormat.includes('DaysFrom')) {

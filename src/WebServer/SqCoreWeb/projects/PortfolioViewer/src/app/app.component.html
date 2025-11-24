@@ -94,6 +94,17 @@
     </tr>
   </table>
   <div id="pfRunResultChrt"></div> <!-- portfolio run result chart  -->
+<div id="chartPanel">
+  <div id="chartToolbar">
+    <label for="chartTypeSelect">Chart Type:</label>
+    <select id="chartTypeSelect" name="model" (change)="onChangeChartType($event)">
+      <option value="line">Line</option>
+      <option value="basicCandle">Basic Candle</option>
+      <option value="candleStick">Candle Stick</option>
+    </select>
+  </div>
+  <div id="chartContainer"></div>
+</div><br>
   <table class="tableCommon">
     <thead>
       <tr>
