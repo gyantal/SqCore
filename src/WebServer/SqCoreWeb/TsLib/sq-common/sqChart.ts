@@ -35,7 +35,7 @@ export class ChartLine {
   public visibleDataStartIdx: number;
   public visibleDataEndIdx: number;
   public color: string | null;
-  public chartType: string; // line, candle, bar...
+  private chartType: string; // line, candle, bar...
   public visBaseRefValue: number = NaN; // The first visible data point’s value, used as the base reference when converting visible data into percentage values
   public dataSetVisible: UiChartPoint[];
 
@@ -94,6 +94,10 @@ export class ChartLine {
 
   public setChartType(chartType: string): void {
     this.chartType = chartType;
+  }
+
+  public getChartType(): string {
+    return this.chartType;
   }
 
   public generateRandomOhlc(): void {
@@ -423,7 +427,8 @@ export class SqChart {
     const xScale = canvasWidth / (this.xAxis.maxTime - this.xAxis.minTime);
     const yScale = canvasHeight / (this.yAxis.maxValue - this.yAxis.minValue);
     for (const chartLine of this.chartLines) {
-      switch (chartLine.chartType) {
+      const chartType: string = chartLine.getChartType();
+      switch (chartType) {
         case 'basicCandle': // A simple candle bar
           this.drawBasicCandle(chartLine, canvasRenderingCtx, xScale, yScale, canvasHeight);
           break;
@@ -611,7 +616,7 @@ export class SqChart {
       for (const chartLine of self.chartLines) {
         const point: UiChartPoint | undefined = chartLine.dataSetVisible.find((p) => p.date.getTime() == hoveredDate.getTime());
         if (point != undefined)
-          hoveredPoints.push({ point, chartType: chartLine.chartType });
+          hoveredPoints.push({ point, chartType: chartLine.getChartType() });
       }
 
       // Draw OHLC or value info for all hovered points (stacked)

@@ -126,7 +126,6 @@ export class AppComponent {
   m_detailedStatistics: BacktestDetailedStatistics = new BacktestDetailedStatistics();
 
   m_sqChart: SqChart | null = null;
-  m_selectedChartType : string = 'line';
 
   // Trades tabpage: internal data
   m_trades: TradeUi[] = [];
@@ -901,10 +900,10 @@ export class AppComponent {
   }
 
   onChangeChartType(event: Event) {
-    this.m_selectedChartType = (event.target as HTMLInputElement).value;
+    const chartType: string = (event.target as HTMLInputElement).value;
 
     if (this.m_sqChart) // update the existing chart
-      this.m_sqChart.setChartTypeToAllChartLines(this.m_selectedChartType);
+      this.m_sqChart.setChartTypeToAllChartLines(chartType);
   }
 
   createSqChart() {
@@ -925,7 +924,7 @@ export class AppComponent {
     // Add a data series
     const chartData: UiChartPoint[][] = this.getSqChartData();
     for (const dataset of chartData)
-      this.m_sqChart.addLine(new ChartLine(dataset, null, this.m_selectedChartType));
+      this.m_sqChart.addLine(new ChartLine(dataset, null, 'line'));
       // Set viewport to show data between two dates
     // this.m_sqChart.setViewport(this.m_vizStartDate, this.m_vizEndDate);
   }
