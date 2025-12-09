@@ -438,6 +438,11 @@ public partial class MemDb
         throw new Exception($"UpdatePortfolioTrade(), cannot find tradeHistoryId {p_tradeHistoryId}");
     }
 
+    // It is OK that we don't keep TradeHistories in RAM. It is intentional that we always reload the TradeHistory from RedisDb whenever somebody asks for it.
+    // First, not having large RAM footprint is a faster WebServer program.
+    // Second, this is only needed rarely. So it doesn't matter too much.
+    // Third, the difference of getting it from Redis is not too high. From Linux server app to Linux RedisDb, it takes only 1ms (or 12 msec the first time because of C# Reflection serialization). 
+    // Fourth, we don't have to worry about whether it was changed during the last 2 hours, while WebServer didn't synch with RedisDb.
     public IEnumerable<Trade> GetPortfolioTradeHistory(int p_tradeHistoryId, DateTime? p_startIncLoc, DateTime? p_endIncLoc)
     {
         return m_Db.GetPortfolioTradeHistory(p_tradeHistoryId, p_startIncLoc, p_endIncLoc);

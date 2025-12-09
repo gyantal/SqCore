@@ -5,6 +5,9 @@ throw new Exception("Here is the error message");
 But it is an awful lot of computation. Creating a new Exception object, throwing it on the stack upwards, checking which try{} will handle it.
 A lot of computation.
 
+Use exceptions for exceptional cases (e.g., unexpected failures like file I/O errors) rather than control flow. For predictable errors like division by zero, alternatives are better.
+Avoid using exceptions if this can be triggered in a For loop running 1000x. (like backtester, running a function for every day for 1000 days)
+
 2.
 Another idea is using a bool return parameter and a string as an output errMsg parameter. But it is not a great code of the Function(). 
 Because we signal error by filling up 2 variables at the same time all the time: errMsg + the returned bool.
@@ -69,9 +72,10 @@ public static bool operator == (String a, String b) {
 }"
 
 
-4. Fastest option. Using string? pointer and return null for NoError. Fastest, but you have to get used to reading the code.
+4. !Fastest option. Using string? pointer and return null for NoError. Fastest, but you have to get used to reading the code.
 If you want to propagate an error message upwards in a C# function using a nullable string and null signalling as no error, 
 you can return null when there is no error and return the error message as a string when there is an error.
+The real Result is returned in an 'out' parameter.
 
 string? Divide(int numerator, int denominator, out double result)
 {
@@ -95,3 +99,44 @@ public static bool IsNullOrEmpty([NotNullWhen(false)] string? value)
     return value == null || value.Length == 0;
 }
 But when using function we wrote, we don't have to bother. Null comparision is the fastest.
+
+
+5. <!Preferred> Fastest with C# named tuples (C# 7.0). More functional. The preferred way. Nicer to read the code. More functional looking that the all return value is returned by the object.
+Although we have to create another object on the stack with malloc(). The returned Tuple object.
+Avoiding the need for out parameters;
+"
+(double? Result, string? ErrMsg) Divide(int numerator, int denominator)
+{
+    if (denominator == 0)
+        return (null, "Denominator cannot be zero.");
+    return ((double)numerator / denominator, null);
+}
+
+var (result, errorMsg) = Divide(5, 6);
+if (errorMsg == null)
+    Console.WriteLine($"Result: {result}");
+else
+    Console.WriteLine($"Error: {errorMsg}");
+"
+
+
+Additional Alternative:
+6. Result Pattern (Structured Return Type). Extendable with attributes (errCode, errMsg, etc). 
+Instead of using bool + out string? or string?, you could use a result type to encapsulate both the result and error information. 
+Slightly more code to define the Result<T> type.
+"
+public record Result<T>(bool IsSuccess, T? Value, string? ErrorMessage);
+
+Result<double> Divide(int numerator, int denominator)
+{
+    if (denominator == 0)
+        return new Result<double>(false, default, "Denominator cannot be zero.");
+    return new Result<double>(true, (double)numerator / denominator, null);
+}
+
+var result = Divide(5, 6);
+if (result.IsSuccess)
+    Console.WriteLine($"Result: {result.Value}");
+else
+    Console.WriteLine($"Error: {result.ErrorMessage}");
+"	

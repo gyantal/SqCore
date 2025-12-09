@@ -183,7 +183,7 @@ public partial class Program
         {
             userInput = Console.ReadLine() ?? string.Empty;
         }
-        catch (System.IO.IOException e) // on Linux, of somebody closes the Terminal Window, Console.Readline() will throw an Exception with Message "Input/output error"
+        catch (System.IO.IOException e) // on Linux, if somebody closes the Terminal Window, Console.Readline() will throw an Exception with Message "Input/output error"
         {
             gLogger.Info($"Console.ReadLine() exception. Somebody closes the Terminal Window: {e.Message}");
             return "ConsoleIsForcedToShutDown";

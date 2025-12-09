@@ -1,6 +1,9 @@
 {
+    "workbench.colorTheme": "Quiet Light",
     "editor.fontSize": 18,
     "terminal.integrated.fontSize": 18,
+    "chat.fontSize": 16,
+    "chat.editor.fontSize": 16,
     "git.confirmSync": false,
     "window.restoreWindows": "all",
     "explorer.confirmDelete": false,
@@ -8,10 +11,7 @@
     "editor.renderWhitespace": "all",
     "typescript.reportStyleChecksAsWarnings": false,
     "git.enableSmartCommit": true,
-    "aws.profile": "profile:default",
     "diffEditor.ignoreTrimWhitespace": false,
-    "python.pythonPath": "",
-    "remote.SSH.showLoginTerminal": true,
     "omnisharp.projectLoadTimeout": 1200,
     "[typescript]": {
         "editor.defaultFormatter": "vscode.typescript-language-features"    // "esbenp.prettier-vscode" didn't support FormatSelection for me
@@ -23,10 +23,30 @@
     "editor.columnSelection": false,
     "python.languageServer": "Pylance",
     "workbench.editorAssociations": {
-        "*.ipynb": "jupyter.notebook.ipynb"
+        "*.ipynb": "jupyter-notebook"
     },
     "window.newWindowDimensions": "offset",
     "files.autoSave": "afterDelay",
     "window.zoomLevel": 1,
-    "security.workspace.trust.enabled": false
+    "security.workspace.trust.enabled": false,
+    "python.defaultInterpreterPath": "",
+    "json.schemas": [],
+    "terminal.explorerKind": "external",
+    "git.autofetch": true,
+    "[json]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "window.commandCenter": true,
+    "editor.accessibilitySupport": "off",
+    "git.openRepositoryInParentFolders": "always",
+    "[python]": {
+        "editor.formatOnType": true
+    },
+    "editor.stickyScroll.enabled": true,
+    "csharp.experimental.debug.hotReload": true,
+    "amazonQ.telemetry": false,
+    "python.createEnvironment.trigger": "off",
+    "[jsonc]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    }
 }

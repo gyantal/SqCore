@@ -479,7 +479,10 @@ public partial class Db
         return string.Empty;
     }
 
-    // Benchmark runs for GetPortfolioTradeHistory(). On Linux server with local Redis-sever. First run: 10ms, consecutive runs: 0.5ms
+    // Benchmark runs of GetPortfolioTradeHistory(). On Linux server with local Redis-sever. First run: 12ms, consecutive runs: 0.5ms
+    // Benchmark runs of GetPortfolioTradeHistory(). On Windows client with remote Redis-sever. First run: 24ms, consecutive runs: 12ms. This is fine, because simply 'ping' to server is 11ms.
+    // m_redisDb.HashGet("portfolioTradeHistory", redisKey) has constant time. First call is not really longer than the second calls. As expected from a RAM DB. Locale RedisSrv: 1ms, remote RedisSrv: 12ms (11ms ping)
+    // Reason of the first run taking 12ms more: the JsonSerializer.Deserialize<IEnumerable<TradeInDb>> is compiled on the fly only once, when it is needed. Based on Reflection, so it is quite slow (takes about 12ms).
     public IEnumerable<Trade> GetPortfolioTradeHistory(int p_tradeHistoryId, DateTime? p_startIncLoc, DateTime? p_endIncLoc) // Slim version of returning 5,000 trades one by one with IEnumerable. Use this if you have to Serialize it to UI browser client without processing it.
     {
         string redisKey = p_tradeHistoryId.ToString();
