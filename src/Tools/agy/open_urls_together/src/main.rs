@@ -1,4 +1,6 @@
 use std::{process::Command, thread, time::Duration};
+use std::io::stdout;
+use std::io::Write;
 
 fn main() { // cargo build --release
     let sleep_in_msec : u32 = 300; // 50 was not enough for digg.com and channel9, 100msec was not enough on 2012-07-18, 150mset was not enough on 2012-07-19
@@ -14,8 +16,8 @@ fn main() { // cargo build --release
     open_in_browser("https://www.dailyfx.com/gbp-usd", sleep_in_msec);
 
     println!("Open Urls Together!");
-    let mut command = Command::new("cmd").arg("/C").arg("dir").output().expect("there was an error");
-    io::stdout().write_all(&command.stdout).unwrap();
+    let command = Command::new("cmd").arg("/C").arg("dir").output().expect("there was an error");
+    stdout().write(&command.stdout).unwrap();
 }
 
 fn open_in_browser(url: &str, sleep_in_msec: u32) {

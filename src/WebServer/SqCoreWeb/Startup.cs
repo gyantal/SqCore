@@ -101,6 +101,7 @@ public class Startup
         //     options.Level = CompressionLevel.Fastest;
         // });
 
+        // See Google Developers Console: https://console.developers.google.com/start  with gya***l1@gmail.com
         string? googleClientId = Utils.Configuration["Google:ClientId"];
         string? googleClientSecret = Utils.Configuration["Google:ClientSecret"];
 
