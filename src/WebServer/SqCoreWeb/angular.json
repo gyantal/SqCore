@@ -6,7 +6,8 @@
       "enabled": true,
       "path": ".angularCache",
       "environment": "all"
-    }
+    },
+    "analytics": false
   },
   "newProjectRoot": "projects",
   "projects": {
