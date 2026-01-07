@@ -27,9 +27,9 @@ module.exports = {
       },
       {
         test: /\.(png|webp|jpe?g|gif)$/i,
-        loader: 'file-loader',
-        options: {
-          outputPath: 'images',
+        type: 'asset/resource',
+        generator: {
+          filename: 'images/[contenthash][ext][query]'
         }
       }
     ]
