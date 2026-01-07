@@ -1,6 +1,5 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const HtmlInlineScriptPlugin = require('html-inline-script-webpack-plugin');
 const HtmlInlineCssWebpackPlugin = require('html-inline-css-webpack-plugin').default;
@@ -10,7 +9,8 @@ module.exports = {
   output: {
     path: path.resolve(__dirname, './../../../wwwroot/webapps/LiveStrategy/UberTaa'),
     filename: '[name].[chunkhash].js',
-    publicPath: '/webapps/LiveStrategy/UberTaa/'
+    publicPath: '/webapps/LiveStrategy/UberTaa/',
+    clean: true
   },
   resolve: {
     extensions: ['.js', '.ts']
@@ -35,13 +35,6 @@ module.exports = {
     ]
   },
   plugins: [
-    new CleanWebpackPlugin({
-      dry: false, // default: false
-      verbose: true, // default: false
-      cleanStaleWebpackAssets: true, // default: true
-      protectWebpackAssets: false, // default: true
-      cleanOnceBeforeBuildPatterns: ['**/*', '!static-files*']
-    }),
     new MiniCssExtractPlugin({
       filename: './css/[name].[chunkhash].css'
     }),
