@@ -2,11 +2,11 @@
 import sys
 import re
 import time
-import speedtest # pip3 install speedtest
+import speedtest # don't install library 'speedtest', but 'pip3 install speedtest-cli'
 import win32api # pip3 install pypiwin32
-from tcping import Ping # pip3 install speedtest-cli
+from tcping import Ping # pip3 install tcping
 from io import StringIO
-from datetime import datetime
+import datetime
 
 
 
@@ -34,7 +34,7 @@ def speedtest_recursion(thresholdMbit, k, logfile):
         spTstNumStr = 'FAIL'
     else:
         spTstNumStr = format(spTstNum, '.2f')
-    logfile.write(datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S') + ',Speedtest,' + spTstNumStr + '\n')  # '2013-09-18 11:16:32'
+    logfile.write(datetime.datetime.now(datetime.UTC).strftime('%Y-%m-%d %H:%M:%S') + ',Speedtest,' + spTstNumStr + '\n')  # '2013-09-18 11:16:32'
     if spTstNum >= thresholdMbit or k <= 0:  # when Speedtest >= thresholdMbit Mbit, accept it as OK.
         return spTstNum
     else:   # when Speedtest < 90Mbit AND k > 0 => try again
@@ -69,7 +69,7 @@ while True: # daemon function runs forever with sleep(), with a keyboard interru
             print('Yes! Ping is OK: ' + pingResult + ' ms.')
         else:
             print('No! Ping Failed.')
-        logfile.write(datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S') + ',Ping,' + pingResult + '\n')  # '2013-09-18 11:16:32'
+        logfile.write(datetime.datetime.now(datetime.UTC).strftime('%Y-%m-%d %H:%M:%S') + ',Ping,' + pingResult + '\n')  # '2013-09-18 11:16:32'
 
         # 2. SPEEDTEST
         if nCycles % 10 == 0:   # runs every 10 cycles, which is usually 10 minutes

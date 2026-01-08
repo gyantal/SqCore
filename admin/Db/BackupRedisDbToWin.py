@@ -2,7 +2,7 @@
 # RedisDb is backed up at 8:05 on every Sunday on Linux, and at 10:00 on every Thursday on Win
 import platform
 import paramiko  # for sftp
-from datetime import datetime
+import datetime
 
 serverHost = "ec2-34-251-1-119.eu-west-1.compute.amazonaws.com"         # MTrader server
 serverPort = 122    # on MTraderServer, port 22 bandwidth throttled, because of VNC viewer usage, a secondary SSH port 122 has no bandwith limit
@@ -39,7 +39,7 @@ print("\n2. SFTPClient is connecting to get 7zip file...")
 transport = paramiko.Transport((serverHost, serverPort))
 transport.connect(username = serverUser, pkey = paramiko.RSAKey.from_private_key_file(serverRsaKeyFile))
 sftp = paramiko.SFTPClient.from_transport(transport)
-filename = "dump-7045." + datetime.utcnow().strftime('%Y-%m-%d') + ".rdb.7z"
+filename = "dump-7045." + datetime.datetime.now(datetime.UTC).strftime('%Y-%m-%d') + ".rdb.7z"
 sftp.get(rootRemoteDir + filename, backupLocalDir + filename)
 print("Backup file created: " + backupLocalDir + filename)
 sftp.close()
