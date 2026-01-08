@@ -259,11 +259,11 @@ function uberTaaTbls(json: any) {
   sqLineChartGenerator(noAssetsSpx, nCurrData, assetNames2ArraySpx, spxChartMtx, xLabelSpx, yLabelSpx, yScaleTickFormatSpx, lineChrtDivSpx, lineChrtTooltip, isDrawCricles);
 }
 
-getNonNullDocElementById('gameChanger').onclick = onClickGameChanger;
-getNonNullDocElementById('globalAssets').onclick = onClickGlobalAssets;
-getNonNullDocElementById('alphaPicks').onclick = onClickAlphaPicks;
-
 document.addEventListener('DOMContentLoaded', (event) => {
   console.log('DOMContentLoaded(). All JS were downloaded. DOM fully loaded and parsed.');
+
+  getNonNullDocElementById('gameChanger').onclick = onClickGameChanger;
+  getNonNullDocElementById('globalAssets').onclick = onClickGlobalAssets;
+  getNonNullDocElementById('alphaPicks').onclick = onClickAlphaPicks;
 });
 console.log('SqCore: Script END');

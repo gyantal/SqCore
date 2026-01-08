@@ -171,7 +171,15 @@ public static partial class Utils
                     continue;
 
                 var tds = trs[i].Split(new string[] { @"<th>", @"</th>", @"<td>", @"</td>" }, StringSplitOptions.RemoveEmptyEntries);
-                // string holidayName = tds[1];
+
+                // TEMP
+                // There is a mistake on website https://www.nyse.com/trade/hours-calendars
+                // *** Each market will close early at 1:00 p.m. (1:15 p.m. for eligible options) on Wednesday, December 24, 2025, and Thursday, December 24, 2026. NYSE American Equities, NYSE Arca Equities, NYSE National, and NYSE Texas late trading sessions will close at 5:00 p.m. All times are Eastern Time.
+                // it should be 2026 and 2027. and we search that year (2027) in the text, which fails.
+                string holidayName = tds[0].Trim();
+                if (holidayName == "Thanksgiving Day" || holidayName == "Christmas Day")
+                    continue; // TEMP: skip these 2 holidays, because *** footnote errors on page: https://www.nyse.com/trade/hours-calendars
+
                 ProcessHolidayCellInET(tds[1].Trim(), year1, footnote, holidays1);
                 ProcessHolidayCellInET(tds[2].Trim(), year2, footnote, holidays2);
                 // ProcessHolidayCellInET(tds[5], year2, footnote, holidays2);   // there is year3 too, but we don't need it in VBroker or healthmonitor. So, just ignore them
