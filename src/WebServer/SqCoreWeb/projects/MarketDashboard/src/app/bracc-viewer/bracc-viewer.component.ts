@@ -575,10 +575,24 @@ export class BrAccViewerComponent implements OnInit {
     uiSnapTable.visibleNumOfPoss = uiSnapTable.poss.length;
 
     uiSnapTable.poss = uiSnapTable.poss.sort((n1: UiAssetSnapPossPos, n2: UiAssetSnapPossPos) => {
+      const isEstPrice1Missing: boolean = Number.isNaN(n1.estPrice);
+      const isEstPrice2Missing: boolean = Number.isNaN(n2.estPrice);
+
+      // Rows with NaN estPrice do not participate in sorting and are always positioned after rows with valid estPrice.
+      if (isEstPrice1Missing && isEstPrice2Missing)
+        return 0;
+      if (isEstPrice1Missing)
+        return 1;
+      if (isEstPrice2Missing)
+        return -1;
+
+      const value1: string | number = n1[sortColumn as keyof UiAssetSnapPossPos];
+      const value2: string | number = n2[sortColumn as keyof UiAssetSnapPossPos];
+
       if (isSortingDirectionAscending)
-        return (n1[sortColumn] > n2[sortColumn]) ? 1 : ((n1[sortColumn] < n2[sortColumn]) ? -1 : 0);
+        return value1 > value2 ? 1 : value1 < value2 ? -1 : 0;
       else
-        return (n2[sortColumn] > n1[sortColumn]) ? 1 : ((n2[sortColumn] < n1[sortColumn]) ? -1 : 0);
+        return value2 > value1 ? 1 : value2 < value1 ? -1 : 0;
     });
   }
 
