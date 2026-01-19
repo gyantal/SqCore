@@ -149,7 +149,7 @@ public static partial class Utils
             // 2019: holiday table appears only once in the HTML.
             // 2022: table class is changed from 'table table-layout-fixed' to 'table-data table-fixed table-border-rows'
             // 2025: table class is changed from 'table-data table-fixed table-border-rows' to 'table-data w-full table-fixed table-condensed table-border-rows'
-            int iTHead = webPage.IndexOf(@"<table class=""table-data w-full table-fixed table-condensed table-border-rows"">");
+            int iTHead = webPage.IndexOf(@"<table class=""table-data w-full table-fixed table-striped table-condensed table-border-rows"">");
             int iTBody = webPage.IndexOf(@"</table>", iTHead);
             string holidayTable = webPage[iTHead..iTBody];
 
@@ -161,13 +161,13 @@ public static partial class Utils
             string[] trs = holidayTable.Split(new string[] { "<tr>\n  ", "<tr>", "<tr style=", "</tr>\n  ", "</tr>" }, StringSplitOptions.RemoveEmptyEntries);
             string? headerRow = trs[1];
             string[] tdsHeader = headerRow.Split(new string[] { @"<th>", @"</th>" }, StringSplitOptions.RemoveEmptyEntries); // 2023-12-28: a "<th>" => "<td>", 2025-12-28: a "<td>" => "<th>"
-            year1 = Int32.Parse(tdsHeader[1]);
-            year2 = Int32.Parse(tdsHeader[2]);
+            year1 = Int32.Parse(tdsHeader[2]);  // TEMP
+            year2 = Int32.Parse(tdsHeader[3]);
             // year3 = Int32.Parse(tdsHeader[7]);  // there is year3 too, but we don't need it in VBroker or healthmonitor. So, just ignore them
 
             for (int i = 2; i < trs.Length; i++)
             {
-                if (!trs[i].TrimStart().StartsWith(@"<td>"))
+                if (!(trs[i].TrimStart().StartsWith(@"<th>") || trs[i].TrimStart().StartsWith(@"<td>"))) // should start with <th> or <td>
                     continue;
 
                 var tds = trs[i].Split(new string[] { @"<th>", @"</th>", @"<td>", @"</td>" }, StringSplitOptions.RemoveEmptyEntries);
