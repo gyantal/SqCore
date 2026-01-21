@@ -483,7 +483,7 @@ export class BrAccViewerComponent implements OnInit {
         uiPosItem.pctChgTod = (possItem.estPrice - possItem.priorClose) / possItem.priorClose;
       uiPosItem.plTod = Math.round(possItem.pos * (possItem.estPrice - possItem.priorClose));
       uiPosItem.costBasis = Math.round(possItem.pos * possItem.avgCost);
-      uiPosItem.mktVal = Math.round(possItem.pos * possItem.estPrice);
+      uiPosItem.mktVal = isNaN(uiPosItem.estPrice)? NaN : Math.round(possItem.pos * possItem.estPrice);
       uiPosItem.plTotal = Math.round(possItem.pos * (possItem.estPrice - possItem.avgCost));
       uiPosItem.plPctTotal = uiPosItem.plTotal / Math.abs(uiPosItem.costBasis);
       uiPosItem.gBeta = (uiPosItem.symbol in BrAccViewerComponent.betaArr ) ? BrAccViewerComponent.betaArr [uiPosItem.symbol] : 1.0;
