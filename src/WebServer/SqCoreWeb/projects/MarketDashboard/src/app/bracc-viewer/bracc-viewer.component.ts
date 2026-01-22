@@ -483,7 +483,7 @@ export class BrAccViewerComponent implements OnInit {
         uiPosItem.pctChgTod = (possItem.estPrice - possItem.priorClose) / possItem.priorClose;
       uiPosItem.plTod = Math.round(possItem.pos * (possItem.estPrice - possItem.priorClose));
       uiPosItem.costBasis = Math.round(possItem.pos * possItem.avgCost);
-      uiPosItem.mktVal = isNaN(uiPosItem.estPrice)? NaN : Math.round(possItem.pos * possItem.estPrice);
+      uiPosItem.mktVal = isNaN(uiPosItem.estPrice) ? NaN : Math.round(possItem.pos * possItem.estPrice);
       uiPosItem.plTotal = Math.round(possItem.pos * (possItem.estPrice - possItem.avgCost));
       uiPosItem.plPctTotal = uiPosItem.plTotal / Math.abs(uiPosItem.costBasis);
       uiPosItem.gBeta = (uiPosItem.symbol in BrAccViewerComponent.betaArr ) ? BrAccViewerComponent.betaArr [uiPosItem.symbol] : 1.0;
@@ -574,9 +574,9 @@ export class BrAccViewerComponent implements OnInit {
     uiSnapTable.betaDeltaAdjTotalMarketOrientationLeverage = (uiSnapTable.betaDeltaAdjTotalMarketOrientation / uiSnapTable.netLiquidation);
     uiSnapTable.visibleNumOfPoss = uiSnapTable.poss.length;
 
-    uiSnapTable.poss = uiSnapTable.poss.sort((n1: UiAssetSnapPossPos, n2: UiAssetSnapPossPos) => {
-      const isEstPrice1Missing: boolean = Number.isNaN(n1.estPrice);
-      const isEstPrice2Missing: boolean = Number.isNaN(n2.estPrice);
+    uiSnapTable.poss = uiSnapTable.poss.sort((row1: UiAssetSnapPossPos, row2: UiAssetSnapPossPos) => {
+      const isEstPrice1Missing: boolean = Number.isNaN(row1.estPrice);
+      const isEstPrice2Missing: boolean = Number.isNaN(row2.estPrice);
 
       // Rows with NaN estPrice do not participate in sorting and are always positioned after rows with valid estPrice.
       if (isEstPrice1Missing && isEstPrice2Missing)
@@ -586,8 +586,8 @@ export class BrAccViewerComponent implements OnInit {
       if (isEstPrice2Missing)
         return -1;
 
-      const value1: string | number = n1[sortColumn as keyof UiAssetSnapPossPos];
-      const value2: string | number = n2[sortColumn as keyof UiAssetSnapPossPos];
+      const value1: string | number = row1[sortColumn as keyof UiAssetSnapPossPos]; // type can be string (for symbol column) or number (plTod, pctChgTod, etc columns)
+      const value2: string | number = row2[sortColumn as keyof UiAssetSnapPossPos];
 
       if (isSortingDirectionAscending)
         return value1 > value2 ? 1 : value1 < value2 ? -1 : 0;
