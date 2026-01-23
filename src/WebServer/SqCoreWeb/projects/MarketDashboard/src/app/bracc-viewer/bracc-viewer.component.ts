@@ -483,7 +483,7 @@ export class BrAccViewerComponent implements OnInit {
         uiPosItem.pctChgTod = (possItem.estPrice - possItem.priorClose) / possItem.priorClose;
       uiPosItem.plTod = Math.round(possItem.pos * (possItem.estPrice - possItem.priorClose));
       uiPosItem.costBasis = Math.round(possItem.pos * possItem.avgCost);
-      uiPosItem.mktVal = isNaN(uiPosItem.estPrice) ? NaN : Math.round(possItem.pos * possItem.estPrice);
+      uiPosItem.mktVal = Math.round(possItem.pos * possItem.estPrice);
       uiPosItem.plTotal = Math.round(possItem.pos * (possItem.estPrice - possItem.avgCost));
       uiPosItem.plPctTotal = uiPosItem.plTotal / Math.abs(uiPosItem.costBasis);
       uiPosItem.gBeta = (uiPosItem.symbol in BrAccViewerComponent.betaArr ) ? BrAccViewerComponent.betaArr [uiPosItem.symbol] : 1.0;
@@ -503,7 +503,8 @@ export class BrAccViewerComponent implements OnInit {
         uiSnapTable.sumPlTodVal += uiPosItem.plTod;
       if (!isNaN(uiPosItem.mktVal))
         uiSnapTable.totalMaxRiskedN += Math.abs(uiPosItem.mktVal);
-      uiSnapTable.betaDeltaAdjTotalMarketOrientation += uiPosItem.betaDltAdj;
+      if (!isNaN(uiPosItem.estPrice))
+        uiSnapTable.betaDeltaAdjTotalMarketOrientation += uiPosItem.betaDltAdj;
 
       if (possItem.sqTicker.startsWith('S')) { // Stocks
         if (uiPosItem.mktVal > 0) { // Long and Short stock values
