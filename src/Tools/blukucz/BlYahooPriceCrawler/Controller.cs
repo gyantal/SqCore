@@ -423,9 +423,21 @@ namespace BlYahooPriceCrawler
             string inputDirectory = @"d:\Temp\SAQR\";
             string qrScoresFile = @"d:\Temp\MergedSAQRScores.csv";
             string priceFile = @"d:\Temp\MergedSAQRPrices.csv";
+            string valuationFile = @"d:\Temp\MergedSAQRValuation.csv";
+            string growthFile = @"d:\Temp\MergedSAQRGrowth.csv";
+            string profitabilityFile = @"d:\Temp\MergedSAQRProfitability.csv";
+            string momentumFile = @"d:\Temp\MergedSAQRMomentum.csv";
+            string epsRevFile = @"d:\Temp\MergedSAQREpsRev.csv";
 
-            // Dictionary to store tickers and their date-QuantScore pairs
-            Dictionary<string, List<(string Date, double QuantScore, double Price)>> tickerData = [];
+            // Dictionary to store tickers and their date-related data
+            Dictionary<string, List<(string Date,
+                                     double QuantScore,
+                                     double Price,
+                                     string Valuation,
+                                     string Growth,
+                                     string Profitability,
+                                     string Momentum,
+                                     string EpsRev)>> tickerData = [];
 
             // Read all files from the directory
             foreach (string filePath in Directory.GetFiles(inputDirectory, "*.csv"))
@@ -437,58 +449,127 @@ namespace BlYahooPriceCrawler
                     continue; // Skip if the ticker is already added
 
                 tickerData[ticker] = [];
+
                 // Read the file line by line
-                string lastDate = string.Empty;
                 foreach (string? line in File.ReadLines(filePath).Skip(1)) // Skip header
                 {
+                    if (string.IsNullOrWhiteSpace(line))
+                        continue;
+
                     string[] columns = line.Split(',');
+
+                    // Skip lines that are too short or contain only empty fields (e.g. ",,,,,,,,")
+                    if (columns.Length < 4 || columns.All(string.IsNullOrWhiteSpace))
+                        continue;
+
+                    // Date (MM/dd/yyyy -> yyyy-MM-dd)
+                    string date = DateTime.ParseExact(columns[0], "MM/dd/yyyy", CultureInfo.InvariantCulture)
+                                         .ToString("yyyy-MM-dd");
+
+                    // Price
+                    double price = 0;
+                    if (columns.Length >= 2 && double.TryParse(columns[1], out double p))
+                        price = p;
+
+                    // Quant Rating (text) and Quant Score (numeric or 99 if NOT COVERED)
+                    string quantRating = columns.Length >= 3 ? columns[2].Trim() : string.Empty;
 
                     if (columns.Length >= 4)
                     {
-                        string date = DateTime.ParseExact(columns[0], "MM/dd/yyyy", CultureInfo.InvariantCulture).ToString("yyyy-MM-dd");
-                        double price = columns.Length >= 2 && double.TryParse(columns[1], out double p) ? p : 0;
-
-                        if (string.IsNullOrWhiteSpace(columns[3]) && columns[2].Trim() == "NOT COVERED")
+                        if (string.IsNullOrWhiteSpace(columns[3]) && quantRating == "NOT COVERED")
                             columns[3] = "99";
-
-                        double quantScore = double.TryParse(columns[3], out double qs) ? qs : 0;
-                        tickerData[ticker].Add((date, quantScore, price));
-                        lastDate = date;
                     }
+
+                    double quantScore = 0;
+                    if (columns.Length >= 4 && double.TryParse(columns[3], out double qs))
+                        quantScore = qs;
+
+                    // Letter grades – safely read, default to empty if missing
+                    string valuation = columns.Length >= 5 ? columns[4].Trim() : string.Empty;
+                    string growth = columns.Length >= 6 ? columns[5].Trim() : string.Empty;
+                    string profitability = columns.Length >= 7 ? columns[6].Trim() : string.Empty;
+                    string momentum = columns.Length >= 8 ? columns[7].Trim() : string.Empty;
+                    string epsRev = columns.Length >= 9 ? columns[8].Trim() : string.Empty;
+
+                    tickerData[ticker].Add((date,
+                                            quantScore,
+                                            price,
+                                            valuation,
+                                            growth,
+                                            profitability,
+                                            momentum,
+                                            epsRev));
                 }
             }
 
             // Aggregate all unique dates
             List<string> allDates = [.. tickerData
-                .SelectMany(kvp => kvp.Value.Select(pair => pair.Date))
-                .Distinct()
-                .OrderBy(date => date)];
+        .SelectMany(kvp => kvp.Value.Select(pair => pair.Date))
+        .Distinct()
+        .OrderBy(date => date)];
 
-            // Write the output CSV
-            using (StreamWriter writer1 = new(qrScoresFile))
-            using (StreamWriter writer2 = new(priceFile))
+            // Prepare ordered ticker list once
+            List<string> orderedTickers = tickerData.Keys.OrderBy(t => t).ToList();
+
+            // Write the output CSVs
+            using StreamWriter writerScores = new(qrScoresFile);
+            using StreamWriter writerPrices = new(priceFile);
+            using StreamWriter writerValuation = new(valuationFile);
+            using StreamWriter writerGrowth = new(growthFile);
+            using StreamWriter writerProfitability = new(profitabilityFile);
+            using StreamWriter writerMomentum = new(momentumFile);
+            using StreamWriter writerEpsRev = new(epsRevFile);
             {
-                writer1.WriteLine("Date," + string.Join(",", tickerData.Keys.OrderBy(ticker => ticker)));
-                writer2.WriteLine("Date," + string.Join(",", tickerData.Keys.OrderBy(ticker => ticker)));
+                // Headers
+                string header = "Date," + string.Join(",", orderedTickers);
+                writerScores.WriteLine(header);
+                writerPrices.WriteLine(header);
+                writerValuation.WriteLine(header);
+                writerGrowth.WriteLine(header);
+                writerProfitability.WriteLine(header);
+                writerMomentum.WriteLine(header);
+                writerEpsRev.WriteLine(header);
 
+                // Rows
                 foreach (string date in allDates)
                 {
-                    List<string> row1 = [date];
-                    List<string> row2 = [date];
+                    List<string> rowScores = [date];
+                    List<string> rowPrices = [date];
+                    List<string> rowValuation = [date];
+                    List<string> rowGrowth = [date];
+                    List<string> rowProfitability = [date];
+                    List<string> rowMomentum = [date];
+                    List<string> rowEpsRev = [date];
 
-                    foreach (string? ticker in tickerData.Keys.OrderBy(ticker => ticker))
+                    foreach (string ticker in orderedTickers)
                     {
                         var entry = tickerData[ticker].FirstOrDefault(pair => pair.Date == date);
 
-                        row1.Add(entry.QuantScore > 0 ? entry.QuantScore.ToString("F2") : "");
-                        row2.Add(entry.Price > 0 ? entry.Price.ToString("F2") : "");
+                        // Quant Score
+                        rowScores.Add(entry.QuantScore > 0 ? entry.QuantScore.ToString("F2") : "");
+
+                        // Price
+                        rowPrices.Add(entry.Price > 0 ? entry.Price.ToString("F2") : "");
+
+                        // Letter grades – directly write the letters (A+, B-, etc.) or empty
+                        rowValuation.Add(!string.IsNullOrEmpty(entry.Valuation) ? entry.Valuation : "");
+                        rowGrowth.Add(!string.IsNullOrEmpty(entry.Growth) ? entry.Growth : "");
+                        rowProfitability.Add(!string.IsNullOrEmpty(entry.Profitability) ? entry.Profitability : "");
+                        rowMomentum.Add(!string.IsNullOrEmpty(entry.Momentum) ? entry.Momentum : "");
+                        rowEpsRev.Add(!string.IsNullOrEmpty(entry.EpsRev) ? entry.EpsRev : "");
                     }
 
-                    writer1.WriteLine(string.Join(",", row1));
-                    writer2.WriteLine(string.Join(",", row2));
+                    writerScores.WriteLine(string.Join(",", rowScores));
+                    writerPrices.WriteLine(string.Join(",", rowPrices));
+                    writerValuation.WriteLine(string.Join(",", rowValuation));
+                    writerGrowth.WriteLine(string.Join(",", rowGrowth));
+                    writerProfitability.WriteLine(string.Join(",", rowProfitability));
+                    writerMomentum.WriteLine(string.Join(",", rowMomentum));
+                    writerEpsRev.WriteLine(string.Join(",", rowEpsRev));
                 }
             }
         }
+
 
         public static void SteveCressRecommendationQRs()
         {
