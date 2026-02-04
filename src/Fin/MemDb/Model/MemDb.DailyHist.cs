@@ -628,7 +628,10 @@ public partial class MemDb
         // if asked 2010-01-01 (Friday), the first data returned is 2010-01-04, which is next Monday. So, ask YF 1 day before the intended
         var histResult = HistPrice.g_HistPrice.GetHistAdjCloseAsync(yfTicker, lookbackStart, lookbackEnd).TurnAsyncToSyncTask();
         if (histResult.ErrorStr != null)
-            throw new Exception($"g_HistPrice.GetHistorical() error. Cannot get YF data ({yfTicker})");
+        {
+            Utils.Logger.Error($"g_HistPrice.GetHistorical() error. Cannot get YF data ({yfTicker}) {histResult.ErrorStr}");
+            return (Array.Empty<SqDateOnly>(), Array.Empty<float>());
+        }
 
         SqDateOnly[] dates = histResult!.Dates!;
         float[] adjCloses = histResult!.AdjCloses!;

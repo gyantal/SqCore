@@ -81,6 +81,7 @@ export function isValidDay(day: string, date: Date): boolean {
   return day.length == 2 && dayInt >= 1 && dayInt <= maxDays;
 }
 
+// These DIV resizers are in utils-common.ts, because they can be used for any custom DIV, not only for charts.
 export function addEventListenerResizeWidth(chartContainerDiv: HTMLElement) {
   const widthResizerDiv: HTMLElement | null = chartContainerDiv.querySelector('#widthResizer');
   if (widthResizerDiv == null)
