@@ -245,10 +245,15 @@ public class BrokerWrapperIb : IBrokerWrapper
                 Console.WriteLine("Strong Warning. " + errMsg);
                 return; // skip processing the error further. Don't send it to HealthMonitor.
             }
-            if (errorCode == 2104 || errorCode == 2106 || errorCode == 2107 || errorCode == 2108 || errorCode == 2119 || errorCode == 2158)
+            if (errorCode == 2103 || errorCode == 2104 || errorCode == 2105 || errorCode == 2106 || errorCode == 2107 || errorCode == 2108 || errorCode == 2119 || errorCode == 2158)
             {
                 // This is not an error. It is the messages at Connection:
+                // IB Error. Id: -1, Code: 2103, Msg: Market data farm connection is broken:usfarm
+                // IB Error. Id: -1, Code: 2103, Msg: Market data farm connection is broken:hfarm
+                // IB Error. Id: -1, Code: 2103, Msg: Market data farm connection is broken:jfarm
+                // IB Error. Id: -1, Code: 2103, Msg: Market data farm connection is broken:afarm
                 // IB Error. Id: -1, Code: 2104, Msg: Market data farm connection is OK:hfarm
+                // IB Error. Id: -1, Code: 2105, Msg: HMDS data farm connection is broken:ushmds
                 // IB Error. Id: -1, Code: 2106, Msg: HMDS data farm connection is OK:ushmds.us
                 // IB Error. Id: -1, Code: 2107, Msg: HMDS data farm connection is inactive but should be available upon demand.ushmds
                 // IB Error. Id: -1, Code: 2108, Msg: HMDS data farm connection is inactive but should be available upon demand.ushmds
@@ -256,7 +261,7 @@ public class BrokerWrapperIb : IBrokerWrapper
                 // IB Error. Id: -1, Code: 2158, Msg: Sec-def data farm connection is OK:secdefnj
                 return; // skip processing the error further. Don't send it to HealthMonitor.
             }
-            if (errorCode == 2103 || errorCode == 2105 || errorCode == 1100 || errorCode == 1102 || errorCode == 2157)
+            if (errorCode == 1100 || errorCode == 1102 || errorCode == 2157)
             {
                 // This is Usually not an error if it is received pre-market or after market. IBGateway will try reconnecting, so this is usually temporary. However, log it.
                 // Market Data connections:
@@ -265,15 +270,9 @@ public class BrokerWrapperIb : IBrokerWrapper
                 //     usfuture: Market Data
                 //     eufarm: Market Data for EU, France.
                 //     afarm: Market Data for Australia
-                // IB Error. ErrId: -1, ErrCode: 2103, Msg: Market data farm connection is broken:usfarm
-                // IB Error. ErrId: -1, ErrCode: 2103, Msg: Market data farm connection is broken:hfarm
-                // IB Error. ErrId: -1, ErrCode: 2103, Msg: Market data farm connection is broken:jfarm
-                // IB Error. ErrId: -1, ErrCode: 2103, Msg: Market data farm connection is broken:afarm
-                // IB Error. ErrId: -1, ErrCode: 2105, Msg: HMDS data farm connection is broken:ushmds
                 // IB Error. ErrId: -1, ErrCode: 1100, Msg: Connectivity between IB and Trader Workstation has been lost.
                 // IB Error. ErrId: -1, ErrCode: 1102, Msg: Connectivity between IB and Trader Workstation has been restored - data maintained.
                 // IB Error. ErrId: -1, ErrCode: 2157, Msg: Sec-def data farm connection is broken:secdefnj
-
                 // possible data farms: eufarm, usfarm, usfuture, cashfarm,
                 // jfarm  // Japan?  (maybe that is the time when japan servers restart)
                 // hfarm // Hong Kong?
