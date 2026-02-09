@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading;
 using SqCommon;
 
@@ -56,7 +57,8 @@ public partial class LlmAssistClient
 
             string tickerLstplaceholder = "_tickerList_"; // To retain "}" in {ticker_list}, temporarily replace {ticker_list} with a placeholder
             string keyStatsplaceholder = "_keyStats_"; // To retain "}" in {key_stats}, temporarily replace {key_stats} with a placeholder
-            string prompt = cellThird[(promptStartIdx + 1)..].Replace("{ticker_list}", tickerLstplaceholder).Replace("{key_stats}", keyStatsplaceholder).Replace("\\n", "\n").Replace("\r\n", "\n").Replace("\r", string.Empty).Replace("\"", string.Empty).Replace("}", string.Empty).Replace("]", string.Empty).Replace(tickerLstplaceholder, "{ticker_list}").Replace(keyStatsplaceholder, "{key_stats}").Trim();
+            string prompt = cellThird[(promptStartIdx + 1)..].Replace("{ticker_list}", tickerLstplaceholder).Replace("{key_stats}", keyStatsplaceholder).Replace("\r", string.Empty).Replace("\\n", "\n").Replace("\r\n", "\n").Replace("\"", string.Empty).Replace("}", string.Empty).Replace("]", string.Empty).Replace(tickerLstplaceholder, "{ticker_list}").Replace(keyStatsplaceholder, "{key_stats}").Trim();
+            prompt = Regex.Unescape(prompt); // Convert escaped sequences like \u003c back to normal characters (e.g. "https://seekingalpha.com/symbol/\u003cticker\u003e" -> "https://seekingalpha.com/symbol/<ticker>")
             llmPromptCategories.Add(new LlmPromptJs() { Category = category, PromptName = promptName, Prompt = prompt });
         }
 
