@@ -300,18 +300,30 @@ public partial class FinDb
             Utils.Logger.Error($"CrawlPriceDataNew(): No date data received for {p_ticker}.");
             return false;
         }
-        List<SqPrice> rawClosesFromYfList = new();
+
+        List<SqPrice> rawClosesFromYfList = new(dates.Length);
+
+        DateTime? lastDate = null;
+
         for (int i = 0; i < dates.Length; i++)
         {
+            DateTime currentDate = dates[i].Date;
+
+            // Yahoo Finance can occasionally return duplicate rows for the same date. The list is ordered by date ascending, and the first occurrence is the valid one, so remove later duplicates in place.
+            if (lastDate.HasValue && currentDate == lastDate.Value)
+                continue;
+
             rawClosesFromYfList.Add(new SqPrice
             {
-                ReferenceDate = dates[i].Date, // Use the Date property to get DateTime from SqDateOnly
+                ReferenceDate = currentDate,
                 Open = opens[i],
                 High = highs[i],
                 Low = lows[i],
                 Close = closes[i],
                 Volume = volumes[i]
             });
+
+            lastDate = currentDate;
         }
 
         // Reverse adjust historical data with the splits. Going backwards in time, starting from 'today'.
