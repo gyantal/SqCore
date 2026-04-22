@@ -130,7 +130,9 @@ public partial class HealthMonitor
 
             m_checkAmazonAwsInstancesTimer = new System.Threading.Timer(new TimerCallback(CheckAmazonAwsInstances_Elapsed), null, TimeSpan.FromSeconds(40), TimeSpan.FromMinutes(cCheckAmazonAwsTimerFrequencyMinutes));
 
-            m_rtpsTimer = new System.Threading.Timer(new TimerCallback(RtpsTimer_Elapsed), null, TimeSpan.FromSeconds(50), TimeSpan.FromMinutes(cRtpsTimerFrequencyMinutes));
+            // RealTimePriceService was checking SqLab Url RTP service https://www.snifferquant.net/rtp?s=VXX,^VIX,^GSPC,SVXY&f=l
+            // 2026: we don't have SqLab webserver any more. Remove this check.
+            // m_rtpsTimer = new System.Threading.Timer(new TimerCallback(RtpsTimer_Elapsed), null, TimeSpan.FromSeconds(50), TimeSpan.FromMinutes(cRtpsTimerFrequencyMinutes));
 
             m_dailyMarketOpenTimer = new System.Threading.Timer(new TimerCallback(DailyMarketOpenTimer_Elapsed), null, TimeSpan.FromMilliseconds(-1), TimeSpan.FromMilliseconds(-1));
             m_dailyReportTimer = new System.Threading.Timer(new TimerCallback(DailyReportTimer_Elapsed), null, TimeSpan.FromMilliseconds(-1), TimeSpan.FromMilliseconds(-1));

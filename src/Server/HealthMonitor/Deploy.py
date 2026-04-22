@@ -195,6 +195,6 @@ if os.path.isfile(zipListFileName):
     os.remove(zipListFileName)  # remove zip file
 
 print("--- Deployment of %d files ended in %03.2f seconds ---" % (len(fileNamesToDeploy), time.time() - start_time))    # 183 files: one by one upload: 38sec, 7zip: 4.8sec
-print("WARNING! 2023-04. BokerDev Server Ubuntu is 16.04, on which the max supported NetCore is 6.0. After deploying, you have to change the proj files (main and libraries) to Net6.0. Then dotnet build --configuration Release")
+print("WARNING! 2023-04. BokerDev Server Ubuntu is 16.04, on which the max supported NetCore is 6.0. After deploying, you have to change the proj files (main and 2 libraries) to 'net6.0'. Also, comment out m_tcpListener?.Dispose(); and comment out SplitStringByCommaRegex(). Then dotnet build --configuration Release")
 
 # k = input("Press ENTER...")
