@@ -58,6 +58,22 @@ public static class ServerIp
         }
     }
 
+    public static string RqCoreServerPublicIpForClients // RqCore server in London
+    {
+        get
+        {
+            return "rqcore.com"; // Dynamic IP can change. 2026-05-07: 89.45.186.152
+        }
+    }
+
+    public static string RqCoreServerLanIpForGyantalPc // RqCore server in London
+    {
+        get
+        {
+            return "192.168.1.2"; // gyantal-PC LAN is 192.168.1.10-11
+        }
+    }
+
     // Difference between 127.0.0.1 and 0.0.0.0
     // https://www.howtogeek.com/225487/what-is-the-difference-between-127.0.0.1-and-0.0.0.0
     // netstat -lntp  // show listener ports

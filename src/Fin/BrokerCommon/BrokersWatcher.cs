@@ -68,10 +68,17 @@ public partial class BrokersWatcher : IDisposable
         // Option3: all gateways are attached to remote or local servers. To Debug vBroker trading
         var (hostIpCm, gwClientIdCm) = GatewayExtensions.GetHostIpAndGatewayClientID(GatewayId.CharmatMain);
         var (hostIpDm, gwClientIdDm) = GatewayExtensions.GetHostIpAndGatewayClientID(GatewayId.DeBlanzacMain);
-        var (hostIpGm, gwClientIdGm) = GatewayExtensions.GetHostIpAndGatewayClientID(GatewayId.GyantalMain);
+        var (hostIpGm, gwClientIdGm) = GatewayExtensions.GetHostIpAndGatewayClientID(GatewayId.GyantalMain, true);
         Gateway gateway1 = new(GatewayId.CharmatMain, p_accountMaxTradeValueInCurrency: 600000, p_accountMaxEstimatedValueSumRecentlyAllowed: 10) { VbAccountsList = "U988767", Host = hostIpCm, SocketPort = (int)GatewayPort.CharmatMain, SuggestedIbConnectionClientID = (int)gwClientIdCm };
         Gateway gateway2 = new(GatewayId.DeBlanzacMain, p_accountMaxTradeValueInCurrency: 1.0 /* don't trade here */, p_accountMaxEstimatedValueSumRecentlyAllowed: 10) { VbAccountsList = "U1146158", Host = hostIpDm, SocketPort = (int)GatewayPort.DeBlanzacMain, SuggestedIbConnectionClientID = (int)gwClientIdDm };
-        Gateway gateway3 = new(GatewayId.GyantalMain, p_accountMaxTradeValueInCurrency: 100000 /* UberVXX is 12K, 2xleveraged=24K, double=48K*/, p_accountMaxEstimatedValueSumRecentlyAllowed: 160000) { VbAccountsList = "U407941", Host = hostIpGm, SocketPort = (int)GatewayPort.GyantalMain, SuggestedIbConnectionClientID = (int)gwClientIdGm };
+        Gateway gateway3 = new(GatewayId.GyantalMain, p_accountMaxTradeValueInCurrency: 100000 /* UberVXX is 12K, 2xleveraged=24K, double=48K*/, p_accountMaxEstimatedValueSumRecentlyAllowed: 160000)
+        {
+            VbAccountsList = "U407941",
+           // VbAccountsList = "U14545369,U407941,", // if using the main user in IbGateway. But that messes up PV and trades (NAV is only the NAV of first account, but we got stocks from both accounts). Just use secondary user in IbGateway who is belongs to the main broker-account only.
+            Host = hostIpGm,
+            SocketPort = (int)GatewayPort.GyantalMain,
+            SuggestedIbConnectionClientID = (int)gwClientIdGm
+        };
         m_gateways = new List<Gateway>() { gateway1, gateway2, gateway3 };
         m_mainGateway = gateway1;
     }

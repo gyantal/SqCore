@@ -1,7 +1,6 @@
 { // tsconfig.json cannot be 'nested'. So, subfolders will not overwrite main folders.  https://stackoverflow.com/questions/52709947/specific-tsconfig-json-rules-inside-folder
   "compileOnSave": true,
   "compilerOptions": {
-    "baseUrl": "./",	  // error TS5060: Option 'paths' cannot be used without specifying '--baseUrl' option. And that is used for the Angular common library: "sq-ng-common"
     "strict": true,       // strict = true is the default
     "alwaysStrict": true, // emit "use strict" in all JS files. Strict mode execution is 50-80% faster for specific cases
     "strictPropertyInitialization": true, // it is On by default anyway.
@@ -13,6 +12,15 @@
     "experimentalDecorators": true,
     "module": "esnext", // ESNext refers to whatever the highest version TypeScript supports at the time
     "moduleResolution": "node", // Node is the default now
+    // Current compiler error: tsconfig.json:15:25 - error TS5107: Option 'moduleResolution=node10' is deprecated and will stop functioning in TypeScript 7.0.
+    // It should be "moduleResolution": "bundler",
+    // "module": "ES2022",
+    // "target": "ES2022",
+    // But, problem. In package.json, Angular 15 is used, and the max TS version is "~4.9.5" for Angular 15
+    // TODO: Angular 15 is quite old now. Upgrading to Angular 16 or 17 will give access to "bundler"
+    // ng update @angular/core@16 @angular/cli@16
+    // ng update @angular/core@17 @angular/cli@17
+    // after that in package.json typescript": "~4.9.5", => can be updated.
     "target": "esnext", // ESNext refers to whatever the highest version TypeScript supports at the time
     "typeRoots": [
       "node_modules/@types"
@@ -24,8 +32,8 @@
     ],
     "paths": {
       "sq-ng-common": [
-        "wwwroot/webapps/sq-ng-common/sq-ng-common",
-        "wwwroot/webapps/sq-ng-common"
+        "./wwwroot/webapps/sq-ng-common/sq-ng-common",
+        "./wwwroot/webapps/sq-ng-common"
       ]
     },
     "types": [

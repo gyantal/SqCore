@@ -69,7 +69,7 @@ public static class GatewayExtensions
     };
 
     // Need different IP for different platforms, and different GwClientID for different developers (if they happen to code and connect to IbGateways at the same time)
-    public static (string HostIp, GatewayClientID GwClientID) GetHostIpAndGatewayClientID(GatewayId p_gatewayId)
+    public static (string HostIp, GatewayClientID GwClientID) GetHostIpAndGatewayClientID(GatewayId p_gatewayId, bool p_isGatewayOnRqCoreSrv = false)
     {
 #pragma warning disable IDE0066 // IDE0066: Use 'switch' expression
         switch (Environment.OSVersion.Platform)
@@ -78,9 +78,9 @@ public static class GatewayExtensions
             case PlatformID.Unix:
                 return p_gatewayId switch
                 {
-                    GatewayId.CharmatMain => (ServerIp.LocalhostLoopbackWithIP, GatewayClientID.SqCoreToDcProd),
-                    GatewayId.DeBlanzacMain => (ServerIp.LocalhostLoopbackWithIP, GatewayClientID.SqCoreToDbProd),
-                    GatewayId.GyantalMain => (ServerIp.LocalhostLoopbackWithIP, GatewayClientID.SqCoreToGaProd),
+                    GatewayId.CharmatMain => (p_isGatewayOnRqCoreSrv ? ServerIp.RqCoreServerPublicIpForClients : ServerIp.LocalhostLoopbackWithIP, GatewayClientID.SqCoreToDcProd),
+                    GatewayId.DeBlanzacMain => (p_isGatewayOnRqCoreSrv ? ServerIp.RqCoreServerPublicIpForClients : ServerIp.LocalhostLoopbackWithIP, GatewayClientID.SqCoreToDbProd),
+                    GatewayId.GyantalMain => (p_isGatewayOnRqCoreSrv ? ServerIp.RqCoreServerPublicIpForClients : ServerIp.LocalhostLoopbackWithIP, GatewayClientID.SqCoreToGaProd),
                     _ => throw new NotImplementedException()
                 };
 
@@ -92,28 +92,28 @@ public static class GatewayExtensions
                     {
                         GatewayId.CharmatMain => (ServerIp.SqCoreServerPublicIpForClients, GatewayClientID.SqCoreToDcDev1),
                         GatewayId.DeBlanzacMain => (ServerIp.SqCoreServerPublicIpForClients, GatewayClientID.SqCoreToDbDev1),
-                        GatewayId.GyantalMain => (ServerIp.SqCoreServerPublicIpForClients, GatewayClientID.SqCoreToGaDev1),
+                        GatewayId.GyantalMain => (p_isGatewayOnRqCoreSrv ? ServerIp.RqCoreServerLanIpForGyantalPc : ServerIp.SqCoreServerPublicIpForClients, GatewayClientID.SqCoreToGaDev1),
                         _ => throw new NotImplementedException()
                     },
                     "Balazs" => p_gatewayId switch
                     {
                         GatewayId.CharmatMain => (ServerIp.SqCoreServerPublicIpForClients, GatewayClientID.SqCoreToDcDev2),
                         GatewayId.DeBlanzacMain => (ServerIp.SqCoreServerPublicIpForClients, GatewayClientID.SqCoreToDbDev2),
-                        GatewayId.GyantalMain => (ServerIp.SqCoreServerPublicIpForClients, GatewayClientID.SqCoreToGaDev2),
+                        GatewayId.GyantalMain => (p_isGatewayOnRqCoreSrv ? ServerIp.RqCoreServerPublicIpForClients : ServerIp.SqCoreServerPublicIpForClients, GatewayClientID.SqCoreToGaDev2),
                         _ => throw new NotImplementedException()
                     },
                     "Laci" => p_gatewayId switch
                     {
                         GatewayId.CharmatMain => (ServerIp.SqCoreServerPublicIpForClients, GatewayClientID.SqCoreToDcDev3),
                         GatewayId.DeBlanzacMain => (ServerIp.SqCoreServerPublicIpForClients, GatewayClientID.SqCoreToDbDev3),
-                        GatewayId.GyantalMain => (ServerIp.SqCoreServerPublicIpForClients, GatewayClientID.SqCoreToGaDev3),
+                        GatewayId.GyantalMain => (p_isGatewayOnRqCoreSrv ? ServerIp.RqCoreServerPublicIpForClients : ServerIp.SqCoreServerPublicIpForClients, GatewayClientID.SqCoreToGaDev3),
                         _ => throw new NotImplementedException()
                     },
                     "vinci" or "Gigabyte" => p_gatewayId switch
                     {
                         GatewayId.CharmatMain => (ServerIp.SqCoreServerPublicIpForClients, GatewayClientID.SqCoreToDcDev4),
                         GatewayId.DeBlanzacMain => (ServerIp.SqCoreServerPublicIpForClients, GatewayClientID.SqCoreToDbDev4),
-                        GatewayId.GyantalMain => (ServerIp.SqCoreServerPublicIpForClients, GatewayClientID.SqCoreToGaDev4),
+                        GatewayId.GyantalMain => (p_isGatewayOnRqCoreSrv ? ServerIp.RqCoreServerPublicIpForClients : ServerIp.SqCoreServerPublicIpForClients, GatewayClientID.SqCoreToGaDev4),
                         _ => throw new NotImplementedException()
                     },
                     _ => throw new Exception("Windows user name is not recognized. Add your username and folder here!"),
