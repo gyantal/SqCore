@@ -10,18 +10,9 @@
     "removeComments": false,
     "sourceMap": true,
     "experimentalDecorators": true,
-    "module": "esnext", // ESNext refers to whatever the highest version TypeScript supports at the time
-    "moduleResolution": "node", // Node is the default now
-    // Current compiler error: tsconfig.json:15:25 - error TS5107: Option 'moduleResolution=node10' is deprecated and will stop functioning in TypeScript 7.0.
-    // It should be "moduleResolution": "bundler",
-    // "module": "ES2022",
-    // "target": "ES2022",
-    // But, problem. In package.json, Angular 15 is used, and the max TS version is "~4.9.5" for Angular 15
-    // TODO: Angular 15 is quite old now. Upgrading to Angular 16 or 17 will give access to "bundler"
-    // ng update @angular/core@16 @angular/cli@16
-    // ng update @angular/core@17 @angular/cli@17
-    // after that in package.json typescript": "~4.9.5", => can be updated.
-    "target": "esnext", // ESNext refers to whatever the highest version TypeScript supports at the time
+    "module": "ES2022",
+    "moduleResolution": "bundler",
+    "target": "ES2022",
     "typeRoots": [
       "node_modules/@types"
     ],

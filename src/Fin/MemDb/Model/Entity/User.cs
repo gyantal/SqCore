@@ -111,19 +111,24 @@ public class User
 
         User firstNavUser = this; // the first NAV in the list should be the logged user's own NAVs.
         List<BrokerNav> firstNavs = firstNavUser.GetBrokerNavsOrdered(allNavsWithHistory);
-        if (firstNavs.Count == 0) // if the logged user doesn't have any NAVS, the default fallback is the DC user as first user
-        {
-            firstNavUser = MemDb.gMemDb.Users.Where(r => r.Username == "drcharmat").FirstOrDefault()!;
-            firstNavs = firstNavUser.GetBrokerNavsOrdered(allNavsWithHistory);
-        }
-        visibleNavs.AddRange(firstNavs);    // First add the current user NAVs. Virtual Aggregated should come first.
+        visibleNavs.AddRange(firstNavs); // First add the current user NAVs. Virtual Aggregated should come first.
+        firstNavUser = MemDb.gMemDb.Users.Where(r => r.Username == "drcharmat").FirstOrDefault()!;
+        firstNavs = firstNavUser.GetBrokerNavsOrdered(allNavsWithHistory);
+        visibleNavs.AddRange(firstNavs);
 
-        User[] addUsers = IsAdmin ? MemDb.gMemDb.Users : VisibleUsers;             // then the NAVs of other users
-        foreach (var user in addUsers)
-        {
-            if (user != firstNavUser) // was already added in step 1
-                visibleNavs.AddRange(user.GetBrokerNavsOrdered(allNavsWithHistory));
-        }
+        // if (firstNavs.Count == 0) // if the logged user doesn't have any NAVS, the default fallback is the DC user as first user
+        // {
+        //     firstNavUser = MemDb.gMemDb.Users.Where(r => r.Username == "drcharmat").FirstOrDefault()!;
+        //     firstNavs = firstNavUser.GetBrokerNavsOrdered(allNavsWithHistory);
+        // }
+        // visibleNavs.AddRange(firstNavs);    // First add the current user NAVs. Virtual Aggregated should come first.
+
+        // User[] addUsers = IsAdmin ? MemDb.gMemDb.Users : VisibleUsers;             // then the NAVs of other users
+        // foreach (var user in addUsers)
+        // {
+        //     if (user != firstNavUser) // was already added in step 1
+        //         visibleNavs.AddRange(user.GetBrokerNavsOrdered(allNavsWithHistory));
+        // }
 
         return visibleNavs;
     }
