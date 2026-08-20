@@ -6,11 +6,15 @@
       </div>
       <span class="refreshPortfolios"><img class="refreshPortfolios" src='../assets/images/refresh64_vslow_30pct.avif' (click)="onPortfoliosRefreshClicked()"></span>
     </span>
-    <div *ngIf="uiPrtfRunResult.sqLogs.length > 0" [ngClass]="hasSqLogErrOrWarn ? 'sqErrOrWarnLog' : 'sqInfoLog'">! Backtest Warning/Error/Info logs.
-      <div class="sqLogTooltipText">
-          <p *ngFor="let log of uiPrtfRunResult.sqLogs">{{log.message}}</p>
+    @if (uiPrtfRunResult.sqLogs.length > 0) {
+      <div [ngClass]="hasSqLogErrOrWarn ? 'sqErrOrWarnLog' : 'sqInfoLog'">! Backtest Warning/Error/Info logs.
+        <div class="sqLogTooltipText">
+          @for (log of uiPrtfRunResult.sqLogs; track log) {
+            <p>{{log.message}}</p>
+          }
+        </div>
       </div>
-    </div>
+    }
     <app-sq-tree-view [items]="uiNestedPrtfTreeViewItems" [treeViewState]="treeViewState" [rootTreeViewComponent]="_rootTreeComponent!" (click)="showPortfolioStats()" (dblclick)="onOpenPortfolioViewerClicked()"></app-sq-tree-view>
     <button class="btnCommon" (click)="showCreateOrEditPortfolioPopup('create')" [ngClass]="(treeViewState.lastSelectedItem?.prtfItemType == 'Folder') ? 'btnEnabled' : 'btnDisabled'">Create Portfolio</button>&nbsp;
     <button class="btnCommon" (click)="showCreateOrEditFolderPopup('create')" [ngClass]="treeViewState.lastSelectedItem?.prtfItemType == 'Folder' ? 'btnEnabled': 'btnDisabled'">Create Folder</button>&nbsp;<br>
@@ -22,7 +26,9 @@
     <button class="btnCommon" id="openChartGenerator" (click)="onOpenChartGeneratorClicked()" [ngClass]="treeViewState.lastSelectedItem?.prtfItemType == 'Portfolio' ? 'btnEnabled' : 'btnDisabled'">Open in Chart Generator</button>&nbsp;
     <div class="popup infoPopup" id="createOrEditFolderPopup" [ngStyle]="{'display': isCreateOrEditFolderPopupVisible ? 'block' : 'none'}"><br>
       <div>
-        <div class="prtfCommon prtfFields">Name:<span class="requiredAndNotFound" *ngIf="!editedFolder.name">*</span></div>
+        <div class="prtfCommon prtfFields">Name:@if (!editedFolder.name) {
+          <span class="requiredAndNotFound">*</span>
+        }</div>
         <div class="prtfCommon prtfUserValues">
           <input class="pfItemLongInput" type="text" placeholder="Enter Folder Name" [(ngModel)]="editedFolder.name" [value]="editedFolder.name">
         </div>
@@ -38,9 +44,9 @@
         <div class="prtfCommon prtfFields">PrntFolderId:</div>
         <div class="prtfCommon prtfUserValues">
           <span>
-          <input class="inputItemIdCommon" type="text" placeholder="Enter PrntFld Id" (keyup)="onKeyupParentFolderId(editedFolder.parentFolderId)" [(ngModel)]="editedFolder.parentFolderId" [value]="editedFolder.parentFolderId">&nbsp;
-          <label><b>PrntFldName:</b>&nbsp;<span [ngClass]="{'requiredAndNotFound': parentfolderName == 'Not Found'}">{{parentfolderName}}</span></label>
-        </span>
+            <input class="inputItemIdCommon" type="text" placeholder="Enter PrntFld Id" (keyup)="onKeyupParentFolderId(editedFolder.parentFolderId)" [(ngModel)]="editedFolder.parentFolderId" [value]="editedFolder.parentFolderId">&nbsp;
+            <label><b>PrntFldName:</b>&nbsp;<span [ngClass]="{'requiredAndNotFound': parentfolderName == 'Not Found'}">{{parentfolderName}}</span></label>
+          </span>
         </div>
       </div>
       <div>
@@ -57,7 +63,9 @@
     <div class="popup infoPopup" id="createPortfolioPopup" [ngStyle]="{'display': isCreateOrEditPortfolioPopupVisible ? 'block' : 'none'}"><br>
       <div>
         <div>
-          <div class="prtfCommon prtfFields">Name:<span class="requiredAndNotFound" *ngIf="!editedPortfolio.name">*</span></div>
+          <div class="prtfCommon prtfFields">Name:@if (!editedPortfolio.name) {
+            <span class="requiredAndNotFound">*</span>
+          }</div>
           <div class="prtfCommon prtfUserValues">
             <input class="pfItemLongInput" type="text" placeholder="Enter Portfolio Name" [(ngModel)]="editedPortfolio.name">
           </div>
@@ -73,16 +81,18 @@
           <div class="prtfCommon prtfFields">PrntFolderId:</div>
           <div class="prtfCommon prtfUserValues">
             <span>
-            <input class="inputItemIdCommon" type="text" placeholder="Enter PrntFld Id" (keyup)="onKeyupParentFolderId(editedPortfolio.parentFolderId)" [(ngModel)]="editedPortfolio.parentFolderId" [value]="editedPortfolio.parentFolderId">&nbsp;
-            <label><b>PrntFldName:</b>&nbsp;<span [ngClass]="{'requiredAndNotFound': parentfolderName == 'Not Found'}">{{parentfolderName}}</span></label>
-          </span>
+              <input class="inputItemIdCommon" type="text" placeholder="Enter PrntFld Id" (keyup)="onKeyupParentFolderId(editedPortfolio.parentFolderId)" [(ngModel)]="editedPortfolio.parentFolderId" [value]="editedPortfolio.parentFolderId">&nbsp;
+              <label><b>PrntFldName:</b>&nbsp;<span [ngClass]="{'requiredAndNotFound': parentfolderName == 'Not Found'}">{{parentfolderName}}</span></label>
+            </span>
           </div>
         </div>
         <div>
           <div class="prtfCommon prtfFields">Currency:</div>
           <div class="prtfCommon prtfUserValues">
             <select name="currency" [(ngModel)]="editedPortfolio.baseCurrency">
-              <option *ngFor="let currency of currencyType" [ngValue]="currency">{{currency}}</option>
+              @for (currency of currencyType; track currency) {
+                <option [ngValue]="currency">{{currency}}</option>
+              }
             </select>
           </div>
         </div>
@@ -90,12 +100,16 @@
           <div class="prtfCommon prtfFields">PortfolioType:</div>
           <div class="prtfCommon prtfUserValues">
             <select name="portfolioType" [value]="editedPortfolio.type" (change)="onChangePortfolioType($event)">
-              <option *ngFor="let type of portfolioType" [value]="type">{{type}}</option>
+              @for (type of portfolioType; track type) {
+                <option [value]="type">{{type}}</option>
+              }
             </select>
           </div>
         </div>
         <div>
-          <div class="prtfCommon prtfFields">Algorithm:<span class="requiredAndNotFound" *ngIf="editedPortfolio.type == 'Simulation' && !editedPortfolio.algorithm">*</span></div>
+          <div class="prtfCommon prtfFields">Algorithm:@if (editedPortfolio.type == 'Simulation' && !editedPortfolio.algorithm) {
+            <span class="requiredAndNotFound">*</span>
+          }</div>
           <div class="prtfCommon prtfUserValues">
             <input class="pfItemLongInput" type="text" placeholder="Enter Portfolio Algorithm" [(ngModel)]="editedPortfolio.algorithm">
           </div>
@@ -107,7 +121,9 @@
           </div>
         </div>
         <!--Disable and apply a gray color to the legacyDb portfolio field if the portfolioType is not set to legacyDbTrades.-->
-        <div class="prtfCommon prtfFields" [ngStyle]="{color: (editedPortfolio.type != 'LegacyDbTrades') ? '#A9A9A9' : '' }">LegacyDbPortfName:<span class="requiredAndNotFound" *ngIf="!editedPortfolio.legacyDbPortfName && editedPortfolio.type == 'LegacyDbTrades'">*</span></div>
+        <div class="prtfCommon prtfFields" [ngStyle]="{color: (editedPortfolio.type != 'LegacyDbTrades') ? '#A9A9A9' : '' }">LegacyDbPortfName:@if (!editedPortfolio.legacyDbPortfName && editedPortfolio.type == 'LegacyDbTrades') {
+          <span class="requiredAndNotFound">*</span>
+        }</div>
         <div class="prtfCommon prtfUserValues">
           <input class="pfItemLongInput" type="text" placeholder="Enter LegacyDbPortfName" [disabled]="editedPortfolio.type != 'LegacyDbTrades'" [(ngModel)]="editedPortfolio.legacyDbPortfName">
         </div>
@@ -121,7 +137,9 @@
           <div class="prtfCommon prtfFields">SharedAccess:</div>
           <div class="prtfCommon prtfUserValues">
             <select name="sharedAccess" [(ngModel)]="editedPortfolio.sharedAccess">
-              <option *ngFor="let accessType of sharedAccess" [ngValue]="accessType">{{accessType}}</option>
+              @for (accessType of sharedAccess; track accessType) {
+                <option [ngValue]="accessType">{{accessType}}</option>
+              }
             </select>
           </div>
         </div>
@@ -134,9 +152,9 @@
       </div>
       <span>
         <!-- Disabling the Create Or Save Portfolio button for the below casees
-          1. The portfolio name field shouldn't be left empty.
-          2. Algorithm should not be empty, if the portfolioType is Simlumation.
-          3. For protfolioType LegacyDbTrades the LegacyPortfolioName field shouldn't be left empty. -->
+        1. The portfolio name field shouldn't be left empty.
+        2. Algorithm should not be empty, if the portfolioType is Simulation.
+        3. For protfolioType LegacyDbTrades the LegacyPortfolioName field shouldn't be left empty. -->
         <button id="createPortfolioButton" (click)="onCreateOrEditPortfolioClicked()"
         [disabled]="!isViewedPortfolioSaveAllowed || editedPortfolio.name == '' ||
         (this.editedPortfolio.type == 'Simulation' && this.editedPortfolio.algorithm == '') ||
@@ -212,13 +230,15 @@
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let item of uiPrtfRunResult.prtfPosValues">
-                <td>{{item.sqTicker}}</td>
-                <td>{{item.quantity}}</td>
-                <td>{{item.avgPrice | number:'1.2-2'}}</td>
-                <td>{{item.priorClose | number:'1.2-2'}}</td>
-                <td>{{item.costBasis | number:'1.0-0'}}</td>
-              </tr>
+              @for (item of uiPrtfRunResult.prtfPosValues; track item) {
+                <tr>
+                  <td>{{item.sqTicker}}</td>
+                  <td>{{item.quantity}}</td>
+                  <td>{{item.avgPrice | number:'1.2-2'}}</td>
+                  <td>{{item.priorClose | number:'1.2-2'}}</td>
+                  <td>{{item.costBasis | number:'1.0-0'}}</td>
+                </tr>
+              }
             </tbody>
           </table>
         </div>

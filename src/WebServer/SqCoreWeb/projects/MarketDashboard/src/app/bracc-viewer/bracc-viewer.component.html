@@ -1,21 +1,25 @@
 BrAcc:
 <span>
   <select class="selectedNavBraccCl" [(ngModel)]="navSelectionSelected" (change)="onNavSelectedChange()">
-    <option *ngFor="let item of navSelection" [value]="item">{{item}}</option>
+    @for (item of navSelection; track item) {
+      <option [value]="item">{{item}}</option>
+    }
   </select>
 </span>
 MarketBar
 <span>
-  <span *ngFor="let item of uiMktBar.poss">
-    <a href="https://uk.tradingview.com/chart/?symbol={{item.symbol}}" target="_blank">{{item.symbol}}</a>:
-    <span [ngClass]="{'importantToHighlight' : item.symbol == 'SPY'}">
+  @for (item of uiMktBar.poss; track item) {
+    <span>
+      <a href="https://uk.tradingview.com/chart/?symbol={{item.symbol}}" target="_blank">{{item.symbol}}</a>:
+      <span [ngClass]="{'importantToHighlight' : item.symbol == 'SPY'}">
       <span [ngClass]="{
             'positiveVal' : item.pctChg > 0,
             'negativeVal' : item.pctChg < 0
          }">{{item.pctChg | percent:'1.2'}},
+        </span>
       </span>
     </span>
-  </span>
+  }
   <span>{{uiMktBar.lstValLastRefreshTimeStr}}</span>
 </span>
 <hr class="hrWithoutMargin">
@@ -91,55 +95,55 @@ MarketBar
           <div>IB Gross Pos Value: <span class="moreDetailsSum">{{uiSnapTable.grossPositionValue | number}}</span></div>
         </div>
         <div class="moreDetailsPartitions"><span class="moreDetailsSum">Visible:</span>
-          <div>Number Of Positions: <span class="moreDetailsSum">{{uiSnapTable.visibleNumOfPoss | number}}</span></div>
-          <div>Long Stock MktVal: <span class="moreDetailsSum">{{uiSnapTable.visibleLongStockValue | number}}</span></div>
-          <div>Short Stock MktVal: <span class="moreDetailsSum">{{uiSnapTable.visibleShortStockValue | number}}</span></div>
-          <!-- <div>LC+SP Optn DeltaAdj DelVal: <span class="moreDetailsSum">{{uiSnapTable.visibleLongOptionDeltaAdjValue | number :'1.0-0'}}</span></div>
-          <div>LP+SC Optn DeltaAdj DelVal: <span class="moreDetailsSum">{{uiSnapTable.visibleShortOptionDeltaAdjValue | number :'1.0-0'}}</span></div> -->
-          <div>Delta Adjusted Bullish/Bearish<br>Market Orientation: <span class="moreDetailsSum">{{uiSnapTable.visibleDeltaAdjTotalMarketOrientation | number}}</span></div>
-          <div class="tooltipGeneral plSum">P&L Today :
+        <div>Number Of Positions: <span class="moreDetailsSum">{{uiSnapTable.visibleNumOfPoss | number}}</span></div>
+        <div>Long Stock MktVal: <span class="moreDetailsSum">{{uiSnapTable.visibleLongStockValue | number}}</span></div>
+        <div>Short Stock MktVal: <span class="moreDetailsSum">{{uiSnapTable.visibleShortStockValue | number}}</span></div>
+        <!-- <div>LC+SP Optn DeltaAdj DelVal: <span class="moreDetailsSum">{{uiSnapTable.visibleLongOptionDeltaAdjValue | number :'1.0-0'}}</span></div>
+        <div>LP+SC Optn DeltaAdj DelVal: <span class="moreDetailsSum">{{uiSnapTable.visibleShortOptionDeltaAdjValue | number :'1.0-0'}}</span></div> -->
+        <div>Delta Adjusted Bullish/Bearish<br>Market Orientation: <span class="moreDetailsSum">{{uiSnapTable.visibleDeltaAdjTotalMarketOrientation | number}}</span></div>
+        <div class="tooltipGeneral plSum">P&L Today :
             <span [ngClass]="{
               'positiveVal' : uiSnapTable.visibleSumPlTodVal > 0,
               'negativeVal' : uiSnapTable.visibleSumPlTodVal < 0
               }">{{uiSnapTable.visibleSumPlTodVal | currency:'USD':'symbol':'1.0'}}
-            </span>
+          </span>
             <span class="notImpInfo" [ngClass]="{
               'positiveVal' : uiSnapTable.visibleSumPlTodPct > 0,
               'negativeVal' : uiSnapTable.visibleSumPlTodPct < 0
               }">({{uiSnapTable.visibleSumPlTodPct | percent:'1.2'}})
-            </span>
+          </span>
+          <div class="tooltipText">
+            Profit is calculated as <br>a sum of the visible table cells
+          </div>
+        </div>
+      </div>
+      <div class="moreDetailsPartitions">
+        <div>Number Of All Positions: <span class="moreDetailsSum">{{uiSnapTable.numOfPoss}}</span></div>
+        <div>Long Stock MktVal:
+          <span class="tooltipGeneral moreDetailsSum">{{uiSnapTable.longStockValue | number}}*
             <div class="tooltipText">
-              Profit is calculated as <br>a sum of the visible table cells
+              !! Long VXX is here, although it is market bearish.<br>
             </div>
-          </div>
+          </span>
         </div>
-        <div class="moreDetailsPartitions">
-          <div>Number Of All Positions: <span class="moreDetailsSum">{{uiSnapTable.numOfPoss}}</span></div>
-          <div>Long Stock MktVal:
-            <span class="tooltipGeneral moreDetailsSum">{{uiSnapTable.longStockValue | number}}*
-              <div class="tooltipText">
-                !! Long VXX is here, although it is market bearish.<br>
-              </div>
-            </span>
-          </div>
-          <div>Short Stock MktVal: <span class="moreDetailsSum">{{uiSnapTable.shortStockValue | number}}</span></div>
-          <div>LC+SP Optn DeltaAdj DelVal:
-            <span class="tooltipGeneral moreDetailsSum">{{uiSnapTable.longOptionDeltaAdjValue | number :'1.0-0'}}*
-              <div class="tooltipText">
-                Long Call options and Short Put options have positive market exposure.
-              </div>
-            </span>
-          </div>
-          <div>LP+SC Optn DeltaAdj DelVal:
-            <span class="tooltipGeneral moreDetailsSum">{{uiSnapTable.shortOptionDeltaAdjValue | number :'1.0-0'}}*
-              <div class="tooltipText">
-                Long Put options and Short Call options have negative market exposure.
-              </div>
-            </span>
-          </div>
+        <div>Short Stock MktVal: <span class="moreDetailsSum">{{uiSnapTable.shortStockValue | number}}</span></div>
+        <div>LC+SP Optn DeltaAdj DelVal:
+          <span class="tooltipGeneral moreDetailsSum">{{uiSnapTable.longOptionDeltaAdjValue | number :'1.0-0'}}*
+            <div class="tooltipText">
+              Long Call options and Short Put options have positive market exposure.
+            </div>
+          </span>
         </div>
-        <div class="moreDetailsPartitions" id="borderRemove">
-          <div class="tooltipGeneral">Max Risked estimate:<br><span class="moreDetailsSum">{{uiSnapTable.totalMaxRiskedN | number}}</span>
+        <div>LP+SC Optn DeltaAdj DelVal:
+          <span class="tooltipGeneral moreDetailsSum">{{uiSnapTable.shortOptionDeltaAdjValue | number :'1.0-0'}}*
+            <div class="tooltipText">
+              Long Put options and Short Call options have negative market exposure.
+            </div>
+          </span>
+        </div>
+      </div>
+      <div class="moreDetailsPartitions" id="borderRemove">
+        <div class="tooltipGeneral">Max Risked estimate:<br><span class="moreDetailsSum">{{uiSnapTable.totalMaxRiskedN | number}}</span>
             <span class="moreDetailsSum" [ngClass]="{'green' : uiSnapTable.totalMaxRiskedLeverage < 1.3,
                                                       'orange': uiSnapTable.totalMaxRiskedLeverage <= 1.5,
                                                       'red' : uiSnapTable.totalMaxRiskedLeverage > 1.5}"> (Leverage: {{uiSnapTable.totalMaxRiskedLeverage | number :'1.2-2'}})*
@@ -177,7 +181,9 @@ MarketBar
               <div class="selectionDropDown">
                 <input id="histPeriodInput" class="highlightInputDropDown" type="text" [(ngModel)]="histPeriodSelectionSelected" (change)="onHistPeriodSelectionClicked(histPeriodSelectionSelected)">
                 <div class="listDropDown">
-                  <option class="optionDropDown" *ngFor="let item of histPeriodSelection" [value]="item" (click)="onHistPeriodSelectionClicked(item)">{{item}}</option>
+                  @for (item of histPeriodSelection; track item) {
+                  <option class="optionDropDown" [value]="item" (click)="onHistPeriodSelectionClicked(item)">{{item}}</option>
+                  }
                 </div>
               </div>
               <div>StartDate: <input class="histPeriodDateCl" type="date" id="StartDate" name="startDate" min="01-01-1975" [(ngModel)]="histPeriodStartETstr" (change)="onHistPeriodChangeClicked()"></div>
@@ -185,28 +191,39 @@ MarketBar
               <div class="selectionDropDown">
                 <input id="bnchmrkInput" class="highlightInputDropDown" type="text" [(ngModel)]="bnchmkTickerSelectionSelected" (change)="onHistPeriodChangeClicked()">
                 <div class="listDropDown">
-                  <option class="optionDropDown" *ngFor="let item of bnchmkTickerSelection" [value]="item" (click)="onBnchmrkSelectionClicked(item)">{{item}}</option>
+                  @for (item of bnchmkTickerSelection; track item) {
+                  <option class="optionDropDown" [value]="item" (click)="onBnchmrkSelectionClicked(item)">{{item}}</option>
+                  }
                 </div>
               </div>
               <div>MaxDD<span class="notImpInfo">(NAV/BnchMrk):</span>
-                <span class="histBchMrkDetails" *ngFor="let item of uiHistData; last as isLast">
+                @for (item of uiHistData; track item; let isLast = $last) {
+                  <span class="histBchMrkDetails">
                   {{item.periodMaxDD | percent:'1.2'}}
-                  <ng-container *ngIf="!isLast">/</ng-container>
+                  @if (!isLast) {
+/
+}
                 </span>
+                }
               </div>
               <div>Return<span class="notImpInfo">(NAV/BnchMrk):</span>
-                <span class="histBchMrkDetails" *ngFor="let item of uiHistData; last as isLast">
+                @for (item of uiHistData; track item; let isLast = $last) {
+<span class="histBchMrkDetails">
                   {{item.periodReturn | percent:'1.2'}}
-                  <ng-container *ngIf="!isLast">/</ng-container>
+                  @if (!isLast) {
+/
+}
                 </span>
+}
               </div>
             </div>
           </span>
         </div>
-        <div *ngIf="isHistPeriodDateValid; else validDateDialog" id="navChrt"></div>
-        <ng-template #validDateDialog>
+        @if (isHistPeriodDateValid) {
+          <div id="navChrt"></div>
+        } @else {
           <div id="validDateDialog">Please input a valid date. Ensure that both the start and end dates are valid to view the graph</div>
-        </ng-template>
+        }
       </div>
     </div>
   </span>
@@ -217,7 +234,9 @@ MarketBar
     <span class="selectionDropDown">
       <input id="assetCategoryInput" class="highlightInputDropDown" type="text" [(ngModel)]="assetCategorySelectionSelected" placeholder="No Filter">
       <span class="listDropDown">
-        <option class="optionDropDown" *ngFor="let item of uiAssetCategories" [value]="item" (click)="onAssetCategorySelectionClicked(item)">{{item.tag}}</option>
+        @for (item of uiAssetCategories; track item) {
+          <option class="optionDropDown" [value]="item" (click)="onAssetCategorySelectionClicked(item)">{{item.tag}}</option>
+        }
       </span>
     </span>
   </span>
@@ -273,7 +292,8 @@ MarketBar
     </tr>
   </thead>
   <tbody class="selectedBrcAccSnapShotTbl">
-    <tr *ngFor="let item of uiSnapTable.poss">
+    @for (item of uiSnapTable.poss; track item) {
+      <tr>
       <td class="tooltipStck" (mouseenter)="onMouseEnterSnapTableSymbol($event, item)" (mouseover)="onMouseOverSnapTableSymbol()" (mouseleave)="onMouseLeaveSnapTableSymbol()">
         <a href="https://uk.tradingview.com/chart/?symbol={{item.symbol}}" target="_blank">
           {{item.symbol}}
@@ -297,58 +317,61 @@ MarketBar
       <td>{{item.gBeta | number:'1.1-2'}}</td>
       <td>{{item.betaDltAdj | number}}</td>
       <td>{{item.accIdStr}}</td>
-    </tr>
+      </tr>
+    }
   </tbody>
 </table>
 </div>
 <!-- <hr> -->
-<div id="stckTooltip" class="tooltipText" (mouseenter)="onMouseEnterStockTooltip()" (mouseleave)="onMouseLeaveStockTooltip()" *ngIf="isShowStockTooltip">
+@if (isShowStockTooltip) {
+<div id="stckTooltip" class="tooltipText" (mouseenter)="onMouseEnterStockTooltip()" (mouseleave)="onMouseLeaveStockTooltip()">
   <span id="stckTooltipName">Name: {{stockTooltipName}}<br></span>
   <a class="commonTinySpace" href="https://seekingalpha.com/symbol/{{stockTooltipSymbol}}" target="_blank"><img alt='seekingalpha' src='../assets/sa_vslow_30pct.avif' width='20' height='20'></a>
   <a class="commonTinySpace" href="https://uk.tradingview.com/chart/?symbol={{stockTooltipSymbol}}" target="_blank">
     <svg width="28" height="22" viewBox="0 0 28 22" xmlns="http://www.w3.org/2000/svg">
       <path d="M 12 20 H 7 V 11 H 0 V 4 h 12 v 16 z 
                         M 24 20 h-8 l 7.5-18 h 8 L 22 20 z" fill="currentColor">
-      </path>
-      <circle cx="16.5" cy="7" r="4" fill="currentColor" />
-    </svg>
-  </a>
-  <a class="commonTinySpace" href="https://finance.yahoo.com/quote/{{stockTooltipSymbol}}" target="_blank"><img alt='YF' src='../assets/yf_vslow_30pct.avif' width='20' height='20'></a>
-  <a class="commonTinySpace" href="https://www.zacks.com/stock/quote/{{stockTooltipSymbol}}" target="_blank"><img alt='Zacks' src='../assets/zacks_vslow_30pct.avif' width='20' height='20'></a>
-  <a class="commonTinySpace" href="https://www.earningswhispers.com/tradeview/{{stockTooltipSymbol}}" target="_blank"><img alt='earningswhispers-BeforeEarnings' src='../assets/ew_be_vslow_30pct.avif' width='20' height='20'></a>
-  <a class="commonTinySpace" href="https://www.earningswhispers.com/epsdetails/{{stockTooltipSymbol}}" target="_blank"><img alt='earningswhispers-AfterEarnings' src='../assets/ew_ae_vslow_30pct.avif' width='20' height='20'></a>
-  <a class="commonTinySpace" href="https://www.tipranks.com/stocks/{{stockTooltipSymbol}}/forecast" target="_blank"><img alt='TipRanks' src='../assets/tr_vslow_30pct.avif' width='20' height='20'></a>
-  <a href="https://stockcharts.com/h-sc/ui?s={{stockTooltipSymbol}}" target="_blank"><img alt='stocksCharts' src='../assets/sc_vslow_30pct.avif' width='20' height='20'></a><br>
-  <span id="stockChrt"></span>
-</div>
+        </path>
+        <circle cx="16.5" cy="7" r="4" fill="currentColor" />
+      </svg>
+    </a>
+    <a class="commonTinySpace" href="https://finance.yahoo.com/quote/{{stockTooltipSymbol}}" target="_blank"><img alt='YF' src='../assets/yf_vslow_30pct.avif' width='20' height='20'></a>
+    <a class="commonTinySpace" href="https://www.zacks.com/stock/quote/{{stockTooltipSymbol}}" target="_blank"><img alt='Zacks' src='../assets/zacks_vslow_30pct.avif' width='20' height='20'></a>
+    <a class="commonTinySpace" href="https://www.earningswhispers.com/tradeview/{{stockTooltipSymbol}}" target="_blank"><img alt='earningswhispers-BeforeEarnings' src='../assets/ew_be_vslow_30pct.avif' width='20' height='20'></a>
+    <a class="commonTinySpace" href="https://www.earningswhispers.com/epsdetails/{{stockTooltipSymbol}}" target="_blank"><img alt='earningswhispers-AfterEarnings' src='../assets/ew_ae_vslow_30pct.avif' width='20' height='20'></a>
+    <a class="commonTinySpace" href="https://www.tipranks.com/stocks/{{stockTooltipSymbol}}/forecast" target="_blank"><img alt='TipRanks' src='../assets/tr_vslow_30pct.avif' width='20' height='20'></a>
+    <a href="https://stockcharts.com/h-sc/ui?s={{stockTooltipSymbol}}" target="_blank"><img alt='stocksCharts' src='../assets/sc_vslow_30pct.avif' width='20' height='20'></a><br>
+    <span id="stockChrt"></span>
+  </div>
+}
 <!-- Addded class "selectedTempDebug" to limit the text output in the UI-->
 <div id="warning">{{uiSnapTable.clientMsg}}</div>
 <div class="selectedTempDebug">
-<br><br>Temporary Debug Info:<br>
-<div class="tooltipGeneral">HandshakeMsgStr:
-  <div class="tooltipText">
-    {{handshakeStrFormatted}}
+  <br><br>Temporary Debug Info:<br>
+  <div class="tooltipGeneral">HandshakeMsgStr:
+    <div class="tooltipText">
+      {{handshakeStrFormatted}}
+    </div>
   </div>
-</div>
-<div class="tooltipGeneral">MarketBarLastClosesStr:
-  <div class="tooltipText">
-    {{mktBrLstClsStrFormatted}}
+  <div class="tooltipGeneral">MarketBarLastClosesStr:
+    <div class="tooltipText">
+      {{mktBrLstClsStrFormatted}}
+    </div>
   </div>
-</div>
-<div class="tooltipGeneral">HistStr:
-  <div class="tooltipText">
-    {{navHistStrFormatted}}
+  <div class="tooltipGeneral">HistStr:
+    <div class="tooltipText">
+      {{navHistStrFormatted}}
+    </div>
   </div>
-</div>
-<div class="tooltipGeneral">BrAccountSnapshot:
-  <div class="tooltipText">
-    {{brAccountSnapshotStrFormatted}}
+  <div class="tooltipGeneral">BrAccountSnapshot:
+    <div class="tooltipText">
+      {{brAccountSnapshotStrFormatted}}
+    </div>
   </div>
-</div>
-<div class="tooltipGeneral">StockHistData:
-  <div class="tooltipText">
-    {{stockHistStrFormatted}}
+  <div class="tooltipGeneral">StockHistData:
+    <div class="tooltipText">
+      {{stockHistStrFormatted}}
+    </div>
   </div>
-</div>
 </div>
 <br>

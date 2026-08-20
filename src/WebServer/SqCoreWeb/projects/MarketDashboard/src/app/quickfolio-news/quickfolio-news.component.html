@@ -2,16 +2,18 @@
 <div style="overflow: hidden;">
   <div style="overflow-y: auto; height:160px; width: 750px; float:left;">
     <ul style="margin: 0px;">
-      <div class="newsItemCommon" *ngFor="let news of generalNews">
-        <li (mouseenter)=mouseEnterCommon(news)>
-          <!-- <span>{{getpublishedString(news.publishDate)}} </span> -->
-          <span>{{news.displayText}} </span>
-          <a class="newsHyperlink" [title]="news.summary" [href]="news.linkUrl" target="_blank">
-            {{news.title}}
-          </a>
-          <!-- <span>{{ news.DownloadTime}} </span> -->
-        </li>
-      </div>
+      @for (news of generalNews; track news) {
+        <div class="newsItemCommon">
+          <li (mouseenter)=mouseEnterCommon(news)>
+            <!-- <span>{{getpublishedString(news.publishDate)}} </span> -->
+            <span>{{news.displayText}} </span>
+            <a class="newsHyperlink" [title]="news.summary" [href]="news.linkUrl" target="_blank">
+              {{news.title}}
+            </a>
+            <!-- <span>{{ news.DownloadTime}} </span> -->
+          </li>
+        </div>
+      }
     </ul>
   </div>
   <div style="width: 200px; float: right; margin-left: 10px; height: 160px; overflow-y: auto;">
@@ -60,36 +62,40 @@
 </div>
 <div>
   <div style="width: 100px; height: 602px; float:left; overflow-y: auto;">
-    <div class="vertical-menu" *ngFor="let ticker of stockTickers">
-      <div class="menuElement" (click)="menuClick($event, ticker)">{{ ticker }}</div>
-    </div>
+    @for (ticker of stockTickers; track ticker) {
+      <div class="vertical-menu">
+        <div class="menuElement" (click)="menuClick($event, ticker)">{{ ticker }}</div>
+      </div>
+    }
   </div>
 
 
   <div style="width: 490px; height: 602px; float:left; overflow-y: auto;">
     <!-- <div style=" height:602px;"> -->
     <ul style="margin: 0px;">
-      <div class="newsItemStock inVisible" *ngFor="let news of stockNews">
-        <li (mouseenter)=mouseEnter(news)>
-          <!-- <span>{{getpublishedString(news.publishDate)}} </span> -->
-          <span>{{news.displayText}} </span>
-          <span class="newsTicker">{{ news.ticker}} </span>
-          <a class="newsHyperlink" [title]="news.summary" [href]="news.linkUrl" target="_blank">
-            {{news.title}}
-          </a>
-          <span class="newsSource" style="display: none;">{{news.source}}</span>
-          <!-- <span class="newsTitle" style="display: none;">{{news.title}}</span> -->
-          <span class="newsSentiment" style="display: none;">{{news.sentiment}}</span>
-          <span class="newsIsDuplicate" style="display: none;">{{news.isDuplicate}}</span>
-          <!-- <span>{{ news.DownloadTime}}</span> -->
-        </li>
-      </div>
+      @for (news of stockNews; track news) {
+        <div class="newsItemStock inVisible">
+          <li (mouseenter)=mouseEnter(news)>
+            <!-- <span>{{getpublishedString(news.publishDate)}} </span> -->
+            <span>{{news.displayText}} </span>
+            <span class="newsTicker">{{ news.ticker}} </span>
+            <a class="newsHyperlink" [title]="news.summary" [href]="news.linkUrl" target="_blank">
+              {{news.title}}
+            </a>
+            <span class="newsSource" style="display: none;">{{news.source}}</span>
+            <!-- <span class="newsTitle" style="display: none;">{{news.title}}</span> -->
+            <span class="newsSentiment" style="display: none;">{{news.sentiment}}</span>
+            <span class="newsIsDuplicate" style="display: none;">{{news.isDuplicate}}</span>
+            <!-- <span>{{ news.DownloadTime}}</span> -->
+          </li>
+        </div>
+      }
     </ul>
   </div>
-  <!-- </div> -->
-  <div style="width: 360px; float: right; height: 602px; overflow-y: auto;margin-top: 15px;">
-    <span>
-      {{previewText}}
-    </span>
-  </div>
+<!-- </div> -->
+<div style="width: 360px; float: right; height: 602px; overflow-y: auto;margin-top: 15px;">
+  <span>
+    {{previewText}}
+  </span>
+</div>
 </div>

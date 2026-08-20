@@ -1,55 +1,69 @@
 <h4>Technical Analyzer</h4>
 <div>Tickers:<input id="wideInputWidth" type="text" [value]="m_tickersStr" (change)="onInputTickers($event)"></div><br>
 <div id="pctChnTableContainer">
-  <table *ngIf="m_assetHistDatas.length > 0">  <!-- Verify if m_assetHistDatas contains data; otherwise, (the second) *ngFor indexes into the [0] item forDates, and that will fail. -->
-    <thead>
-      <tr>
-        <th>Date</th>
-        <th *ngFor="let asset of m_assetHistDatas" (mouseover)="onMouseoverStckSymbol()" (mouseenter)="onMouseenterStckSymbol($event, asset.symbol)" (mouseleave)="onMouseleaveStckSymbol()">{{ asset.symbol }}</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr *ngFor="let dateIndex of m_assetHistDatas[0].pctChnDatas; let i = index"> <!-- To iterate through dates using the first asset's pctChnDatas array -->
-        <td>{{ m_assetHistDatas[0].pctChnDatas[i].Date | date : 'yyyy-MM-dd' }}</td>  <!-- Display the date in the first column -->
-        <td *ngFor="let asset of m_assetHistDatas">
-          <!-- To ensure the tooltip text is positioned correctly when the mouse hovers over the parent element "pctChnTooltip", the mouseover event is used to activate the child element "pctChnTooltipText". Once the child element is activated, the mouseenter event positions the tooltip text to the right side. 
-            see. https://www.quora.com/Should-I-use-Mouseover-or-Mouseenter#:~:text=Most%20times%20mouseover%20will%20be,element%20that's%20not%20a%20child.-->
-            <div id="pctChnTooltip" (mouseover)="onMouseoverPctChnWtAggCell()" (mouseenter)="onMouseenterPctChnWtAggCell($event, asset.pctChnDatas[i])" (mouseleave)="onMouseleavePctChnWtAggCell()">
-            {{ asset.pctChnDatas[i].pctChnWeightAggregate | percent:'1.0' }}
-          </div>
-        </td>
-      </tr>
-    </tbody>
-  </table>
+  @if (m_assetHistDatas.length > 0) {
+    <table>  <!-- Verify if m_assetHistDatas contains data; otherwise, (the second) *ngFor indexes into the [0] item forDates, and that will fail. -->
+      <thead>
+        <tr>
+          <th>Date</th>
+          @for (asset of m_assetHistDatas; track asset) {
+            <th (mouseover)="onMouseoverStckSymbol()" (mouseenter)="onMouseenterStckSymbol($event, asset.symbol)" (mouseleave)="onMouseleaveStckSymbol()">{{ asset.symbol }}</th>
+          }
+        </tr>
+      </thead>
+      <tbody>
+        @for (dateIndex of m_assetHistDatas[0].pctChnDatas; track dateIndex; let i = $index) {
+          <tr> <!-- To iterate through dates using the first asset's pctChnDatas array -->
+            <td>{{ m_assetHistDatas[0].pctChnDatas[i].Date | date : 'yyyy-MM-dd' }}</td>  <!-- Display the date in the first column -->
+            @for (asset of m_assetHistDatas; track asset) {
+              <td>
+                <!-- To ensure the tooltip text is positioned correctly when the mouse hovers over the parent element "pctChnTooltip", the mouseover event is used to activate the child element "pctChnTooltipText". Once the child element is activated, the mouseenter event positions the tooltip text to the right side.
+                see. https://www.quora.com/Should-I-use-Mouseover-or-Mouseenter#:~:text=Most%20times%20mouseover%20will%20be,element%20that's%20not%20a%20child.-->
+                <div id="pctChnTooltip" (mouseover)="onMouseoverPctChnWtAggCell()" (mouseenter)="onMouseenterPctChnWtAggCell($event, asset.pctChnDatas[i])" (mouseleave)="onMouseleavePctChnWtAggCell()">
+                  {{ asset.pctChnDatas[i].pctChnWeightAggregate | percent:'1.0' }}
+                </div>
+              </td>
+            }
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
 </div>
-<div class="tooltipCommon" id="pctChnTooltipText" *ngIf="m_isShowPctChnTooltip">
-  <span *ngFor="let item of [{period: 60, signal: 1}, {period: 120, signal: 2}, {period: 180, signal: 3}, {period: 252, signal: 4}]">
-    PctChn-{{ item.period }}:<span [ngStyle]="{'color': (m_enumPctChnSignal[m_pctChnDataForTooltip['pctChnSignal' + item.signal]] === 'ValidBull' || m_enumPctChnSignal[m_pctChnDataForTooltip['pctChnSignal' + item.signal]] === 'NonValidBull') ? 'Green' : 'Red'}">
-    {{ 
-      m_enumPctChnSignal[m_pctChnDataForTooltip['pctChnSignal' + item.signal]] === 'ValidBull' ? 'Bull' : 
-      m_enumPctChnSignal[m_pctChnDataForTooltip['pctChnSignal' + item.signal]] === 'NonValidBull' ? '?Bull' : 
-      m_enumPctChnSignal[m_pctChnDataForTooltip['pctChnSignal' + item.signal]] === 'ValidBear' ? 'Bear' : 
-      m_enumPctChnSignal[m_pctChnDataForTooltip['pctChnSignal' + item.signal]] === 'NonValidBear' ? '?Bear' : 
-      'Unknown'
-    }} ({{m_pctChnDataForTooltip['pctChnVal' + item.signal] | percent:'1.0' }})
-    </span><br>
-  </span>
+@if (m_isShowPctChnTooltip) {
+  <div class="tooltipCommon" id="pctChnTooltipText">
+    @for (item of [{period: 60, signal: 1}, {period: 120, signal: 2}, {period: 180, signal: 3}, {period: 252, signal: 4}]; track item) {
+      <span>
+        PctChn-{{ item.period }}:<span [ngStyle]="{'color': (m_enumPctChnSignal[m_pctChnDataForTooltip['pctChnSignal' + item.signal]] === 'ValidBull' || m_enumPctChnSignal[m_pctChnDataForTooltip['pctChnSignal' + item.signal]] === 'NonValidBull') ? 'Green' : 'Red'}">
+        {{
+        m_enumPctChnSignal[m_pctChnDataForTooltip['pctChnSignal' + item.signal]] === 'ValidBull' ? 'Bull' :
+        m_enumPctChnSignal[m_pctChnDataForTooltip['pctChnSignal' + item.signal]] === 'NonValidBull' ? '?Bull' :
+        m_enumPctChnSignal[m_pctChnDataForTooltip['pctChnSignal' + item.signal]] === 'ValidBear' ? 'Bear' :
+        m_enumPctChnSignal[m_pctChnDataForTooltip['pctChnSignal' + item.signal]] === 'NonValidBear' ? '?Bear' :
+        'Unknown'
+        }} ({{m_pctChnDataForTooltip['pctChnVal' + item.signal] | percent:'1.0' }})
+      </span><br>
+    </span>
+  }
 </div>
-<div class="tooltipCommon" id="stockChrtTooltip" (mouseenter)="onMouseenterStckChrtTooltip()" (mouseleave)="onMouseleaveStckChrtTooltip()" *ngIf="m_isShowStckChrtTooltip">&nbsp;&nbsp;
-  <a class="commonTinySpace" href="https://seekingalpha.com/symbol/{{m_stockSymbol}}" target="_blank"><img alt='seekingalpha' src='assets/sa_vslow_30pct.avif' width='20' height='20'></a>
-  <a class="commonTinySpace" href="https://uk.tradingview.com/chart/?symbol={{m_stockSymbol}}" target="_blank">
-    <svg width="28" height="22" viewBox="0 0 28 22" xmlns="http://www.w3.org/2000/svg">
+}
+@if (m_isShowStckChrtTooltip) {
+  <div class="tooltipCommon" id="stockChrtTooltip" (mouseenter)="onMouseenterStckChrtTooltip()" (mouseleave)="onMouseleaveStckChrtTooltip()">&nbsp;&nbsp;
+    <a class="commonTinySpace" href="https://seekingalpha.com/symbol/{{m_stockSymbol}}" target="_blank"><img alt='seekingalpha' src='assets/sa_vslow_30pct.avif' width='20' height='20'></a>
+    <a class="commonTinySpace" href="https://uk.tradingview.com/chart/?symbol={{m_stockSymbol}}" target="_blank">
+      <svg width="28" height="22" viewBox="0 0 28 22" xmlns="http://www.w3.org/2000/svg">
       <path d="M 12 20 H 7 V 11 H 0 V 4 h 12 v 16 z 
                         M 24 20 h-8 l 7.5-18 h 8 L 22 20 z" fill="currentColor">
-      </path>
-      <circle cx="16.5" cy="7" r="4" fill="currentColor" />
-    </svg>
-  </a>
-  <a class="commonTinySpace" href="https://finance.yahoo.com/quote/{{m_stockSymbol}}" target="_blank"><img alt='YF' src='assets/yf_vslow_30pct.avif' width='20' height='20'></a>
-  <a class="commonTinySpace" href="https://www.zacks.com/stock/quote/{{m_stockSymbol}}" target="_blank"><img alt='Zacks' src='assets/zacks_vslow_30pct.avif' width='20' height='20'></a>
-  <a class="commonTinySpace" href="https://www.earningswhispers.com/tradeview/{{m_stockSymbol}}" target="_blank"><img alt='earningswhispers-BeforeEarnings' src='assets/ew_be_vslow_30pct.avif' width='20' height='20'></a>
-  <a class="commonTinySpace" href="https://www.earningswhispers.com/epsdetails/{{m_stockSymbol}}" target="_blank"><img alt='earningswhispers-AfterEarnings' src='assets/ew_ae_vslow_30pct.avif' width='20' height='20'></a>
-  <a class="commonTinySpace" href="https://www.tipranks.com/stocks/{{m_stockSymbol}}/forecast" target="_blank"><img alt='TipRanks' src='assets/tr_vslow_30pct.avif' width='20' height='20'></a>
-  <a href="https://stockcharts.com/h-sc/ui?s={{m_stockSymbol}}" target="_blank"><img alt='stocksCharts' src='assets/sc_vslow_30pct.avif' width='20' height='20'></a><br>
-  <span id="stockChrt"></span>
-</div>
+        </path>
+        <circle cx="16.5" cy="7" r="4" fill="currentColor" />
+      </svg>
+    </a>
+    <a class="commonTinySpace" href="https://finance.yahoo.com/quote/{{m_stockSymbol}}" target="_blank"><img alt='YF' src='assets/yf_vslow_30pct.avif' width='20' height='20'></a>
+    <a class="commonTinySpace" href="https://www.zacks.com/stock/quote/{{m_stockSymbol}}" target="_blank"><img alt='Zacks' src='assets/zacks_vslow_30pct.avif' width='20' height='20'></a>
+    <a class="commonTinySpace" href="https://www.earningswhispers.com/tradeview/{{m_stockSymbol}}" target="_blank"><img alt='earningswhispers-BeforeEarnings' src='assets/ew_be_vslow_30pct.avif' width='20' height='20'></a>
+    <a class="commonTinySpace" href="https://www.earningswhispers.com/epsdetails/{{m_stockSymbol}}" target="_blank"><img alt='earningswhispers-AfterEarnings' src='assets/ew_ae_vslow_30pct.avif' width='20' height='20'></a>
+    <a class="commonTinySpace" href="https://www.tipranks.com/stocks/{{m_stockSymbol}}/forecast" target="_blank"><img alt='TipRanks' src='assets/tr_vslow_30pct.avif' width='20' height='20'></a>
+    <a href="https://stockcharts.com/h-sc/ui?s={{m_stockSymbol}}" target="_blank"><img alt='stocksCharts' src='assets/sc_vslow_30pct.avif' width='20' height='20'></a><br>
+    <span id="stockChrt"></span>
+  </div>
+}

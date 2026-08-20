@@ -13,7 +13,9 @@ LLM-ModelName:
 <br>
 <button (click)="sendUserInputToBackEnd(userInputTextarea.value)">Generate Predicted Text</button>
 
-<div *ngFor="let chatItem of m_chatHistory" [innerHTML]="chatItem"></div>
+@for (chatItem of m_chatHistory; track chatItem) {
+  <div [innerHTML]="chatItem"></div>
+}
 <br>
 Demo<br>Just for Testing
 <a href="https://finance.yahoo.com/" target="_blank"><img alt='YF' src='./assets/images/llm_yf_vslow_30pct.avif' width='20' height='20'></a>&nbsp;

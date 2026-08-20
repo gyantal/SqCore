@@ -1,12 +1,20 @@
 <ul>
-  <li *ngFor="let item of items">
-    <div class="treeViewRowBase" [ngClass]="{'treeViewRowSelected': item.isSelected, 'treeViewRowPortfolio': item.prtfItemType == 'Portfolio'}">
-      <span (click)="onItemClicked(item)">{{(item.prtfItemType == 'Folder') ? (item.isExpanded ? '&#45;' : '&#43;') : ''}}&nbsp;<input *ngIf="m_useCheckboxes && item.prtfItemType == 'Portfolio'" type="checkbox" [checked]="item.isCheckboxChecked" (change)="onChangeCheckbox($event, item)">{{item.name}}
-        <span *ngIf="item.prtfItemType == 'Folder'"> ({{childrenCount(item)}})</span><!-- Display the child count for folders only -->
-      </span>
-    </div>
-    <ul *ngIf="item.children && item.isExpanded">
-      <app-sq-tree-view [items]="item.children" [treeViewState]="treeViewState" [rootTreeViewComponent]="rootTreeViewComponent" [m_useCheckboxes]="m_useCheckboxes"></app-sq-tree-view>
-    </ul>
-  </li>
-</ul>
+  @for (item of items; track item) {
+    <li>
+      <div class="treeViewRowBase" [ngClass]="{'treeViewRowSelected': item.isSelected, 'treeViewRowPortfolio': item.prtfItemType == 'Portfolio'}">
+        <span (click)="onItemClicked(item)">{{(item.prtfItemType == 'Folder') ? (item.isExpanded ? '&#45;' : '&#43;') : ''}}&nbsp;@if (m_useCheckboxes && item.prtfItemType == 'Portfolio') {
+          <input type="checkbox" [checked]="item.isCheckboxChecked" (change)="onChangeCheckbox($event, item)">
+          }{{item.name}}
+          @if (item.prtfItemType == 'Folder') {
+            <span> ({{childrenCount(item)}})</span>
+            }<!-- Display the child count for folders only -->
+          </span>
+        </div>
+        @if (item.children && item.isExpanded) {
+          <ul>
+            <app-sq-tree-view [items]="item.children" [treeViewState]="treeViewState" [rootTreeViewComponent]="rootTreeViewComponent" [m_useCheckboxes]="m_useCheckboxes"></app-sq-tree-view>
+          </ul>
+        }
+      </li>
+    }
+  </ul>

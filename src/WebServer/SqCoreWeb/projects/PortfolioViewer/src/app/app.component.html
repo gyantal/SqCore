@@ -1,5 +1,9 @@
-<b>Portfolio Viewer</b>&nbsp;<span id="userWarnId" *ngIf="m_userWarning">({{m_userWarning}})</span>&nbsp;PortfolioName: {{m_portfolio?.name}}<br>
-<button [ngClass]="{'activeTabItem':m_activeTab == 'Positions'}" (click)="onActiveTabCicked('Positions')">Positions</button>&nbsp;<button [ngClass]="{'activeTabItem':m_activeTab == 'Portfolio Report'}" (click)="onActiveTabCicked('Portfolio Report')">Portfolio Report</button>&nbsp;<button [ngClass]="{'activeTabItem':m_activeTab == 'Trades'}" (click)="onActiveTabCicked('Trades')">Trades*</button>&nbsp;<button [ngClass]="{'activeTabItem':m_activeTab == 'Portfolio Performance Accumulator'}" (click)="onActiveTabCicked('Portfolio Performance Accumulator')">Portfolio Performance Accumulator</button>&nbsp;<button [ngClass]="{'activeTabItem':m_activeTab == 'LegacyDbTrades'}" (click)="onActiveTabCicked('LegacyDbTrades')" *ngIf="m_portfolio?.legacyDbPortfName">LegacyDbTrades</button>
+<b>Portfolio Viewer</b>&nbsp;@if (m_userWarning) {
+<span id="userWarnId">({{m_userWarning}})</span>
+}&nbsp;PortfolioName: {{m_portfolio?.name}}<br>
+<button [ngClass]="{'activeTabItem':m_activeTab == 'Positions'}" (click)="onActiveTabCicked('Positions')">Positions</button>&nbsp;<button [ngClass]="{'activeTabItem':m_activeTab == 'Portfolio Report'}" (click)="onActiveTabCicked('Portfolio Report')">Portfolio Report</button>&nbsp;<button [ngClass]="{'activeTabItem':m_activeTab == 'Trades'}" (click)="onActiveTabCicked('Trades')">Trades*</button>&nbsp;<button [ngClass]="{'activeTabItem':m_activeTab == 'Portfolio Performance Accumulator'}" (click)="onActiveTabCicked('Portfolio Performance Accumulator')">Portfolio Performance Accumulator</button>&nbsp;@if (m_portfolio?.legacyDbPortfName) {
+<button [ngClass]="{'activeTabItem':m_activeTab == 'LegacyDbTrades'}" (click)="onActiveTabCicked('LegacyDbTrades')">LegacyDbTrades</button>
+}
 <div [hidden]="m_activeTab != 'Positions'">
   <table id="pfStatsTable">
     <tr>
@@ -16,353 +20,401 @@
       <td><b>Positions-$P&L</b> on Date: <span [ngStyle]="{color: (m_uiHistPrtfRunResultUntilDate.onDatePosPv - m_uiHistPrtfRunResultUntilDate.prevDatePosPv) < 0 ? 'red' : 'green'}"><b>${{(m_uiHistPrtfRunResultUntilDate.onDatePosPv - m_uiHistPrtfRunResultUntilDate.prevDatePosPv) | number:'1.0-0'}} ({{(m_uiHistPrtfRunResultUntilDate.onDatePosPv - m_uiHistPrtfRunResultUntilDate.prevDatePosPv) / m_uiHistPrtfRunResultUntilDate.prevDatePosPv | percent:'1.2-2' }})</b></span></td>
     </tr>
   </table><br>
-    <div *ngIf="m_uiPrtfRunResult.sqLogs.length > 0" [ngClass]="m_hasSqLogErrOrWarn ? 'sqErrOrWarnLog' : 'sqInfoLog'">! Backtest Warning/Error/Info logs.
-        <div class="sqLogTooltipText">
-            <p *ngFor="let log of m_uiPrtfRunResult.sqLogs">{{log.message}}</p>
-        </div>
-    </div><br>
-  <!-- Angular only: using Angular template reference #variables like (#yearInput, #monthInput and #dayInput) provides a way to reference DOM elements directly 
+  @if (m_uiPrtfRunResult.sqLogs.length > 0) {
+    <div [ngClass]="m_hasSqLogErrOrWarn ? 'sqErrOrWarnLog' : 'sqInfoLog'">! Backtest Warning/Error/Info logs.
+      <div class="sqLogTooltipText">
+        @for (log of m_uiPrtfRunResult.sqLogs; track log) {
+          <p>{{log.message}}</p>
+        }
+      </div>
+    </div>
+    }<br>
+    <!-- Angular only: using Angular template reference #variables like (#yearInput, #monthInput and #dayInput) provides a way to reference DOM elements directly
     within the HTML template without needing to query them using document.getElementById().
     Example: In (change)="onDatePartChange('year', yearInput, calendarInput)", the variable yearInput directly references the HTMLInputElement.
     These variables are scoped to the components template.
     In non Angular environments, we have to rewrite this AngularDateWidget to use the time consuming document.getElementById('myInputId').-->
-  <span title="UTC is used on UI. Assume Time part is the end of the day 23:59 in UTC.">Historical Positions EndTimeUtc:&nbsp;
-    <input #yearInput type="text" class="commonDateInput sqIsoDateInputYYYY" placeholder="YYYY" (change)="onChangeDatePart('year', yearInput, calendarInput, m_histPosEndDateObj)"/>
-    <input #monthInput type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="MM" (change)="onChangeDatePart('month', monthInput, calendarInput, m_histPosEndDateObj)"/>
-    <input #dayInput type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="DD" (change)="onChangeDatePart('day', dayInput, calendarInput, m_histPosEndDateObj)"/>
-    <input #calendarInput type="date" class="commonDateInput sqIsoCalendar" [value]="m_histPosEndDateObj.dateStr" (change)="onChangeDateFromCalendarPicker(calendarInput, yearInput, monthInput, dayInput, m_histPosEndDateObj)"/>
-    <span id="nextOrPrevDateButtonContainer">
-      <button class="nextOrPrevDateBtn" (click)="onClickPosNextOrPrevDate('next')">&#43;</button>
-      <button class="nextOrPrevDateBtn" (click)="onClickPosNextOrPrevDate('prev')">&#45;</button>
-    </span>
-  </span>23:59Z<br><br>
-  <table class="tableCommon">
-    <thead>
-      <tr>
-        <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'sqTicker'}" (click)="onSortingPositionsClicked('sqTicker')">SqTicker</th>
-        <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'name'}" (click)="onSortingPositionsClicked('name')">Name</th>
-        <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'quantity'}" (click)="onSortingPositionsClicked('quantity')">Qty</th>
-        <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'avgPrice'}" (click)="onSortingPositionsClicked('avgPrice')">AvgPrice</th>
-        <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'priorClose'}" (click)="onSortingPositionsClicked('priorClose')">Prior<br>Close</th>
-        <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'estPrice'}" (click)="onSortingPositionsClicked('estPrice')">Price(Cl-Rt)<br>on Date</th>
-        <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'pctChgTod'}" (click)="onSortingPositionsClicked('pctChgTod')">Chg%<br>on Date</th>
-        <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'plTod'}" (click)="onSortingPositionsClicked('plTod')">P&L<br>on Date</th>
-        <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'costBasis'}" (click)="onSortingPositionsClicked('costBasis')">Cost<br>Basis</th>
-        <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'mktVal'}" (click)="onSortingPositionsClicked('mktVal')">MktVal<br>on Date</th>
-        <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'plPctTotal'}" (click)="onSortingPositionsClicked('plPctTotal')">P&L%<br>Total</th>
-        <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'plTotal'}" (click)="onSortingPositionsClicked('plTotal')">P&L<br>Total</th>
-        <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'sharesOutstanding'}" (click)="onSortingPositionsClicked('sharesOutstanding')">Shares<br>Outstanding</th>
-        <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'marketCap'}" (click)="onSortingPositionsClicked('marketCap')">Market<br>Cap</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr *ngFor="let item of m_uiHistPrtfRunResultUntilDate.prtfPosValues">
-        <td>{{item.sqTicker}}</td>
-        <td>{{item.name}}</td>
-        <td>{{item.quantity | number:'1.0-0'}}</td>
-        <td>{{item.avgPrice | number:'1.2-2'}}</td>
-        <td>{{item.priorClose | number:'1.2-2'}}</td>
-        <td>{{item.estPrice | nanToDash}}</td>
-        <td [ngClass]="item.pctChgTod > 0 ? 'positiveVal' : 'negativeVal'">{{item.pctChgTod | percent:'1.2'}}</td>
-        <td>{{item.plTod | number}}</td>
-        <td>{{item.costBasis | number:'1.0-0'}}</td>
-        <td>{{item.mktVal | number:'1.0-0'}}</td>
-        <td [ngClass]="item.plPctTotal > 0 ? 'positiveVal' : 'negativeVal'">{{item.plPctTotal | percent:'1.2'}}</td>
-        <td>{{item.plTotal | number}}</td>
-        <td>{{item.sharesOutstanding | numberToTBMK}}</td>
-        <td>{{item.marketCap | numberToTBMK}}</td>
-      </tr>
-    </tbody>
-  </table>
-</div>
-<div [hidden]="m_activeTab != 'Portfolio Report'">
-  <table id="pfStatsTable">
-    <tr>
-      <td>$PV Start: {{m_uiPrtfRunResult.startPortfolioValue | currency:'USD':'symbol':'1.0'}}</td>
-      <td>$PV Final(PrevClose, non-RT): {{m_uiPrtfRunResult.endPortfolioValue | currency:'USD':'symbol':'1.0'}}</td>
-      <td>Twr-PV Return: {{m_uiPrtfRunResult.totalReturn | number:'1.2-2'}}%</td>
-    </tr>
-    <tr>
-      <td><b>Twr-PV CAGR:</b> {{m_uiPrtfRunResult.cAGR | number:'1.2-2'}}%</td>
-      <td><b>MaxDD:</b> {{m_uiPrtfRunResult.maxDD | number:'1.2-2'}}%</td>
-      <td><b>Sharpe:</b> {{m_uiPrtfRunResult.sharpe | number:'1.2-2'}}</td>
-    </tr>
-    <tr>
-      <td><b>CagrSharpe:</b> {{m_uiPrtfRunResult.cagrSharpe | number:'1.2-2'}}</td>
-      <td>StDev: {{m_uiPrtfRunResult.stDev | number:'1.2-2'}}</td>
-      <td>Max.TradingDays in DD: {{m_uiPrtfRunResult.tradingDays}}</td>
-    </tr>
-  </table>
-  <div id="pfRunResultChrt"></div> <!-- portfolio run result chart  -->
-<div id="chartPanel">
-  <div id="chartToolbar">
-    <label for="chartTypeSelect">Chart Type:</label>
-    <select id="chartTypeSelect" (change)="onChangeChartType($event)">
-      <option value="line">Line</option>
-      <option value="basicCandle">Basic Candle</option>
-      <option value="candleStick">Candle Stick</option>
-    </select>
+    <span title="UTC is used on UI. Assume Time part is the end of the day 23:59 in UTC.">Historical Positions EndTimeUtc:&nbsp;
+      <input #yearInput type="text" class="commonDateInput sqIsoDateInputYYYY" placeholder="YYYY" (change)="onChangeDatePart('year', yearInput, calendarInput, m_histPosEndDateObj)"/>
+      <input #monthInput type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="MM" (change)="onChangeDatePart('month', monthInput, calendarInput, m_histPosEndDateObj)"/>
+      <input #dayInput type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="DD" (change)="onChangeDatePart('day', dayInput, calendarInput, m_histPosEndDateObj)"/>
+      <input #calendarInput type="date" class="commonDateInput sqIsoCalendar" [value]="m_histPosEndDateObj.dateStr" (change)="onChangeDateFromCalendarPicker(calendarInput, yearInput, monthInput, dayInput, m_histPosEndDateObj)"/>
+      <span id="nextOrPrevDateButtonContainer">
+        <button class="nextOrPrevDateBtn" (click)="onClickPosNextOrPrevDate('next')">&#43;</button>
+        <button class="nextOrPrevDateBtn" (click)="onClickPosNextOrPrevDate('prev')">&#45;</button>
+      </span>
+    </span>23:59Z<br><br>
+    <table class="tableCommon">
+      <thead>
+        <tr>
+          <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'sqTicker'}" (click)="onSortingPositionsClicked('sqTicker')">SqTicker</th>
+          <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'name'}" (click)="onSortingPositionsClicked('name')">Name</th>
+          <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'quantity'}" (click)="onSortingPositionsClicked('quantity')">Qty</th>
+          <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'avgPrice'}" (click)="onSortingPositionsClicked('avgPrice')">AvgPrice</th>
+          <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'priorClose'}" (click)="onSortingPositionsClicked('priorClose')">Prior<br>Close</th>
+          <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'estPrice'}" (click)="onSortingPositionsClicked('estPrice')">Price(Cl-Rt)<br>on Date</th>
+          <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'pctChgTod'}" (click)="onSortingPositionsClicked('pctChgTod')">Chg%<br>on Date</th>
+          <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'plTod'}" (click)="onSortingPositionsClicked('plTod')">P&L<br>on Date</th>
+          <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'costBasis'}" (click)="onSortingPositionsClicked('costBasis')">Cost<br>Basis</th>
+          <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'mktVal'}" (click)="onSortingPositionsClicked('mktVal')">MktVal<br>on Date</th>
+          <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'plPctTotal'}" (click)="onSortingPositionsClicked('plPctTotal')">P&L%<br>Total</th>
+          <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'plTotal'}" (click)="onSortingPositionsClicked('plTotal')">P&L<br>Total</th>
+          <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'sharesOutstanding'}" (click)="onSortingPositionsClicked('sharesOutstanding')">Shares<br>Outstanding</th>
+          <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'marketCap'}" (click)="onSortingPositionsClicked('marketCap')">Market<br>Cap</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of m_uiHistPrtfRunResultUntilDate.prtfPosValues; track item) {
+          <tr>
+            <td>{{item.sqTicker}}</td>
+            <td>{{item.name}}</td>
+            <td>{{item.quantity | number:'1.0-0'}}</td>
+            <td>{{item.avgPrice | number:'1.2-2'}}</td>
+            <td>{{item.priorClose | number:'1.2-2'}}</td>
+            <td>{{item.estPrice | nanToDash}}</td>
+            <td [ngClass]="item.pctChgTod > 0 ? 'positiveVal' : 'negativeVal'">{{item.pctChgTod | percent:'1.2'}}</td>
+            <td>{{item.plTod | number}}</td>
+            <td>{{item.costBasis | number:'1.0-0'}}</td>
+            <td>{{item.mktVal | number:'1.0-0'}}</td>
+            <td [ngClass]="item.plPctTotal > 0 ? 'positiveVal' : 'negativeVal'">{{item.plPctTotal | percent:'1.2'}}</td>
+            <td>{{item.plTotal | number}}</td>
+            <td>{{item.sharesOutstanding | numberToTBMK}}</td>
+            <td>{{item.marketCap | numberToTBMK}}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
   </div>
-  <div id="chartContainer"></div>
-</div><br>
-  <table class="tableCommon">
-    <thead>
+  <div [hidden]="m_activeTab != 'Portfolio Report'">
+    <table id="pfStatsTable">
       <tr>
-        <th>DetailedStatistics</th>
-        <th>{{m_portfolio?.name}}</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>last3YearsAnnualized</td>
-        <td [ngClass]="m_detailedStatistics.last3YearsAnnualized > 0 ? 'positiveVal' : (m_detailedStatistics.last3YearsAnnualized < 0 ? 'negativeVal' : 'noReturns')">{{m_detailedStatistics.last3YearsAnnualized | nanToDashPct}}</td>
+        <td>$PV Start: {{m_uiPrtfRunResult.startPortfolioValue | currency:'USD':'symbol':'1.0'}}</td>
+        <td>$PV Final(PrevClose, non-RT): {{m_uiPrtfRunResult.endPortfolioValue | currency:'USD':'symbol':'1.0'}}</td>
+        <td>Twr-PV Return: {{m_uiPrtfRunResult.totalReturn | number:'1.2-2'}}%</td>
       </tr>
       <tr>
-        <td>last5YearsAnnualized</td>
-        <td [ngClass]="m_detailedStatistics.last5YearsAnnualized > 0 ? 'positiveVal' : (m_detailedStatistics.last5YearsAnnualized < 0 ? 'negativeVal' : 'noReturns')">{{m_detailedStatistics.last5YearsAnnualized | nanToDashPct}}</td>
-      </tr>
-      <tr *ngFor="let item of m_detailedStatistics.annualReturns">
-        <td>{{item.year}}</td>
-        <td [ngClass]="item.return > 0 ? 'positiveVal' : (item.return < 0 ? 'negativeVal' : 'noReturns')">{{item.return | nanToDashPct}}</td>
-      </tr>
-    </tbody>
-  </table>
-  <p id="seasonalityText"><b>Seasonality: </b> Displays mean and median monthly returns in order to identify seasonal patterns.</p>
-  <div id="seasonalityChrt"></div>
-  <table class="tableCommon">
-    <thead>
-      <tr>
-        <th>Year</th>
-        <th>Jan</th>
-        <th>Feb</th>
-        <th>Mar</th>
-        <th>Apr</th>
-        <th>May</th>
-        <th>Jun</th>
-        <th>Jul</th>
-        <th>Aug</th>
-        <th>Sep</th>
-        <th>Oct</th>
-        <th>Nov</th>
-        <th>Dec</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>WinRate</td>
-        <td *ngFor="let item of this.m_seasonalityData.monthlySeasonalityWinrate" [ngClass]="item > 0 ? 'positiveVal' : (item < 0 ? 'negativeVal' : 'noReturns')">{{item | nanToDashPct}}</td>
+        <td><b>Twr-PV CAGR:</b> {{m_uiPrtfRunResult.cAGR | number:'1.2-2'}}%</td>
+        <td><b>MaxDD:</b> {{m_uiPrtfRunResult.maxDD | number:'1.2-2'}}%</td>
+        <td><b>Sharpe:</b> {{m_uiPrtfRunResult.sharpe | number:'1.2-2'}}</td>
       </tr>
       <tr>
-        <td>Median</td>
-        <td *ngFor="let item of this.m_seasonalityData.monthlySeasonalityMedian" [ngClass]="item > 0 ? 'positiveVal' : (item < 0 ? 'negativeVal' : 'noReturns')">{{item | nanToDashPct}}</td>
+        <td><b>CagrSharpe:</b> {{m_uiPrtfRunResult.cagrSharpe | number:'1.2-2'}}</td>
+        <td>StDev: {{m_uiPrtfRunResult.stDev | number:'1.2-2'}}</td>
+        <td>Max.TradingDays in DD: {{m_uiPrtfRunResult.tradingDays}}</td>
       </tr>
-      <tr>
-        <td>Mean</td>
-        <td *ngFor="let item of this.m_seasonalityData.monthlySeasonalityAvg" [ngClass]="item > 0 ? 'positiveVal' : (item < 0 ? 'negativeVal' : 'noReturns')">{{item | nanToDashPct}}</td>
-      </tr>
-      <tr>
-        <td>10yAvg</td>
-        <td *ngFor="let item of this.m_seasonalityData.monthlySeasonality10yAvg" [ngClass]="item > 0 ? 'positiveVal' : (item < 0 ? 'negativeVal' : 'noReturns')">{{item | nanToDashPct}}</td>
-      </tr>
-      <tr>
-        <td>5yAvg</td>
-        <td *ngFor="let item of this.m_seasonalityData.monthlySeasonality5yAvg" [ngClass]="item > 0 ? 'positiveVal' : (item < 0 ? 'negativeVal' : 'noReturns')">{{item | nanToDashPct}}</td>
-      </tr>
-      <tr>
-        <td>3yAvg</td>
-        <td *ngFor="let item of this.m_seasonalityData.monthlySeasonality3yAvg" [ngClass]="item > 0 ? 'positiveVal' : (item < 0 ? 'negativeVal' : 'noReturns')">{{item | nanToDashPct}}</td>
-      </tr>
-      <tr *ngFor="let item of this.m_seasonalityData.monthlySeasonality">
-        <td>{{item.year}}</td>
-        <td *ngFor="let retVal of item.returns" [ngClass]="retVal > 0 ? 'positiveVal' : (retVal < 0 ? 'negativeVal' : 'noReturns')">{{retVal | nanToDashPct}}</td>
-      </tr>
-    </tbody>
-  </table>
-</div>
-<div [hidden]="m_activeTab != 'Trades'"><br>
-  <span>
-    <span (click)="toggleTradeSectionVisibility()" class="toggleTradesSection"><span id="toggleSign" [ngStyle]="{'color': m_isEditedTradeSectionVisible ? 'green' : 'red'}">{{m_isEditedTradeSectionVisible ? '&#45;' : '&#43;'}}</span> Edit trades...</span>&nbsp;
-    <button (click)="onClickSelectAllOrDeselectAll(true)" class="btnCommon" [disabled]="m_trades.length == 0">Select All</button>&nbsp;
-    <button (click)="onClickSelectAllOrDeselectAll(false)" class="btnCommon" [disabled]="m_trades.length == 0">DeSelect All</button>&nbsp;
-    <button (click)="onClickCopyToClipboard()" class="btnCommon" [disabled]="m_trades.length == 0">Copy to Clipboard (all/selected)</button>&nbsp;
-    <button disabled class="btnCommon">Create from Clipboard</button>&nbsp;
-  </span><br>
-  <div id="tradesSection" *ngIf="m_isEditedTradeSectionVisible">
-    <div id="tradesContainer">
-      <span class="tradesCommon">
-        <ng-container >
-          <svg id="saveIcon" version="1.0" xmlns="http://www.w3.org/2000/svg" width="64" height="18" viewBox="0 0 64 64" preserveAspectRatio="xMidYMid meet">
-              <g transform="translate(0.0,64) scale(0.1,-0.1)" [ngStyle]="{'fill': m_isEditedTradeDirty ? '#EE4B2B' : '#0096FF'}" stroke="none">
+    </table>
+    <div id="pfRunResultChrt"></div> <!-- portfolio run result chart  -->
+    <div id="chartPanel">
+      <div id="chartToolbar">
+        <label for="chartTypeSelect">Chart Type:</label>
+        <select id="chartTypeSelect" (change)="onChangeChartType($event)">
+          <option value="line">Line</option>
+          <option value="basicCandle">Basic Candle</option>
+          <option value="candleStick">Candle Stick</option>
+        </select>
+      </div>
+      <div id="chartContainer"></div>
+    </div><br>
+    <table class="tableCommon">
+      <thead>
+        <tr>
+          <th>DetailedStatistics</th>
+          <th>{{m_portfolio?.name}}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>last3YearsAnnualized</td>
+          <td [ngClass]="m_detailedStatistics.last3YearsAnnualized > 0 ? 'positiveVal' : (m_detailedStatistics.last3YearsAnnualized < 0 ? 'negativeVal' : 'noReturns')">{{m_detailedStatistics.last3YearsAnnualized | nanToDashPct}}</td>
+        </tr>
+        <tr>
+          <td>last5YearsAnnualized</td>
+          <td [ngClass]="m_detailedStatistics.last5YearsAnnualized > 0 ? 'positiveVal' : (m_detailedStatistics.last5YearsAnnualized < 0 ? 'negativeVal' : 'noReturns')">{{m_detailedStatistics.last5YearsAnnualized | nanToDashPct}}</td>
+        </tr>
+        @for (item of m_detailedStatistics.annualReturns; track item) {
+          <tr>
+            <td>{{item.year}}</td>
+            <td [ngClass]="item.return > 0 ? 'positiveVal' : (item.return < 0 ? 'negativeVal' : 'noReturns')">{{item.return | nanToDashPct}}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+    <p id="seasonalityText"><b>Seasonality: </b> Displays mean and median monthly returns in order to identify seasonal patterns.</p>
+    <div id="seasonalityChrt"></div>
+    <table class="tableCommon">
+      <thead>
+        <tr>
+          <th>Year</th>
+          <th>Jan</th>
+          <th>Feb</th>
+          <th>Mar</th>
+          <th>Apr</th>
+          <th>May</th>
+          <th>Jun</th>
+          <th>Jul</th>
+          <th>Aug</th>
+          <th>Sep</th>
+          <th>Oct</th>
+          <th>Nov</th>
+          <th>Dec</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>WinRate</td>
+          @for (item of this.m_seasonalityData.monthlySeasonalityWinrate; track item) {
+            <td [ngClass]="item > 0 ? 'positiveVal' : (item < 0 ? 'negativeVal' : 'noReturns')">{{item | nanToDashPct}}</td>
+          }
+        </tr>
+        <tr>
+          <td>Median</td>
+          @for (item of this.m_seasonalityData.monthlySeasonalityMedian; track item) {
+            <td [ngClass]="item > 0 ? 'positiveVal' : (item < 0 ? 'negativeVal' : 'noReturns')">{{item | nanToDashPct}}</td>
+          }
+        </tr>
+        <tr>
+          <td>Mean</td>
+          @for (item of this.m_seasonalityData.monthlySeasonalityAvg; track item) {
+            <td [ngClass]="item > 0 ? 'positiveVal' : (item < 0 ? 'negativeVal' : 'noReturns')">{{item | nanToDashPct}}</td>
+          }
+        </tr>
+        <tr>
+          <td>10yAvg</td>
+          @for (item of this.m_seasonalityData.monthlySeasonality10yAvg; track item) {
+            <td [ngClass]="item > 0 ? 'positiveVal' : (item < 0 ? 'negativeVal' : 'noReturns')">{{item | nanToDashPct}}</td>
+          }
+        </tr>
+        <tr>
+          <td>5yAvg</td>
+          @for (item of this.m_seasonalityData.monthlySeasonality5yAvg; track item) {
+            <td [ngClass]="item > 0 ? 'positiveVal' : (item < 0 ? 'negativeVal' : 'noReturns')">{{item | nanToDashPct}}</td>
+          }
+        </tr>
+        <tr>
+          <td>3yAvg</td>
+          @for (item of this.m_seasonalityData.monthlySeasonality3yAvg; track item) {
+            <td [ngClass]="item > 0 ? 'positiveVal' : (item < 0 ? 'negativeVal' : 'noReturns')">{{item | nanToDashPct}}</td>
+          }
+        </tr>
+        @for (item of this.m_seasonalityData.monthlySeasonality; track item) {
+          <tr>
+            <td>{{item.year}}</td>
+            @for (retVal of item.returns; track retVal) {
+              <td [ngClass]="retVal > 0 ? 'positiveVal' : (retVal < 0 ? 'negativeVal' : 'noReturns')">{{retVal | nanToDashPct}}</td>
+            }
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  <div [hidden]="m_activeTab != 'Trades'"><br>
+    <span>
+      <span (click)="toggleTradeSectionVisibility()" class="toggleTradesSection"><span id="toggleSign" [ngStyle]="{'color': m_isEditedTradeSectionVisible ? 'green' : 'red'}">{{m_isEditedTradeSectionVisible ? '&#45;' : '&#43;'}}</span> Edit trades...</span>&nbsp;
+      <button (click)="onClickSelectAllOrDeselectAll(true)" class="btnCommon" [disabled]="m_trades.length == 0">Select All</button>&nbsp;
+      <button (click)="onClickSelectAllOrDeselectAll(false)" class="btnCommon" [disabled]="m_trades.length == 0">DeSelect All</button>&nbsp;
+      <button (click)="onClickCopyToClipboard()" class="btnCommon" [disabled]="m_trades.length == 0">Copy to Clipboard (all/selected)</button>&nbsp;
+      <button disabled class="btnCommon">Create from Clipboard</button>&nbsp;
+    </span><br>
+    @if (m_isEditedTradeSectionVisible) {
+      <div id="tradesSection">
+        <div id="tradesContainer">
+          <span class="tradesCommon">
+            <ng-container >
+              <svg id="saveIcon" version="1.0" xmlns="http://www.w3.org/2000/svg" width="64" height="18" viewBox="0 0 64 64" preserveAspectRatio="xMidYMid meet">
+                <g transform="translate(0.0,64) scale(0.1,-0.1)" [ngStyle]="{'fill': m_isEditedTradeDirty ? '#EE4B2B' : '#0096FF'}" stroke="none">
                   <path d="M20 620 c-19 -19 -20 -33 -20 -300 0 -267 1 -281 20 -300 19 -19 33 -20 300 -20 267 0 281 1 300 20 19 19 20 33 20 258 l0 238 -63 62 -63 62 -237 0 c-224 0 -238 -1 -257 -20z m100 -107 c0 -136 -5 -133 182 -133 84 0 158 5 169 10 17 10 19 22 19 115 0 58 4 105 8 105 4 0 31 -24 60 -53 l52 -53 -2
                           -235 -3 -234 -27 -3 -28 -3 0 145 0 146 -230 0 -230 0 0 -146 0 -145 -27 3 -28 3 -3 275 c-1 151 0 280 3 287 2 8 21 13 45 13 l40 0 0 -97z m350 10 c0 -49 -4 -93 -8 -100 -12 -19 -301 -20 -313 -2 -5 8 -9 53 -9 102 l0 87 165 0 165 0 0 -87z m60 -363 l0 -130 -210 0 -210 0 0 130 0 130 210 0 210 0 0 -130z"/>
-                  <path d="M350 510 l0 -70 40 0 40 0 0 70 0 70 -40 0 -40 0 0 -70z m60 0 c0 -29 -4 -40 -15 -40 -11 0 -15 11 -15 40 0 29 4 40 15 40 11 0 15 -11 15 -40z"/>
-              </g>
-          </svg>
-        </ng-container>
-      <!-- Add Transaction and clear fields will be enabled once the feature is ready -->
-      <button (click)="onClickInsertOrUpdateTrade(true)">Insert (new)</button>&nbsp;
-      <button (click)="onClickInsertOrUpdateTrade(false)" [disabled]="m_editedTrade.id == -1">Update (existing)</button>&nbsp;
-      <button (click)="onClickDeleteTrade()" [disabled]="m_editedTrade.id == -1">Delete</button>&nbsp;
-      <button (click)="onClickClearFields()">Clear Fields</button>&nbsp;<br>
-        <input name="assetType" type="radio" (input)="onInputAssetType(m_enumAssetType.CurrencyCash)" [checked]="m_editedTrade.assetType == m_enumAssetType.CurrencyCash">Cash &nbsp;
-        <input name="assetType" type="radio" (input)="onInputAssetType(m_enumAssetType.Stock)" [checked]="m_editedTrade.assetType == m_enumAssetType.Stock">Stock &nbsp;
-        <input name="assetType" type="radio" (input)="onInputAssetType(m_enumAssetType.Option)" [checked]="m_editedTrade.assetType == m_enumAssetType.Option">Option &nbsp;
-        <input name="assetType" type="radio" (input)="onInputAssetType(m_enumAssetType.Futures)" [checked]="m_editedTrade.assetType == m_enumAssetType.Futures">Futures &nbsp;
-        TradeId: <input class="inputTextboxWidth" type="number" [value]="m_editedTrade.id" (input)="onInputTradeId($event)"><br>
-        TradeAction:
-          <div class="selectionDropDown">
-            <input class="highlightInputDropDown" type="text" [value]="m_enumTradeAction[m_editedTrade.action]" (input)="onTradeInputChange()" disabled>
-            <div class="listDropDown">
-              <ng-container *ngFor="let action of m_enumTradeAction | keyvalue">
-                <option class="optionDropDown" *ngIf="(action.value | sqTypeOf) === 'string'" (click)="onTradeActionSelectionClicked(action.value)">{{ action.value }}</option>
+                    <path d="M350 510 l0 -70 40 0 40 0 0 70 0 70 -40 0 -40 0 0 -70z m60 0 c0 -29 -4 -40 -15 -40 -11 0 -15 11 -15 40 0 29 4 40 15 40 11 0 15 -11 15 -40z"/>
+                  </g>
+                </svg>
               </ng-container>
-          </div>
-        </div>&nbsp;
-        <!-- The user input for options and futures selection has been disabled because the value is determined through concatenation using the underlying symbol, expiration date, put/call designation, and strike price for options, while for futures, it relies on the underlying symbol, expiration date with the addition of "+M," and the multiplier -->
-        Symbol: <input type="text" [value]="m_editedTrade.symbol" (input)="onInputSymbol($event)" (blur)="updateEditedTradePriceFromPrHist()" [disabled]="(m_editedTrade.assetType == m_enumAssetType.Option || m_editedTrade.assetType == m_enumAssetType.Futures)"><br>
-        <div class="fixedHeightDiv" [hidden]="(m_editedTrade.assetType != m_enumAssetType.Option) && (m_editedTrade.assetType != m_enumAssetType.Futures)">
-          UnderlyingSym: <input class="inputTextboxWidth" type="text" [value]="m_editedTrade.underlyingSymbol" (input)="onInputUnderlyingSymbol($event)">
-          <ng-container *ngIf="m_editedTrade.assetType == m_enumAssetType.Option">
-            <input name="optionType" type="radio" (input)="onInputOptionType('P')">Put
-            <input name="optionType" type="radio" (input)="onInputOptionType('C')">Call &nbsp;
-            Expiry: <input type="date" [value]="m_editedTradeOptionFields.dateExpiry" (input)="onInputOptionExpiry($event)">
-            Strike: <input class="inputTextboxWidth" type="number" [value]="m_editedTradeOptionFields.strikePrice" (input)="onInputOptionStrikePrice($event)"><br>
-          </ng-container>
-          <ng-container *ngIf="m_editedTrade.assetType == m_enumAssetType.Futures">
-            Expiry: <input class="inputTextboxWidth" type="date" [value]="m_editedTradeFutureFields.dateExpiry" (input)="onInputFutureExpiry($event)">
-            Multiplier: <input class="inputTextboxWidth" type="number" [value]="m_editedTradeFutureFields.multiplier" (input)="onInputFutureMultiplier($event)"><br>
-          </ng-container>
-        </div>
-      </span>
-      <span class="tradesCommon">
-        <!-- The (change) event is triggered once the input has completed changing, while the (input) event triggers each time the value is modified. see: https://javascript.info/events-change-input -->
-        <div id="dateInputContainer">Date:&nbsp;
-          <input type="date" [value]="m_editedTrade.time | date : 'yyyy-MM-dd'" (change)="onDateChange($event)">
-          <div id="nextOrPrevDateButtonContainer">
-              <button class="nextOrPrevDateBtn" (click)="onClickNextOrPrevDate('next')">&#43;</button>
-              <button class="nextOrPrevDateBtn" (click)="onClickNextOrPrevDate('prev')">&#45;</button>
-          </div>
-        </div>
-        <!-- SetOpen and SetClose are directly linked with TradeAction(Buy/Sell), To get proper setOpen and setClose timings please select tradeAction first -->
-        UTC Time: <button (click)="onClickSetOpenOrClose('open')">setOpen</button>&nbsp;
+              <!-- Add Transaction and clear fields will be enabled once the feature is ready -->
+              <button (click)="onClickInsertOrUpdateTrade(true)">Insert (new)</button>&nbsp;
+              <button (click)="onClickInsertOrUpdateTrade(false)" [disabled]="m_editedTrade.id == -1">Update (existing)</button>&nbsp;
+              <button (click)="onClickDeleteTrade()" [disabled]="m_editedTrade.id == -1">Delete</button>&nbsp;
+              <button (click)="onClickClearFields()">Clear Fields</button>&nbsp;<br>
+              <input name="assetType" type="radio" (input)="onInputAssetType(m_enumAssetType.CurrencyCash)" [checked]="m_editedTrade.assetType == m_enumAssetType.CurrencyCash">Cash &nbsp;
+              <input name="assetType" type="radio" (input)="onInputAssetType(m_enumAssetType.Stock)" [checked]="m_editedTrade.assetType == m_enumAssetType.Stock">Stock &nbsp;
+              <input name="assetType" type="radio" (input)="onInputAssetType(m_enumAssetType.Option)" [checked]="m_editedTrade.assetType == m_enumAssetType.Option">Option &nbsp;
+              <input name="assetType" type="radio" (input)="onInputAssetType(m_enumAssetType.Futures)" [checked]="m_editedTrade.assetType == m_enumAssetType.Futures">Futures &nbsp;
+              TradeId: <input class="inputTextboxWidth" type="number" [value]="m_editedTrade.id" (input)="onInputTradeId($event)"><br>
+              TradeAction:
+              <div class="selectionDropDown">
+                <input class="highlightInputDropDown" type="text" [value]="m_enumTradeAction[m_editedTrade.action]" (input)="onTradeInputChange()" disabled>
+                <div class="listDropDown">
+                  @for (action of m_enumTradeAction | keyvalue; track action) {
+                    @if ((action.value | sqTypeOf) === 'string') {
+                      <option class="optionDropDown" (click)="onTradeActionSelectionClicked(action.value)">{{ action.value }}</option>
+                    }
+                  }
+                </div>
+              </div>&nbsp;
+              <!-- The user input for options and futures selection has been disabled because the value is determined through concatenation using the underlying symbol, expiration date, put/call designation, and strike price for options, while for futures, it relies on the underlying symbol, expiration date with the addition of "+M," and the multiplier -->
+              Symbol: <input type="text" [value]="m_editedTrade.symbol" (input)="onInputSymbol($event)" (blur)="updateEditedTradePriceFromPrHist()" [disabled]="(m_editedTrade.assetType == m_enumAssetType.Option || m_editedTrade.assetType == m_enumAssetType.Futures)"><br>
+              <div class="fixedHeightDiv" [hidden]="(m_editedTrade.assetType != m_enumAssetType.Option) && (m_editedTrade.assetType != m_enumAssetType.Futures)">
+                UnderlyingSym: <input class="inputTextboxWidth" type="text" [value]="m_editedTrade.underlyingSymbol" (input)="onInputUnderlyingSymbol($event)">
+                @if (m_editedTrade.assetType == m_enumAssetType.Option) {
+                  <input name="optionType" type="radio" (input)="onInputOptionType('P')">Put
+                  <input name="optionType" type="radio" (input)="onInputOptionType('C')">Call &nbsp;
+                  Expiry: <input type="date" [value]="m_editedTradeOptionFields.dateExpiry" (input)="onInputOptionExpiry($event)">
+                  Strike: <input class="inputTextboxWidth" type="number" [value]="m_editedTradeOptionFields.strikePrice" (input)="onInputOptionStrikePrice($event)"><br>
+                }
+                @if (m_editedTrade.assetType == m_enumAssetType.Futures) {
+                  Expiry: <input class="inputTextboxWidth" type="date" [value]="m_editedTradeFutureFields.dateExpiry" (input)="onInputFutureExpiry($event)">
+                  Multiplier: <input class="inputTextboxWidth" type="number" [value]="m_editedTradeFutureFields.multiplier" (input)="onInputFutureMultiplier($event)"><br>
+                }
+              </div>
+            </span>
+            <span class="tradesCommon">
+              <!-- The (change) event is triggered once the input has completed changing, while the (input) event triggers each time the value is modified. see: https://javascript.info/events-change-input -->
+              <div id="dateInputContainer">Date:&nbsp;
+                <input type="date" [value]="m_editedTrade.time | date : 'yyyy-MM-dd'" (change)="onDateChange($event)">
+                <div id="nextOrPrevDateButtonContainer">
+                  <button class="nextOrPrevDateBtn" (click)="onClickNextOrPrevDate('next')">&#43;</button>
+                  <button class="nextOrPrevDateBtn" (click)="onClickNextOrPrevDate('prev')">&#45;</button>
+                </div>
+              </div>
+              <!-- SetOpen and SetClose are directly linked with TradeAction(Buy/Sell), To get proper setOpen and setClose timings please select tradeAction first -->
+              UTC Time: <button (click)="onClickSetOpenOrClose('open')">setOpen</button>&nbsp;
               <input type="time" [value]="m_editedTrade.time | date : 'HH:mm'" (change)="onTimeChange($event)">&nbsp;
               <button (click)="onClickSetOpenOrClose('close')">setClose</button><br>
-        Price: <input class="nonUpAndDownArrowsInput inputTextboxWidth" type="number" [value]="m_editedTrade.price | nanToDash" (input)="onInputPrice($event)">&nbsp;
-        <div class="selectionDropDown">
-          <input class="highlightInputDropDown" type="text" placeholder="Enter CurrencyId" [value]="m_enumCurrencyId[m_editedTrade.currency]" (input)="onTradeInputChange()" disabled>
-          <div class="listDropDown">
-            <ng-container *ngFor="let action of m_enumCurrencyId | keyvalue">
-              <option class="optionDropDown" *ngIf="(action.value | sqTypeOf) === 'string'" (click)="onCurrencyTypeSelectionClicked(action.value)">{{ action.value }}</option>
-            </ng-container>
+              Price: <input class="nonUpAndDownArrowsInput inputTextboxWidth" type="number" [value]="m_editedTrade.price | nanToDash" (input)="onInputPrice($event)">&nbsp;
+              <div class="selectionDropDown">
+                <input class="highlightInputDropDown" type="text" placeholder="Enter CurrencyId" [value]="m_enumCurrencyId[m_editedTrade.currency]" (input)="onTradeInputChange()" disabled>
+                <div class="listDropDown">
+                  @for (action of m_enumCurrencyId | keyvalue; track action) {
+                    @if ((action.value | sqTypeOf) === 'string') {
+                      <option class="optionDropDown" (click)="onCurrencyTypeSelectionClicked(action.value)">{{ action.value }}</option>
+                    }
+                  }
+                </div>
+              </div><br>
+              Quantity: <input class="inputTextboxWidth" type="number" [value]="m_editedTrade.quantity | nanToDash" (input)="onInputQuantity($event)">&nbsp;
+              <!-- This is a special case where we need both the input and blur events.
+              Step 1: in OnInput event, we have to calculate only the Quantity as a whole number. E.g. Price is 9.9, and user types 1000.0 as TotalValue, we have to update Quantity to 101.
+              Step 2: in OnBlur event, we have to recalculate this TotalValue itself, based on the last Quantity. So, 9.9 * 101 = 999.9. So, user typed "1000.0", but when the control loses the focus, its value will be recalculated as "999.9". -->
+              TotalValue: <input class="nonUpAndDownArrowsInput inputTextboxWidth" type="number" [value]="m_editedTradeTotalValue" (input)="onInputTotalValue($event)" (blur)="onBlurTotalValue()"><br> <!-- the blur event gets fired when the focus is lost-->
+            </span>
           </div>
-        </div><br>
-        Quantity: <input class="inputTextboxWidth" type="number" [value]="m_editedTrade.quantity | nanToDash" (input)="onInputQuantity($event)">&nbsp;
-        <!-- This is a special case where we need both the input and blur events.
-        Step 1: in OnInput event, we have to calculate only the Quantity as a whole number. E.g. Price is 9.9, and user types 1000.0 as TotalValue, we have to update Quantity to 101.
-        Step 2: in OnBlur event, we have to recalculate this TotalValue itself, based on the last Quantity. So, 9.9 * 101 = 999.9. So, user typed "1000.0", but when the control loses the focus, its value will be recalculated as "999.9". -->
-        TotalValue: <input class="nonUpAndDownArrowsInput inputTextboxWidth" type="number" [value]="m_editedTradeTotalValue" (input)="onInputTotalValue($event)" (blur)="onBlurTotalValue()"><br> <!-- the blur event gets fired when the focus is lost-->
-      </span>
-    </div>
-  </div>&nbsp;
-  <table class="tableCommon">
-    <thead>
-      <tr>
-        <th [ngClass]="{'activeSortTableHeader':m_tradesTabSortColumn == 'action'}" (click)="onSortingTradesClicked('action')">TradeAction</th>
-        <th [ngClass]="{'activeSortTableHeader':m_tradesTabSortColumn == 'assetType'}" (click)="onSortingTradesClicked('assetType')">AssetType</th>
-        <th [ngClass]="{'activeSortTableHeader':m_tradesTabSortColumn == 'underlyingSymbol'}" (click)="onSortingTradesClicked('underlyingSymbol')">Symbol</th>
-        <th [ngClass]="{'activeSortTableHeader':m_tradesTabSortColumn == 'quantity'}" (click)="onSortingTradesClicked('quantity')">Qty</th>
-        <th [ngClass]="{'activeSortTableHeader':m_tradesTabSortColumn == 'price'}" (click)="onSortingTradesClicked('price')">Price</th>
-        <th [ngClass]="{'activeSortTableHeader':m_tradesTabSortColumn == 'currency'}" (click)="onSortingTradesClicked('currency')">Currency</th>
-        <th>MktVal</th>
-        <th [ngClass]="{'activeSortTableHeader':m_tradesTabSortColumn == 'time'}" (click)="onSortingTradesClicked('time')">Date</th>
-        <th [ngClass]="{'activeSortTableHeader':m_tradesTabSortColumn == 'exchangeId'}" (click)="onSortingTradesClicked('exchangeId')">ExchangeId</th>
-      </tr>
-    </thead>
-    <tbody *ngFor="let item of m_trades">
-      <tr (click)="onClickSelectedTradeItem(item, $event)" [ngClass]="{'tradedRowSelected': item.isSelected}">
-        <td>{{m_enumTradeAction[item.action]}}</td>
-        <td>{{m_enumAssetType[item.assetType]}}</td>
-        <td>{{item.underlyingSymbol}}</td>
-        <td>{{item.quantity}}</td>
-        <td>{{item.price | number:'1.2-2'}}</td>
-        <td>{{m_enumCurrencyId[item.currency] == 'Unknown' ? 'USD' : m_enumCurrencyId[item.currency]}}</td> <!-- Displaying the currencyId as 'USD' in the UI, while 'USD' is stored as 'unknown' in the database. -->
-        <td>{{item.quantity * item.price | number:'1.0-0'}}</td>
-        <td>{{item.time | date : 'yyyy-MM-dd HH:mm'}}</td>
-        <td>{{m_enumExchangeId[item.exchangeId]}}</td>
-      </tr>
-    </tbody>
-  </table>
-</div>
-<div [hidden]="m_activeTab != 'Portfolio Performance Accumulator'">
-  <p>Portfolio Performance Accumulator</p>
-</div>
-<div [hidden]="m_activeTab != 'LegacyDbTrades'"><br>
-  <textarea id="inputTradesStr"></textarea><br>
+        </div>
+        }&nbsp;
+        <table class="tableCommon">
+          <thead>
+            <tr>
+              <th [ngClass]="{'activeSortTableHeader':m_tradesTabSortColumn == 'action'}" (click)="onSortingTradesClicked('action')">TradeAction</th>
+              <th [ngClass]="{'activeSortTableHeader':m_tradesTabSortColumn == 'assetType'}" (click)="onSortingTradesClicked('assetType')">AssetType</th>
+              <th [ngClass]="{'activeSortTableHeader':m_tradesTabSortColumn == 'underlyingSymbol'}" (click)="onSortingTradesClicked('underlyingSymbol')">Symbol</th>
+              <th [ngClass]="{'activeSortTableHeader':m_tradesTabSortColumn == 'quantity'}" (click)="onSortingTradesClicked('quantity')">Qty</th>
+              <th [ngClass]="{'activeSortTableHeader':m_tradesTabSortColumn == 'price'}" (click)="onSortingTradesClicked('price')">Price</th>
+              <th [ngClass]="{'activeSortTableHeader':m_tradesTabSortColumn == 'currency'}" (click)="onSortingTradesClicked('currency')">Currency</th>
+              <th>MktVal</th>
+              <th [ngClass]="{'activeSortTableHeader':m_tradesTabSortColumn == 'time'}" (click)="onSortingTradesClicked('time')">Date</th>
+              <th [ngClass]="{'activeSortTableHeader':m_tradesTabSortColumn == 'exchangeId'}" (click)="onSortingTradesClicked('exchangeId')">ExchangeId</th>
+            </tr>
+          </thead>
+          @for (item of m_trades; track item) {
+            <tbody>
+              <tr (click)="onClickSelectedTradeItem(item, $event)" [ngClass]="{'tradedRowSelected': item.isSelected}">
+                <td>{{m_enumTradeAction[item.action]}}</td>
+                <td>{{m_enumAssetType[item.assetType]}}</td>
+                <td>{{item.underlyingSymbol}}</td>
+                <td>{{item.quantity}}</td>
+                <td>{{item.price | number:'1.2-2'}}</td>
+                <td>{{m_enumCurrencyId[item.currency] == 'Unknown' ? 'USD' : m_enumCurrencyId[item.currency]}}</td> <!-- Displaying the currencyId as 'USD' in the UI, while 'USD' is stored as 'unknown' in the database. -->
+                <td>{{item.quantity * item.price | number:'1.0-0'}}</td>
+                <td>{{item.time | date : 'yyyy-MM-dd HH:mm'}}</td>
+                <td>{{m_enumExchangeId[item.exchangeId]}}</td>
+              </tr>
+            </tbody>
+          }
+        </table>
+      </div>
+      <div [hidden]="m_activeTab != 'Portfolio Performance Accumulator'">
+        <p>Portfolio Performance Accumulator</p>
+      </div>
+      <div [hidden]="m_activeTab != 'LegacyDbTrades'"><br>
+        <textarea id="inputTradesStr"></textarea><br>
   <label title="Default: Today in UTC. The Dates from data rows are not complete. Year is always missing.
 If trades executed today, then Month and Day are also missing.
 CompletionDate parts (year, month, day) are used in this case to create the final UTC trade date. By default it is the UtcNow time converted to a date.
 If the default is somehow wrong, the user can change it.">CompletionDate (in UTC): <input type="date" [value]="m_legacyDbInsCompletionDateUtcStr" (input)="onInputLegacyDbDateInsertion($event)"></label>&nbsp;
-  <button (click)="onClickConvertTradesStrToTradesJs()">Convert</button>
-  <div *ngIf="m_legacyDbInsTradesSyntaxCheckResult != null" [ngStyle]="{color: m_legacyDbInsTradesSyntaxCheckResult.includes('Error') ? '#FF0000' : '#008000'}">{{m_legacyDbInsTradesSyntaxCheckResult}}</div>
-  <table class="tableCommon" *ngIf="this.m_legacyDbInsTrades.length != 0">
-    <thead>
-      <tr>
-        <th>S.No</th>
-        <th>TradeAction</th>
-        <th>AssetType</th>
-        <th>Symbol</th>
-        <th>Qty</th>
-        <th>Price</th>
-        <th>Currency</th>
-        <th>MktVal</th>
-        <th>Date</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr *ngFor="let item of this.m_legacyDbInsTrades let i = index">
-        <td>{{i + 1}}</td>
-        <td>{{m_enumTradeAction[item.action]}}</td>
-        <td>{{m_enumAssetType[item.assetType]}}</td>
-        <td>{{item.symbol}}</td>
-        <td>{{item.quantity}}</td>
-        <td>{{m_enumCurrencyId[item.currency] == 'USD' ? '$' : ''}}{{item.price | number:'1.2-2'}}</td>
-        <td>{{m_enumCurrencyId[item.currency] == 'Unknown' ? 'USD' : m_enumCurrencyId[item.currency]}}</td> <!-- Displaying the currencyId as 'USD' in the UI, while 'USD' is stored as 'unknown' in the database. -->
-        <td class="downplayedGreyedText">{{m_enumCurrencyId[item.currency] == 'USD' ? '$' : ''}}{{item.quantity * item.price | number:'1.0-0'}}</td>
-        <td>{{item.time | date : 'yyyy-MM-dd HH:mm'}}</td>
-      </tr>
-    </tbody>
-  </table><br>
-  <button *ngIf="m_legacyDbInsTradesSyntaxCheckResult == 'Syntax OK'" (click)="onClickTestAndInsertLegacyDbTrades()">TestAndInsertLegacyDbTrades</button><br><br>
-  <div *ngIf="m_legacyDbTradesTestAndInsertResult" [ngStyle]="{color: m_legacyDbTradesTestAndInsertResult.includes('Error') ? '#FF0000' : '#008000'}">LegacyDbTrades Test and Insert: {{m_legacyDbTradesTestAndInsertResult}}</div><br>
-  <table class="tableCommon" *ngIf="this.m_legacyDbTrades.length != 0">
-    <thead>
-      <tr>
-        <th>TradeAction</th>
-        <th>AssetType</th>
-        <th>Symbol</th>
-        <th>Qty</th>
-        <th>Price</th>
-        <th>Currency</th>
-        <th>MktVal</th>
-        <th (click)="onSortingLegacyDbTradesClicked('time')">Date</th>
-      </tr>
-    </thead>
-    <tbody *ngFor="let item of m_legacyDbTrades">
-      <tr>
-        <td>{{m_enumTradeAction[item.action]}}</td>
-        <td>{{m_enumAssetType[item.assetType]}}</td>
-        <td>{{item.symbol}}</td>
-        <td>{{item.quantity}}</td>
-        <td>{{m_enumCurrencyId[item.currency] == 'Unknown' ? '$' : ''}}{{item.price | number:'1.2-2'}}</td>
-        <td>{{m_enumCurrencyId[item.currency] == 'Unknown' ? 'USD' : m_enumCurrencyId[item.currency]}}</td> <!-- Displaying the currencyId as 'USD' in the UI, while 'USD' is stored as 'unknown' in the database. -->
-        <td class="downplayedGreyedText">{{m_enumCurrencyId[item.currency] == 'Unknown' ? '$' : ''}}{{item.quantity * item.price | number:'1.0-0'}}</td>
-        <td [ngClass]="{'highlightLatestTrades': (item.time | date:'yyyy-MM-dd') == (m_legacyDbTradesMaxDate | date:'yyyy-MM-dd')}">{{item.time | date : 'yyyy-MM-dd HH:mm'}}</td>
-      </tr>
-    </tbody>
-  </table>
-</div>
-<div id="copyToClipboardDialog" *ngIf="m_isCopyToClipboardDialogVisible">All/Selected rows copied To Clipboard
-  <div id="copyToClipboardDialogClosetBtn">
-    <button type="button" (click)="onCopyDialogCloseClicked()">Close</button>
-  </div>
-</div>
+          <button (click)="onClickConvertTradesStrToTradesJs()">Convert</button>
+          @if (m_legacyDbInsTradesSyntaxCheckResult != null) {
+            <div [ngStyle]="{color: m_legacyDbInsTradesSyntaxCheckResult.includes('Error') ? '#FF0000' : '#008000'}">{{m_legacyDbInsTradesSyntaxCheckResult}}</div>
+          }
+          @if (this.m_legacyDbInsTrades.length != 0) {
+            <table class="tableCommon">
+              <thead>
+                <tr>
+                  <th>S.No</th>
+                  <th>TradeAction</th>
+                  <th>AssetType</th>
+                  <th>Symbol</th>
+                  <th>Qty</th>
+                  <th>Price</th>
+                  <th>Currency</th>
+                  <th>MktVal</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of this.m_legacyDbInsTrades; track item; let i = $index) {
+                  <tr>
+                    <td>{{i + 1}}</td>
+                    <td>{{m_enumTradeAction[item.action]}}</td>
+                    <td>{{m_enumAssetType[item.assetType]}}</td>
+                    <td>{{item.symbol}}</td>
+                    <td>{{item.quantity}}</td>
+                    <td>{{m_enumCurrencyId[item.currency] == 'USD' ? '$' : ''}}{{item.price | number:'1.2-2'}}</td>
+                    <td>{{m_enumCurrencyId[item.currency] == 'Unknown' ? 'USD' : m_enumCurrencyId[item.currency]}}</td> <!-- Displaying the currencyId as 'USD' in the UI, while 'USD' is stored as 'unknown' in the database. -->
+                    <td class="downplayedGreyedText">{{m_enumCurrencyId[item.currency] == 'USD' ? '$' : ''}}{{item.quantity * item.price | number:'1.0-0'}}</td>
+                    <td>{{item.time | date : 'yyyy-MM-dd HH:mm'}}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+            }<br>
+            @if (m_legacyDbInsTradesSyntaxCheckResult == 'Syntax OK') {
+              <button (click)="onClickTestAndInsertLegacyDbTrades()">TestAndInsertLegacyDbTrades</button>
+              }<br><br>
+              @if (m_legacyDbTradesTestAndInsertResult) {
+                <div [ngStyle]="{color: m_legacyDbTradesTestAndInsertResult.includes('Error') ? '#FF0000' : '#008000'}">LegacyDbTrades Test and Insert: {{m_legacyDbTradesTestAndInsertResult}}</div>
+                }<br>
+                @if (this.m_legacyDbTrades.length != 0) {
+                  <table class="tableCommon">
+                    <thead>
+                      <tr>
+                        <th>TradeAction</th>
+                        <th>AssetType</th>
+                        <th>Symbol</th>
+                        <th>Qty</th>
+                        <th>Price</th>
+                        <th>Currency</th>
+                        <th>MktVal</th>
+                        <th (click)="onSortingLegacyDbTradesClicked('time')">Date</th>
+                      </tr>
+                    </thead>
+                    @for (item of m_legacyDbTrades; track item) {
+                      <tbody>
+                        <tr>
+                          <td>{{m_enumTradeAction[item.action]}}</td>
+                          <td>{{m_enumAssetType[item.assetType]}}</td>
+                          <td>{{item.symbol}}</td>
+                          <td>{{item.quantity}}</td>
+                          <td>{{m_enumCurrencyId[item.currency] == 'Unknown' ? '$' : ''}}{{item.price | number:'1.2-2'}}</td>
+                          <td>{{m_enumCurrencyId[item.currency] == 'Unknown' ? 'USD' : m_enumCurrencyId[item.currency]}}</td> <!-- Displaying the currencyId as 'USD' in the UI, while 'USD' is stored as 'unknown' in the database. -->
+                          <td class="downplayedGreyedText">{{m_enumCurrencyId[item.currency] == 'Unknown' ? '$' : ''}}{{item.quantity * item.price | number:'1.0-0'}}</td>
+                          <td [ngClass]="{'highlightLatestTrades': (item.time | date:'yyyy-MM-dd') == (m_legacyDbTradesMaxDate | date:'yyyy-MM-dd')}">{{item.time | date : 'yyyy-MM-dd HH:mm'}}</td>
+                        </tr>
+                      </tbody>
+                    }
+                  </table>
+                }
+              </div>
+              @if (m_isCopyToClipboardDialogVisible) {
+                <div id="copyToClipboardDialog">All/Selected rows copied To Clipboard
+                  <div id="copyToClipboardDialogClosetBtn">
+                    <button type="button" (click)="onCopyDialogCloseClicked()">Close</button>
+                  </div>
+                </div>
+              }

@@ -1,8 +1,10 @@
 <div class="mainDiv1">
-  <b>Chart Generator</b>&nbsp;<span id="userWarnId" *ngIf="m_userWarning">({{m_userWarning}})</span><br>
+  <b>Chart Generator</b>&nbsp;@if (m_userWarning) {
+  <span id="userWarnId">({{m_userWarning}})</span>
+  }<br>
   <div class="chrtGenDiagnosticsMsg" (mouseenter)="mouseEnter('m_chrtGenDiagnosticsMsg')" title="{{m_chrtGenDiagnosticsMsg}}">
-      <svg version="1.0" xmlns="http://www.w3.org/2000/svg" width="4rem" height="1.5rem" viewBox="0 0 159 153" preserveAspectRatio="xMidYMid meet">
-          <g [ngStyle]="{'fill': m_isSrvConnectionAlive ? 'green' : 'red'}" transform="translate(0.0,153.0) scale(0.10,-0.10)">
+    <svg version="1.0" xmlns="http://www.w3.org/2000/svg" width="4rem" height="1.5rem" viewBox="0 0 159 153" preserveAspectRatio="xMidYMid meet">
+      <g [ngStyle]="{'fill': m_isSrvConnectionAlive ? 'green' : 'red'}" transform="translate(0.0,153.0) scale(0.10,-0.10)">
             <path d="M491 1484 c-84 -23 -150 -63 -227 -139 -111 -111 -161 -239 -151
                   -390 25 -366 391 -587 730 -442 l49 20 221 -220 c122 -121 230 -223 239 -226
                   24 -8 76 11 88 33 6 10 10 34 10 52 0 30 -22 55 -216 249 l-217 217 26 34 c80
@@ -16,235 +18,285 @@
                   -1 111 7 58 7 111 13 118 14 6 0 12 6 12 14 0 11 -20 16 -77 21 -43 3 -85 10
                   -93 14 -8 4 -37 64 -63 132 -27 68 -52 127 -56 131 -4 4 -42 -75 -85 -177z"/>
           </g>
-      </svg>
-  </div>
-  <!-- Class=commonColStyle name will be changed in future - Daya(28-04-2023) -->
-  <span class="commonColStyle" id="portfolios">
-    <span>Portfolios:
-      <button class="btnCommon" (click)="onClickSelectFromTree()">Select from tree...</button>
-      <div id="prtfSelectionDialog" [ngStyle]="{'display': m_isPrtfSelectionDialogVisible ? 'block' : 'none'}">
-        <button class="btnCommon" (click)="onClickPrtfSelectedFromTreeView()" [ngClass]="m_treeViewState.lastSelectedItem?.isSelected ? 'btnEnabled': 'btnDisabled'">Insert</button> &nbsp;
-        <app-sq-tree-view [items]="m_uiNestedPrtfTreeViewItems" [treeViewState]="m_treeViewState" [rootTreeViewComponent]="_rootTreeComponent" [m_useCheckboxes]=true></app-sq-tree-view>
+        </svg>
       </div>
-      <br>
-      <div class="backtestPrtfOrBmrkSelected" *ngFor="let item of m_backtestedPortfolios">{{item.name}}</div>&nbsp;
-      <span>
-        <button class="btnCommon" (click)="onClickClearBacktestedPortfolios()" [disabled]="m_backtestedPortfolios.length <= 0">Clear</button>
-      </span>
-    </span>&nbsp;
-    <table class="tableCommon prtfTbl">
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th title="Leverage multiplier applied to the daily PctChg to create a synthetic version.">LevMul</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let item of m_backtestedPortfolios">
-          <td>{{item.name}}</td>
-          <td><input class="leverageInput" type="text" [value]="(item.leverage > 0 ? '&#43;' : '') + (item.leverage | number:'1.2-2')" (change)="onChangePrtfLeverage($event, item)"></td> <!-- plus sign html code(&#43;), minus sign(-) is automatically assigned for negative leverage value-->
-        </tr>
-      </tbody>
-    </table>
-  </span>
-  <span class="commonColStyle" id="stockAndIndexes">
-    StockAndIndexes<br>
-    <span>Benchmarks: <input class="highlightInputBox" oninput="this.value = this.value.toUpperCase()" id="bmrks" type="text" #benchmarkInput></span>&nbsp;
-    <button class="btnCommon" (click)="onClickBmrkSelectedForBacktest(benchmarkInput.value)">Insert</button>
-    <div class="backtestPrtfOrBmrkSelected" *ngFor="let item of m_backtestedBenchmarks">{{item.ticker}}</div>&nbsp;
-    <span>
-      <button class="btnCommon" (click)="onClickClearBacktestedBnmrks()" [disabled]="m_backtestedBenchmarks.length <= 0">Clear</button>
-    </span>
-    <table class="tableCommon">
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th title="Leverage multiplier applied to the daily PctChg to create a synthetic version.">LevMul</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let item of m_backtestedBenchmarks">
-          <td>{{item.ticker}}</td>
-          <td><input type="text" class="leverageInput" [value]="(item.leverage > 0 ? '&#43;' : '') + (item.leverage | number:'1.2-2')" (change)="onChangeBmrkLeverage($event, item)"></td> <!-- plus sign html code(&#43;), minus sign(-) is automatically assigned for negative leverage value -->
-        </tr>
-      </tbody>
-    </table>
-  </span>
-  <span class="commonColStyle" id="others">
-    Tech Indicators / Others
-  </span>
-<br>
-<span>
-    <span class="range">Range:
-      <div class="selectionDropDown">
-        <input id="histPeriodInput" class="highlightInputbox rangeInputWidth" type="text" oninput="this.value = this.value.toUpperCase()" [(ngModel)]="m_histRangeSelected" (change)="onUserChangedHistDateRange(m_histRangeSelected)">
-        <div class="listDropDown">
-          <option class="optionDropDown" *ngFor="let item of m_rangeSelection" [value]="item" (click)="onUserChangedHistDateRange(item)">{{item}}</option>
-        </div>
-      </div>
-    </span>&nbsp;
-    <span title="StartTime: 08:00 UTC (about 03:00 ET)">Start:&nbsp;
-      <input #startYearInput type="text" class="commonDateInput sqIsoDateInputYYYY" placeholder="YYYY" (change)="onChangeDatePart('year', startYearInput, startMonthInput, startDayInput, startCalendarInput, m_startDateObj, false)"/>
-      <input #startMonthInput type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="MM" (change)="onChangeDatePart('month', startYearInput, startMonthInput, startDayInput, startCalendarInput, m_startDateObj, false)"/>
-      <input #startDayInput type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="DD" (change)="onChangeDatePart('day', startYearInput, startMonthInput, startDayInput, startCalendarInput, m_startDateObj, false)"/>
-      <input #startCalendarInput type="date" class="commonDateInput sqIsoCalendar" [value]="m_startDateObj.dateStr" (change)="onChangeDateFromCalendarPicker(startCalendarInput, startYearInput, startMonthInput, startDayInput, m_startDateObj, false)"/>
-    </span>&nbsp;
-    <span title="EndTime: 23:59 UTC (about 19:00 ET)">End:&nbsp;
-      <input #endYearInput type="text" class="commonDateInput sqIsoDateInputYYYY" placeholder="YYYY" (change)="onChangeDatePart('year', endYearInput, endMonthInput, endDayInput, endCalendarInput, m_endDateObj, false)"/>
-      <input #endMonthInput type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="MM" (change)="onChangeDatePart('month', endYearInput, endMonthInput, endDayInput, endCalendarInput, m_endDateObj, false)"/>
-      <input #endDayInput type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="DD" (change)="onChangeDatePart('day', endYearInput, endMonthInput, endDayInput, endCalendarInput, m_endDateObj, false)"/>
-      <input #endCalendarInput type="date" class="commonDateInput sqIsoCalendar" [value]="m_endDateObj.dateStr" (change)="onChangeDateFromCalendarPicker(endCalendarInput, endYearInput, endMonthInput, endDayInput, m_endDateObj, false)"/>
-    </span>&nbsp;
-    <button class="backtestBtn btnCommon" (click)="onStartBacktestsClicked()">Start Server Backtest</button><br>
-  </span><br>
-<span>Portfolio Value Chart</span>
-<div id="backtestPvChrt">
-    <div id="pfRunResultChrt"></div>
-    <div id='tooltipChart'></div>
-</div><br>
-<div *ngFor="let item of m_uiChrtGenPrtfRunResults">
-    <div *ngIf="item.sqLogs.length > 0" [ngClass]="m_hasSqLogErrOrWarn ? 'sqErrOrWarnLog' : 'sqInfoLog'">! Backtest Warning/Error/Info logs.
-        <div class="sqLogTooltipText">
-            <p *ngFor="let log of item.sqLogs">{{log.message}}</p>
-        </div>
-    </div>
-</div><br>
-<div id="chartPanel">
-  <div id="chartToolbar">
-    <label for="chartTypeSelect">Chart Type:</label>
-    <select id="chartTypeSelect" (change)="onChangeChartType($event)">
-      <option value="line">Line</option>
-      <option value="basicCandle">Basic Candle</option>
-      <option value="candleStick">Candle Stick</option>
-    </select>
-    <span>&nbsp;
-        <span>VizStart:&nbsp;
-            <input #startYearInput2 type="text" class="commonDateInput sqIsoDateInputYYYY" placeholder="YYYY" (change)="onChangeDatePart('year', startYearInput2, startMonthInput2, startDayInput2, startCalendarInput2, m_vizStartDateObj, true)"/>
-            <input #startMonthInput2 type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="MM" (change)="onChangeDatePart('month', startYearInput2, startMonthInput2, startDayInput2, startCalendarInput2, m_vizStartDateObj, true)"/>
-            <input #startDayInput2 type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="DD" (change)="onChangeDatePart('day', startYearInput2, startMonthInput2, startDayInput2, startCalendarInput2, m_vizStartDateObj, true)"/>
-            <input #startCalendarInput2 type="date" class="commonDateInput sqIsoCalendar" [value]="m_vizStartDateObj.dateStr" (change)="onChangeDateFromCalendarPicker(startCalendarInput2, startYearInput2, startMonthInput2, startDayInput2, m_vizStartDateObj, true)"/>
-        </span>&nbsp;
-        <span>VizEnd:&nbsp;
-            <input #endYearInput2 type="text" class="commonDateInput sqIsoDateInputYYYY" placeholder="YYYY" (change)="onChangeDatePart('year', endYearInput2, endMonthInput2, endDayInput2, endCalendarInput2, m_vizEndDateObj, true)"/>
-            <input #endMonthInput2 type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="MM" (change)="onChangeDatePart('month', endYearInput2, endMonthInput2, endDayInput2, endCalendarInput2, m_vizEndDateObj, true)"/>
-            <input #endDayInput2 type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="DD" (change)="onChangeDatePart('day', endYearInput2, endMonthInput2, endDayInput2, endCalendarInput2, m_vizEndDateObj, true)"/>
-            <input #endCalendarInput2 type="date" class="commonDateInput sqIsoCalendar" [value]="m_vizEndDateObj.dateStr" (change)="onChangeDateFromCalendarPicker(endCalendarInput2, endYearInput2, endMonthInput2, endDayInput2, m_vizEndDateObj, true)"/>
-        </span>&nbsp;<br>
-    </span>
-  </div>
-  <div id="chartContainer">
-    <div id="widthResizer"></div>
-    <div id="heightResizer"></div>
-  </div>
-</div><br>
-  <div class="statsTbl">
-    <table>
-      <thead>
-        <tr>
-          <th>Statistics</th>
-          <th *ngFor="let item of m_backtestStatsResults">{{item.name}}</th>
-        </tr>
-      </thead>
-      <tbody>
-        <ng-container *ngFor="let name of m_sqStatisticsbuilder.StatNames">
-          <tr [ngStyle]="{'font-weight': (name == 'CAGR' || name == 'Sharpe' || name == 'MaxDD') ? 'bold' : ''}">
-            <td>{{name}}</td>
-            <td *ngFor="let item of m_backtestStatsResults">{{(name == 'Sharpe' || (name == 'CagrSharpe')) ? (item[name] | number:'1.2-2') : ((name == 'MaxDDStart' || name == 'MaxDDEnd' || name == 'DataStart' || name == 'DataEnd') ? (item[name] | date:'YYYY-MM-dd') : (item[name] | percent:'0.2'))}}</td> <!-- we display the sharpe/CagrSharpe ratio without % by using number pipe and dates with Date pipe -->
-          </tr>
-        </ng-container>
-        <tr>
-          <td title='Exactly the date set by the user in the input field'>UserSet Start</td>
-          <td [attr.colspan]="m_backtestStatsResults.length">{{m_startDateObj.dateStr}}</td>
-        </tr>
-        <tr>
-          <td title='Exactly the date set by the user in the input field'>UserSet End</td>
-          <td [attr.colspan]="m_backtestStatsResults.length">{{m_endDateObj.dateStr}}</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>&nbsp;
-  <div class="detailedStatsTbl">
-    <table>
-      <thead>
-        <tr>
-          <th>DetailedStatistics</th>
-          <th *ngFor="let item of m_detailedStatistics.backtestDetailedStatistics">{{item.name}}</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>last3YearsAnnualized</td>
-          <td *ngFor="let stat of m_detailedStatistics.backtestDetailedStatistics" [ngClass]="stat.last3YearsAnnualized > 0 ? 'positiveReturns' : (stat.last3YearsAnnualized < 0 ? 'negativeReturns' : 'noReturns')">{{stat.last3YearsAnnualized | nanToDashPct}}</td>
-        </tr>
-        <tr>
-          <td>last5YearsAnnualized</td>
-          <td *ngFor="let stat of m_detailedStatistics.backtestDetailedStatistics" [ngClass]="stat.last5YearsAnnualized > 0 ? 'positiveReturns' : (stat.last5YearsAnnualized < 0 ? 'negativeReturns' : 'noReturns')">{{stat.last5YearsAnnualized | nanToDashPct}}</td>
-        </tr>
-        <tr *ngFor="let year of m_detailedStatistics.annualReturnYears">
-          <td>{{year}}</td>
-          <td *ngFor="let stat of m_detailedStatistics.backtestDetailedStatistics">
-            <ng-container *ngFor="let annualreturn of stat.annualReturns">
-              <span *ngIf="annualreturn.year == year" [ngClass]="annualreturn.return > 0 ? 'positiveReturns' : (annualreturn.return < 0 ? 'negativeReturns' : 'noReturns')"> {{annualreturn.return | nanToDashPct}}</span>
-            </ng-container>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-</div>
-<!-- Progress bar -->
-<div class="progressBarContainer" [ngStyle]="{'display': m_isProgressBarVisble ? 'block' : 'none'}">
-  <div class="progressBar"></div>
-</div>
-<div *ngFor="let item of m_detailedStatistics.backtestDetailedStatistics; let i = index"><br>
-  <p><b>Seasonality: </b> Displays mean and median monthly returns in order to identify seasonal patterns of <b>{{item.name}}</b>.</p>
-  <table class="tableCommon">
-    <thead>
-      <tr>
-        <th>Year</th>
-        <th>Jan</th>
-        <th>Feb</th>
-        <th>Mar</th>
-        <th>Apr</th>
-        <th>May</th>
-        <th>Jun</th>
-        <th>Jul</th>
-        <th>Aug</th>
-        <th>Sep</th>
-        <th>Oct</th>
-        <th>Nov</th>
-        <th>Dec</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>WinRate</td>
-        <td *ngFor="let item of m_seasonalityData[i].monthlySeasonalityWinrate" [ngClass]="item > 0 ? 'positiveReturns' : (item < 0 ? 'negativeReturns' : 'noReturns')">{{item | nanToDashPct}}</td>
-      </tr>
-      <tr>
-        <td>Median</td>
-        <td *ngFor="let item of m_seasonalityData[i].monthlySeasonalityMedian" [ngClass]="item > 0 ? 'positiveReturns' : (item < 0 ? 'negativeReturns' : 'noReturns')">{{item | nanToDashPct}}</td>
-      </tr>
-      <tr>
-        <td>Mean</td>
-        <td *ngFor="let item of m_seasonalityData[i].monthlySeasonalityAvg" [ngClass]="item > 0 ? 'positiveReturns' : (item < 0 ? 'negativeReturns' : 'noReturns')">{{item | nanToDashPct}}</td>
-      </tr>
-      <tr>
-        <td>10yAvg</td>
-        <td *ngFor="let item of m_seasonalityData[i].monthlySeasonality10yAvg" [ngClass]="item > 0 ? 'positiveReturns' : (item < 0 ? 'negativeReturns' : 'noReturns')">{{item | nanToDashPct}}</td>
-      </tr>
-      <tr>
-        <td>5yAvg</td>
-        <td *ngFor="let item of m_seasonalityData[i].monthlySeasonality5yAvg" [ngClass]="item > 0 ? 'positiveReturns' : (item < 0 ? 'negativeReturns' : 'noReturns')">{{item | nanToDashPct}}</td>
-      </tr>
-      <tr>
-        <td>3yAvg</td>
-        <td *ngFor="let item of m_seasonalityData[i].monthlySeasonality3yAvg" [ngClass]="item > 0 ? 'positiveReturns' : (item < 0 ? 'negativeReturns' : 'noReturns')">{{item | nanToDashPct}}</td>
-      </tr>
-      <tr *ngFor="let item of m_seasonalityData[i].monthlySeasonality">
-        <td>{{item.year}}</td>
-        <td *ngFor="let retVal of item.returns" [ngClass]="retVal > 0 ? 'positiveReturns' : (retVal < 0 ? 'negativeReturns' : 'noReturns')">{{retVal | nanToDashPct}}</td>
-      </tr>
-    </tbody>
-  </table>
-</div>
+      <!-- Class=commonColStyle name will be changed in future - Daya(28-04-2023) -->
+      <span class="commonColStyle" id="portfolios">
+        <span>Portfolios:
+          <button class="btnCommon" (click)="onClickSelectFromTree()">Select from tree...</button>
+          <div id="prtfSelectionDialog" [ngStyle]="{'display': m_isPrtfSelectionDialogVisible ? 'block' : 'none'}">
+            <button class="btnCommon" (click)="onClickPrtfSelectedFromTreeView()" [ngClass]="m_treeViewState.lastSelectedItem?.isSelected ? 'btnEnabled': 'btnDisabled'">Insert</button> &nbsp;
+            <app-sq-tree-view [items]="m_uiNestedPrtfTreeViewItems" [treeViewState]="m_treeViewState" [rootTreeViewComponent]="_rootTreeComponent" [m_useCheckboxes]=true></app-sq-tree-view>
+          </div>
+          <br>
+            @for (item of m_backtestedPortfolios; track item) {
+              <div class="backtestPrtfOrBmrkSelected">{{item.name}}</div>
+              }&nbsp;
+              <span>
+                <button class="btnCommon" (click)="onClickClearBacktestedPortfolios()" [disabled]="m_backtestedPortfolios.length <= 0">Clear</button>
+              </span>
+            </span>&nbsp;
+            <table class="tableCommon prtfTbl">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th title="Leverage multiplier applied to the daily PctChg to create a synthetic version.">LevMul</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of m_backtestedPortfolios; track item) {
+                  <tr>
+                    <td>{{item.name}}</td>
+                    <td><input class="leverageInput" type="text" [value]="(item.leverage > 0 ? '&#43;' : '') + (item.leverage | number:'1.2-2')" (change)="onChangePrtfLeverage($event, item)"></td> <!-- plus sign html code(&#43;), minus sign(-) is automatically assigned for negative leverage value-->
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </span>
+          <span class="commonColStyle" id="stockAndIndexes">
+            StockAndIndexes<br>
+            <span>Benchmarks: <input class="highlightInputBox" oninput="this.value = this.value.toUpperCase()" id="bmrks" type="text" #benchmarkInput></span>&nbsp;
+            <button class="btnCommon" (click)="onClickBmrkSelectedForBacktest(benchmarkInput.value)">Insert</button>
+            @for (item of m_backtestedBenchmarks; track item) {
+              <div class="backtestPrtfOrBmrkSelected">{{item.ticker}}</div>
+              }&nbsp;
+              <span>
+                <button class="btnCommon" (click)="onClickClearBacktestedBnmrks()" [disabled]="m_backtestedBenchmarks.length <= 0">Clear</button>
+              </span>
+              <table class="tableCommon">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th title="Leverage multiplier applied to the daily PctChg to create a synthetic version.">LevMul</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (item of m_backtestedBenchmarks; track item) {
+                    <tr>
+                      <td>{{item.ticker}}</td>
+                      <td><input type="text" class="leverageInput" [value]="(item.leverage > 0 ? '&#43;' : '') + (item.leverage | number:'1.2-2')" (change)="onChangeBmrkLeverage($event, item)"></td> <!-- plus sign html code(&#43;), minus sign(-) is automatically assigned for negative leverage value -->
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </span>
+            <span class="commonColStyle" id="others">
+              Tech Indicators / Others
+            </span>
+            <br>
+              <span>
+                <span class="range">Range:
+                  <div class="selectionDropDown">
+                    <input id="histPeriodInput" class="highlightInputbox rangeInputWidth" type="text" oninput="this.value = this.value.toUpperCase()" [(ngModel)]="m_histRangeSelected" (change)="onUserChangedHistDateRange(m_histRangeSelected)">
+                    <div class="listDropDown">
+                      @for (item of m_rangeSelection; track item) {
+                        <option class="optionDropDown" [value]="item" (click)="onUserChangedHistDateRange(item)">{{item}}</option>
+                      }
+                    </div>
+                  </div>
+                </span>&nbsp;
+                <span title="StartTime: 08:00 UTC (about 03:00 ET)">Start:&nbsp;
+                  <input #startYearInput type="text" class="commonDateInput sqIsoDateInputYYYY" placeholder="YYYY" (change)="onChangeDatePart('year', startYearInput, startMonthInput, startDayInput, startCalendarInput, m_startDateObj, false)"/>
+                  <input #startMonthInput type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="MM" (change)="onChangeDatePart('month', startYearInput, startMonthInput, startDayInput, startCalendarInput, m_startDateObj, false)"/>
+                  <input #startDayInput type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="DD" (change)="onChangeDatePart('day', startYearInput, startMonthInput, startDayInput, startCalendarInput, m_startDateObj, false)"/>
+                  <input #startCalendarInput type="date" class="commonDateInput sqIsoCalendar" [value]="m_startDateObj.dateStr" (change)="onChangeDateFromCalendarPicker(startCalendarInput, startYearInput, startMonthInput, startDayInput, m_startDateObj, false)"/>
+                </span>&nbsp;
+                <span title="EndTime: 23:59 UTC (about 19:00 ET)">End:&nbsp;
+                  <input #endYearInput type="text" class="commonDateInput sqIsoDateInputYYYY" placeholder="YYYY" (change)="onChangeDatePart('year', endYearInput, endMonthInput, endDayInput, endCalendarInput, m_endDateObj, false)"/>
+                  <input #endMonthInput type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="MM" (change)="onChangeDatePart('month', endYearInput, endMonthInput, endDayInput, endCalendarInput, m_endDateObj, false)"/>
+                  <input #endDayInput type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="DD" (change)="onChangeDatePart('day', endYearInput, endMonthInput, endDayInput, endCalendarInput, m_endDateObj, false)"/>
+                  <input #endCalendarInput type="date" class="commonDateInput sqIsoCalendar" [value]="m_endDateObj.dateStr" (change)="onChangeDateFromCalendarPicker(endCalendarInput, endYearInput, endMonthInput, endDayInput, m_endDateObj, false)"/>
+                </span>&nbsp;
+                <button class="backtestBtn btnCommon" (click)="onStartBacktestsClicked()">Start Server Backtest</button><br>
+              </span><br>
+              <span>Portfolio Value Chart</span>
+              <div id="backtestPvChrt">
+                <div id="pfRunResultChrt"></div>
+                <div id='tooltipChart'></div>
+              </div><br>
+              @for (item of m_uiChrtGenPrtfRunResults; track item) {
+                <div>
+                  @if (item.sqLogs.length > 0) {
+                    <div [ngClass]="m_hasSqLogErrOrWarn ? 'sqErrOrWarnLog' : 'sqInfoLog'">! Backtest Warning/Error/Info logs.
+                      <div class="sqLogTooltipText">
+                        @for (log of item.sqLogs; track log) {
+                          <p>{{log.message}}</p>
+                        }
+                      </div>
+                    </div>
+                  }
+                </div>
+                }<br>
+                <div id="chartPanel">
+                  <div id="chartToolbar">
+                    <label for="chartTypeSelect">Chart Type:</label>
+                    <select id="chartTypeSelect" (change)="onChangeChartType($event)">
+                      <option value="line">Line</option>
+                      <option value="basicCandle">Basic Candle</option>
+                      <option value="candleStick">Candle Stick</option>
+                    </select>
+                    <span>&nbsp;
+                      <span>VizStart:&nbsp;
+                        <input #startYearInput2 type="text" class="commonDateInput sqIsoDateInputYYYY" placeholder="YYYY" (change)="onChangeDatePart('year', startYearInput2, startMonthInput2, startDayInput2, startCalendarInput2, m_vizStartDateObj, true)"/>
+                        <input #startMonthInput2 type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="MM" (change)="onChangeDatePart('month', startYearInput2, startMonthInput2, startDayInput2, startCalendarInput2, m_vizStartDateObj, true)"/>
+                        <input #startDayInput2 type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="DD" (change)="onChangeDatePart('day', startYearInput2, startMonthInput2, startDayInput2, startCalendarInput2, m_vizStartDateObj, true)"/>
+                        <input #startCalendarInput2 type="date" class="commonDateInput sqIsoCalendar" [value]="m_vizStartDateObj.dateStr" (change)="onChangeDateFromCalendarPicker(startCalendarInput2, startYearInput2, startMonthInput2, startDayInput2, m_vizStartDateObj, true)"/>
+                      </span>&nbsp;
+                      <span>VizEnd:&nbsp;
+                        <input #endYearInput2 type="text" class="commonDateInput sqIsoDateInputYYYY" placeholder="YYYY" (change)="onChangeDatePart('year', endYearInput2, endMonthInput2, endDayInput2, endCalendarInput2, m_vizEndDateObj, true)"/>
+                        <input #endMonthInput2 type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="MM" (change)="onChangeDatePart('month', endYearInput2, endMonthInput2, endDayInput2, endCalendarInput2, m_vizEndDateObj, true)"/>
+                        <input #endDayInput2 type="text" class="commonDateInput sqIsoDateInputMMDD" placeholder="DD" (change)="onChangeDatePart('day', endYearInput2, endMonthInput2, endDayInput2, endCalendarInput2, m_vizEndDateObj, true)"/>
+                        <input #endCalendarInput2 type="date" class="commonDateInput sqIsoCalendar" [value]="m_vizEndDateObj.dateStr" (change)="onChangeDateFromCalendarPicker(endCalendarInput2, endYearInput2, endMonthInput2, endDayInput2, m_vizEndDateObj, true)"/>
+                      </span>&nbsp;<br>
+                    </span>
+                  </div>
+                  <div id="chartContainer">
+                    <div id="widthResizer"></div>
+                    <div id="heightResizer"></div>
+                  </div>
+                </div><br>
+                <div class="statsTbl">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Statistics</th>
+                        @for (item of m_backtestStatsResults; track item) {
+                          <th>{{item.name}}</th>
+                        }
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (name of m_sqStatisticsbuilder.StatNames; track name) {
+                        <tr [ngStyle]="{'font-weight': (name == 'CAGR' || name == 'Sharpe' || name == 'MaxDD') ? 'bold' : ''}">
+                          <td>{{name}}</td>
+                          @for (item of m_backtestStatsResults; track item) {
+                            <td>{{(name == 'Sharpe' || (name == 'CagrSharpe')) ? (item[name] | number:'1.2-2') : ((name == 'MaxDDStart' || name == 'MaxDDEnd' || name == 'DataStart' || name == 'DataEnd') ? (item[name] | date:'YYYY-MM-dd') : (item[name] | percent:'0.2'))}}</td>
+                            } <!-- we display the sharpe/CagrSharpe ratio without % by using number pipe and dates with Date pipe -->
+                          </tr>
+                        }
+                        <tr>
+                          <td title='Exactly the date set by the user in the input field'>UserSet Start</td>
+                          <td [attr.colspan]="m_backtestStatsResults.length">{{m_startDateObj.dateStr}}</td>
+                        </tr>
+                        <tr>
+                          <td title='Exactly the date set by the user in the input field'>UserSet End</td>
+                          <td [attr.colspan]="m_backtestStatsResults.length">{{m_endDateObj.dateStr}}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>&nbsp;
+                  <div class="detailedStatsTbl">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>DetailedStatistics</th>
+                          @for (item of m_detailedStatistics.backtestDetailedStatistics; track item) {
+                            <th>{{item.name}}</th>
+                          }
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td>last3YearsAnnualized</td>
+                          @for (stat of m_detailedStatistics.backtestDetailedStatistics; track stat) {
+                            <td [ngClass]="stat.last3YearsAnnualized > 0 ? 'positiveReturns' : (stat.last3YearsAnnualized < 0 ? 'negativeReturns' : 'noReturns')">{{stat.last3YearsAnnualized | nanToDashPct}}</td>
+                          }
+                        </tr>
+                        <tr>
+                          <td>last5YearsAnnualized</td>
+                          @for (stat of m_detailedStatistics.backtestDetailedStatistics; track stat) {
+                            <td [ngClass]="stat.last5YearsAnnualized > 0 ? 'positiveReturns' : (stat.last5YearsAnnualized < 0 ? 'negativeReturns' : 'noReturns')">{{stat.last5YearsAnnualized | nanToDashPct}}</td>
+                          }
+                        </tr>
+                        @for (year of m_detailedStatistics.annualReturnYears; track year) {
+                          <tr>
+                            <td>{{year}}</td>
+                            @for (stat of m_detailedStatistics.backtestDetailedStatistics; track stat) {
+                              <td>
+                                @for (annualreturn of stat.annualReturns; track annualreturn) {
+                                  @if (annualreturn.year == year) {
+                                    <span [ngClass]="annualreturn.return > 0 ? 'positiveReturns' : (annualreturn.return < 0 ? 'negativeReturns' : 'noReturns')"> {{annualreturn.return | nanToDashPct}}</span>
+                                  }
+                                }
+                              </td>
+                            }
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                <!-- Progress bar -->
+                <div class="progressBarContainer" [ngStyle]="{'display': m_isProgressBarVisble ? 'block' : 'none'}">
+                  <div class="progressBar"></div>
+                </div>
+                @for (item of m_detailedStatistics.backtestDetailedStatistics; track item; let i = $index) {
+                  <div><br>
+                    <p><b>Seasonality: </b> Displays mean and median monthly returns in order to identify seasonal patterns of <b>{{item.name}}</b>.</p>
+                    <table class="tableCommon">
+                      <thead>
+                        <tr>
+                          <th>Year</th>
+                          <th>Jan</th>
+                          <th>Feb</th>
+                          <th>Mar</th>
+                          <th>Apr</th>
+                          <th>May</th>
+                          <th>Jun</th>
+                          <th>Jul</th>
+                          <th>Aug</th>
+                          <th>Sep</th>
+                          <th>Oct</th>
+                          <th>Nov</th>
+                          <th>Dec</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td>WinRate</td>
+                          @for (item of m_seasonalityData[i].monthlySeasonalityWinrate; track item) {
+                            <td [ngClass]="item > 0 ? 'positiveReturns' : (item < 0 ? 'negativeReturns' : 'noReturns')">{{item | nanToDashPct}}</td>
+                          }
+                        </tr>
+                        <tr>
+                          <td>Median</td>
+                          @for (item of m_seasonalityData[i].monthlySeasonalityMedian; track item) {
+                            <td [ngClass]="item > 0 ? 'positiveReturns' : (item < 0 ? 'negativeReturns' : 'noReturns')">{{item | nanToDashPct}}</td>
+                          }
+                        </tr>
+                        <tr>
+                          <td>Mean</td>
+                          @for (item of m_seasonalityData[i].monthlySeasonalityAvg; track item) {
+                            <td [ngClass]="item > 0 ? 'positiveReturns' : (item < 0 ? 'negativeReturns' : 'noReturns')">{{item | nanToDashPct}}</td>
+                          }
+                        </tr>
+                        <tr>
+                          <td>10yAvg</td>
+                          @for (item of m_seasonalityData[i].monthlySeasonality10yAvg; track item) {
+                            <td [ngClass]="item > 0 ? 'positiveReturns' : (item < 0 ? 'negativeReturns' : 'noReturns')">{{item | nanToDashPct}}</td>
+                          }
+                        </tr>
+                        <tr>
+                          <td>5yAvg</td>
+                          @for (item of m_seasonalityData[i].monthlySeasonality5yAvg; track item) {
+                            <td [ngClass]="item > 0 ? 'positiveReturns' : (item < 0 ? 'negativeReturns' : 'noReturns')">{{item | nanToDashPct}}</td>
+                          }
+                        </tr>
+                        <tr>
+                          <td>3yAvg</td>
+                          @for (item of m_seasonalityData[i].monthlySeasonality3yAvg; track item) {
+                            <td [ngClass]="item > 0 ? 'positiveReturns' : (item < 0 ? 'negativeReturns' : 'noReturns')">{{item | nanToDashPct}}</td>
+                          }
+                        </tr>
+                        @for (item of m_seasonalityData[i].monthlySeasonality; track item) {
+                          <tr>
+                            <td>{{item.year}}</td>
+                            @for (retVal of item.returns; track retVal) {
+                              <td [ngClass]="retVal > 0 ? 'positiveReturns' : (retVal < 0 ? 'negativeReturns' : 'noReturns')">{{retVal | nanToDashPct}}</td>
+                            }
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                }

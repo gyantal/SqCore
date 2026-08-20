@@ -1,65 +1,95 @@
 <div class="mainHmDiv1">
-    <div class="titleDiv">
-        <h3> {{m_title}} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;v. 0.2.49</h3>
+  <div class="titleDiv">
+    <h3> {{m_title}} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;v. 0.2.49</h3>
+  </div>
+  <div class="mainHmDiv2">
+    <h4>1. Main HealthMonitor App</h4>
+
+    <span class="sqImportantError"> &nbsp; @if (m_data) {
+      <span [class.sqImportantOK]="m_data.AppOk === 'OK'">{{m_data.AppOk}}</span>
+    }</span><br>
+    Response to FrontEnd:&nbsp; @if (m_data) {
+    <span>{{m_data.ResponseToFrontEnd}}</span>
+    } <br>
+    Started on @if (m_data) {
+    <span>{{m_data.StartDate}} &nbsp;&nbsp; {{m_data.StartDateTimeSpanStr}} </span>
+  }
+  <div>
+    <label>
+      Daily Email Report active: @if (m_data) {
+      <span><input #chkDailyEmail type="checkbox" [checked]="m_data.DailyEmailReportEnabled" (change)="setControlValue('chkDailyEmail', chkDailyEmail.checked)" /></span>
+    }
+  </label>
+</div>
+
+<h4>2. Realtime Price Service</h4>
+<span class="sqImportantError"> &nbsp; @if (m_data) {
+  <span [class.sqImportantOK]="m_data.RtpsOk === 'OK'">{{m_data.RtpsOk}}</span>
+}</span>
+<div>
+  <label>
+    Realtime Price Service check timer active: @if (m_data) {
+    <span><input #chkRtps type="checkbox" [checked]="m_data.RtpsTimerEnabled" (change)="setControlValue('chkRtps', chkRtps.checked)" /></span>
+  }
+</label>
+</div>
+Timer frequency: every @if (m_data) {
+<span>{{m_data.RtpsTimerFrequencyMinutes}} </span>
+}minutes. Last checks:<br>
+@if (m_data) {
+  <div class="lastChecksReportsDiv">
+    <ul class="lastChecksReportsUl">
+      @for (rtps of m_data.RtpsDownloads; track rtps) {
+        <li>
+          <span>{{rtps}}</span>
+        </li>
+      }
+    </ul>
+  </div>
+}
+<h4>3. VBroker 1.0</h4>
+<span class="sqImportantError"> &nbsp; @if (m_data) {
+  <span [class.sqImportantOK]="m_data.VBrokerOk === 'OK'">{{m_data.VBrokerOk}}</span>
+}</span>
+<div>
+  <label>
+    Processing VBroker messages active: @if (m_data) {
+    <span><input #chkVBroker type="checkbox" [checked]="m_data.ProcessingVBrokerMessagesEnabled" (change)="setControlValue('chkVBroker', chkVBroker.checked)" /></span>
+  }
+</label>
+</div>
+No timer for active polling. Last received messages:<br>
+@if (m_data) {
+  <div class="lastChecksReportsDiv">
+    <ul class="lastChecksReportsUl">
+      @for (report of m_data.VBrokerReports; track report) {
+        <li>
+          <span>{{report}}</span>
+        </li>
+      }
+    </ul>
+  </div>
+}
+
+<br>
+  <button class="sqhm-button" (click)="refreshDataClicked()">Refresh Data</button><br>
+  <span class="loginUserDiv">Logged in as {{m_userEmail}};</span>
+  <hr>
+    <div class="detailedReportsSection">
+      <strong>VBroker Detailed</strong><br>
+      @if (m_data) {
+        <div class="lastChecksDetailedReportsDiv">
+          <ul class="lastChecksDetailedReportsUl">
+            @for (report of m_data.VBrokerDetailedReports; track report) {
+              <li>
+                <div [innerHTML]="report"></div>
+              </li>
+            }
+          </ul>
+        </div>
+      }
     </div>
-    <div class="mainHmDiv2">
-        <h4>1. Main HealthMonitor App</h4>
-
-        <span class="sqImportantError"> &nbsp; <span *ngIf="m_data" [class.sqImportantOK]="m_data.AppOk === 'OK'">{{m_data.AppOk}}</span></span><br>
-        Response to FrontEnd:&nbsp; <span *ngIf="m_data">{{m_data.ResponseToFrontEnd}}</span> <br>
-        Started on <span *ngIf="m_data">{{m_data.StartDate}} &nbsp;&nbsp; {{m_data.StartDateTimeSpanStr}} </span>
-        <div>
-            <label>
-                Daily Email Report active: <span *ngIf="m_data"><input #chkDailyEmail type="checkbox" [checked]="m_data.DailyEmailReportEnabled" (change)="setControlValue('chkDailyEmail', chkDailyEmail.checked)" /></span>
-            </label>
-        </div>
-
-        <h4>2. Realtime Price Service</h4>
-        <span class="sqImportantError"> &nbsp; <span *ngIf="m_data" [class.sqImportantOK]="m_data.RtpsOk === 'OK'">{{m_data.RtpsOk}}</span></span>
-        <div>
-            <label>
-                Realtime Price Service check timer active: <span *ngIf="m_data"><input #chkRtps type="checkbox" [checked]="m_data.RtpsTimerEnabled" (change)="setControlValue('chkRtps', chkRtps.checked)" /></span>
-            </label>
-        </div>
-        Timer frequency: every <span *ngIf="m_data">{{m_data.RtpsTimerFrequencyMinutes}} </span>minutes. Last checks:<br>
-        <div class="lastChecksReportsDiv" *ngIf="m_data">
-            <ul class="lastChecksReportsUl">
-                <li *ngFor="let rtps of m_data.RtpsDownloads">
-                    <span>{{rtps}}</span>
-                </li>
-            </ul>
-        </div>
-        <h4>3. VBroker 1.0</h4>
-        <span class="sqImportantError"> &nbsp; <span *ngIf="m_data" [class.sqImportantOK]="m_data.VBrokerOk === 'OK'">{{m_data.VBrokerOk}}</span></span>
-        <div>
-            <label>
-                Processing VBroker messages active: <span *ngIf="m_data"><input #chkVBroker type="checkbox" [checked]="m_data.ProcessingVBrokerMessagesEnabled" (change)="setControlValue('chkVBroker', chkVBroker.checked)" /></span>
-            </label>
-        </div>
-        No timer for active polling. Last received messages:<br>
-        <div class="lastChecksReportsDiv" *ngIf="m_data">
-            <ul class="lastChecksReportsUl">
-                <li *ngFor="let report of m_data.VBrokerReports">
-                    <span>{{report}}</span>
-                </li>
-            </ul>
-        </div>
-
-        <br>
-        <button class="sqhm-button" (click)="refreshDataClicked()">Refresh Data</button><br>
-        <span class="loginUserDiv">Logged in as {{m_userEmail}};</span>
-        <hr>
-        <div class="detailedReportsSection">
-            <strong>VBroker Detailed</strong><br>
-            <div class="lastChecksDetailedReportsDiv" *ngIf="m_data">
-                <ul class="lastChecksDetailedReportsUl">
-                    <li *ngFor="let report of m_data.VBrokerDetailedReports">
-                        <div [innerHTML]="report"></div>
-                    </li>
-                </ul>
-            </div>
-        </div>
-        <br><br><br>
-        Click <a href="https://sqcore.net/index_dev.html">here for Developer Dashboard</a> (Or for more VBroker details Developers can peek the Linux terminal.)<br><br>
-    </div>
+    <br><br><br>
+    Click <a href="https://sqcore.net/index_dev.html">here for Developer Dashboard</a> (Or for more VBroker details Developers can peek the Linux terminal.)<br><br>
+  </div>
 </div>

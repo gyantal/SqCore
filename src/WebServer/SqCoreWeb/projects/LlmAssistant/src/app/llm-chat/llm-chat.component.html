@@ -14,8 +14,10 @@ LLM-ModelName:
 WebSearch<input type="checkbox" (change)="onChangeWebSearchCheckbox($event)">&nbsp;
 <button (click)="sendUserInputToBackEnd(userInputTextarea.value)">Generate Predicted Text</button>&nbsp;
 <button (click)="onClickNewChat()">New Chat</button>
-<div *ngFor="let chatItem of m_chatItems">
-  <span>{{ chatItem.isUser ? '[User]:' : '[Llm]:' }}</span>
-  <span [innerHTML]="chatItem.chatHtmlStr"></span>
-</div>
+@for (chatItem of m_chatItems; track chatItem) {
+  <div>
+    <span>{{ chatItem.isUser ? '[User]:' : '[Llm]:' }}</span>
+    <span [innerHTML]="chatItem.chatHtmlStr"></span>
+  </div>
+}
 <br>
