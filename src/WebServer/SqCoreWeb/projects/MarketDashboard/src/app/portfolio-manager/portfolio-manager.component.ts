@@ -10,7 +10,8 @@ type Nullable<T> = T | null;
 @Component({
   selector: 'app-portfolio-manager',
   templateUrl: './portfolio-manager.component.html',
-  styleUrls: ['./portfolio-manager.component.scss']
+  styleUrls: ['./portfolio-manager.component.scss'],
+  standalone: false
 })
 export class PortfolioManagerComponent implements OnInit, AfterViewInit {
   @Input() _parentWsConnection?: WebSocket | null = null; // this property will be input from above parent container

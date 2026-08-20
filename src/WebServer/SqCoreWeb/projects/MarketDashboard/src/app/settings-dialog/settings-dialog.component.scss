@@ -1,3 +1,5 @@
+@use "sass:color";
+
 .container {
   display: none;
   position: fixed;
@@ -166,7 +168,7 @@ $color-4: #e74c3c;
 input[type="range"] {
   width: 20rem;
   height: 0.4rem;
-  -webkit-appearance: none;
+  appearance: none;
   background-color: rgb(61, 198, 207);
   border-radius: 1rem;
   outline: none;
@@ -245,8 +247,8 @@ $color-text-ibClass: rgba(0, 0, 0, 1);
   &.sqClassic {
     border-color: $color-primary-sqClass;
     background-color: $color-highlight-sqClass;
-    box-shadow: 0 0 7rem transparentize($color-primary-sqClass, 0.4),
-      0 0.5rem 2rem transparentize($color-primary-sqClass, 0.4),
+    box-shadow: 0 0 7rem color.adjust($color-primary-sqClass, $alpha: -0.4),
+      0 0.5rem 2rem color.adjust($color-primary-sqClass, $alpha: -0.4),
       inset 0 0.1rem $color-highlight-sqClass,
       inset 0 -0.1rem $color-highlight-sqClass;
     color: $color-text-sqClass;
@@ -263,8 +265,8 @@ $color-text-ibClass: rgba(0, 0, 0, 1);
       #ace16b 90%,
       #91d73a 95%
     );
-    box-shadow: 0 0 7rem transparentize($color-primary-sqGrad, 0.5),
-      0 0.5rem 2rem transparentize($color-primary-sqGrad, 0.5),
+    box-shadow: 0 0 7rem color.adjust($color-primary-sqGrad, $alpha: -0.5),
+      0 0.5rem 2rem color.adjust($color-primary-sqGrad, $alpha: -0.5),
       inset 0 0.1rem $color-highlight-sqClass,
       inset 0 -0.1rem $color-highlight-sqClass;
     color: $color-text-sqGrad;
@@ -273,8 +275,8 @@ $color-text-ibClass: rgba(0, 0, 0, 1);
   &.ibClassic {
     border-color: $color-primary-ibClass;
     background-color: $color-highlight-ibClass;
-    box-shadow: 0 0 7rem transparentize($color-primary-ibClass, 0.4),
-      0 0.5rem 2rem transparentize($color-primary-ibClass, 0.4),
+    box-shadow: 0 0 7rem color.adjust($color-primary-ibClass, $alpha: -0.4),
+      0 0.5rem 2rem color.adjust($color-primary-ibClass, $alpha: -0.4),
       inset 0 0.1rem $color-highlight-ibClass,
       inset 0 -0.1rem $color-highlight-ibClass;
     color: $color-text-ibClass;
@@ -282,22 +284,22 @@ $color-text-ibClass: rgba(0, 0, 0, 1);
 
   &:hover {
     &.sqClassic {
-      box-shadow: 0 0 7rem transparentize($color-primary-sqClass, 0.2),
-        0 0.5rem 2rem transparentize($color-primary-sqClass, 0.2),
+      box-shadow: 0 0 7rem color.adjust($color-primary-sqClass, $alpha: -0.2),
+        0 0.5rem 2rem color.adjust($color-primary-sqClass, $alpha: -0.2),
         inset 0 0.1rem $color-hoverborder-sqClass,
         inset 0 -0.1rem $color-hoverborder-sqClass;
     }
 
     &.sqGrad {
-      box-shadow: 0 0 7rem transparentize($color-primary-sqGrad, 0.2),
-        0 0.5rem 2rem transparentize($color-primary-sqGrad, 0.2),
+      box-shadow: 0 0 7rem color.adjust($color-primary-sqGrad, $alpha: -0.2),
+        0 0.5rem 2rem color.adjust($color-primary-sqGrad, $alpha: -0.2),
         inset 0 0.1rem $color-hoverborder-sqGrad,
         inset 0 -0.1rem $color-hoverborder-sqGrad;
     }
 
     &.ibClassic {
-      box-shadow: 0 0 7rem transparentize($color-primary-ibClass, 0.2),
-        0 0.5rem 2rem transparentize($color-primary-ibClass, 0.2),
+      box-shadow: 0 0 7rem color.adjust($color-primary-ibClass, $alpha: -0.2),
+        0 0.5rem 2rem color.adjust($color-primary-ibClass, $alpha: -0.2),
         inset 0 0.1rem $color-hoverborder-ibClass,
         inset 0 -0.1rem $color-hoverborder-ibClass;
     }

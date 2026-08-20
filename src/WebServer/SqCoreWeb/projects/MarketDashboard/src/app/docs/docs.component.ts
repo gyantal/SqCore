@@ -9,7 +9,8 @@ import { Component, OnInit, OnChanges, SimpleChanges, Input } from '@angular/cor
 @Component({
   selector: 'app-docs-what-is-new',
   templateUrl: './docs-what-is-new.html',
-  styleUrls: ['./docs.component.scss']
+  styleUrls: ['./docs.component.scss'],
+  standalone: false
 })
 export class DocsWhatIsNewComponent implements OnInit, OnChanges {
   @Input() _parentActiveTool?: string = undefined; // this property will be input from above parent container
@@ -28,7 +29,8 @@ export class DocsWhatIsNewComponent implements OnInit, OnChanges {
 @Component({
   selector: 'app-docs-get-started',
   templateUrl: './docs-get-started.html',
-  styleUrls: ['./docs.component.scss']
+  styleUrls: ['./docs.component.scss'],
+  standalone: false
 })
 export class DocsGetStartedComponent implements OnInit, OnChanges {
   @Input() _parentActiveTool?: string = undefined; // this property will be input from above parent container
@@ -47,7 +49,8 @@ export class DocsGetStartedComponent implements OnInit, OnChanges {
 @Component({
   selector: 'app-docs-tutorial',
   templateUrl: './docs-tutorial.html',
-  styleUrls: ['./docs.component.scss']
+  styleUrls: ['./docs.component.scss'],
+  standalone: false
 })
 export class DocsTutorialComponent implements OnInit, OnChanges {
   @Input() _parentActiveTool?: string = undefined; // this property will be input from above parent container

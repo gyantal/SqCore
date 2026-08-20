@@ -47,7 +47,8 @@ class TickerEarningsDate {
 @Component({
   selector: 'app-llm-scan',
   templateUrl: './llm-scan.component.html',
-  styleUrls: ['./llm-scan.component.scss']
+  styleUrls: ['./llm-scan.component.scss'],
+  standalone: false
 })
 
 export class LlmScanComponent implements OnInit {

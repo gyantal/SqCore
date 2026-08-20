@@ -6,11 +6,12 @@ export const maxDate = new Date(8640000000000000);
 @Component({
   selector: 'lib-sq-ng-common',
   template: `
-    <p>
-      sq-ng-common works!
-    </p>
+  <p>
+    sq-ng-common works!
+  </p>
   `,
-  styles: []
+  styles: [],
+  standalone: false
 })
 export class SqNgCommonUtilsTime implements OnInit {
   constructor() { }

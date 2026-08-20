@@ -4,7 +4,8 @@ import { UserInput } from '../lib/gpt-common';
 
 @Component({
   selector: 'app-llm-basic-chat',
-  templateUrl: './llm-basic-chat.component.html'
+  templateUrl: './llm-basic-chat.component.html',
+  standalone: false
 })
 
 export class LlmBasicChatComponent implements OnInit {

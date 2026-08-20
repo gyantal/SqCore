@@ -5,7 +5,8 @@ import { RemoveItemOnce } from '../sq-ng-common.utils';
 @Component({
   selector: 'app-sq-tree-view',
   templateUrl: './sq-tree-view.component.html',
-  styleUrls: ['./sq-tree-view.component.scss']
+  styleUrls: ['./sq-tree-view.component.scss'],
+  standalone: false
 })
 export class SqTreeViewComponent implements OnInit {
   // @Input(), @ViewChildren variables: without "| any". Compile error: ' Property 'treeViewState' has no initializer and is not definitely assigned in the constructor.'

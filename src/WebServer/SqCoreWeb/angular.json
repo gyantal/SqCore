@@ -23,12 +23,16 @@
       "prefix": "app",
       "architect": {
         "build": {
-          "builder": "@angular-devkit/build-angular:browser",
+          "builder": "@angular-devkit/build-angular:application",
           "options": {
-            "outputPath": "dist/HelloAngular",
+            "outputPath": {
+              "base": "dist/HelloAngular",
+              "browser": ""
+            },
             "index": "projects/HelloAngular/src/index.html",
-            "main": "projects/HelloAngular/src/main.ts",
-            "polyfills": "projects/HelloAngular/src/polyfills.ts",
+            "polyfills": [
+              "projects/HelloAngular/src/polyfills.ts"
+            ],
             "tsConfig": "projects/HelloAngular/tsconfig.app.json",
             "assets": [
               "projects/HelloAngular/src/favicon.ico",
@@ -38,15 +42,18 @@
               "projects/HelloAngular/src/styles.scss"
             ],
             "scripts": [],
-            "vendorChunk": true,
             "extractLicenses": true,
-            "buildOptimizer": false,
             "sourceMap": true,
             "optimization": false,
-            "namedChunks": true
+            "namedChunks": true,
+            "browser": "projects/HelloAngular/src/main.ts"
           },
           "configurations": {
             "production": {
+              "outputPath": {
+                "base": "wwwroot/webapps/HelloAngular",
+                "browser": ""
+              },
               "fileReplacements": [
                 {
                   "replace": "projects/HelloAngular/src/environments/environment.ts",
@@ -58,8 +65,6 @@
               "sourceMap": false,
               "namedChunks": false,
               "extractLicenses": true,
-              "vendorChunk": false,
-              "buildOptimizer": true,
               "budgets": [
                 {
                   "type": "initial",
@@ -136,12 +141,16 @@
       "prefix": "app",
       "architect": {
         "build": {
-          "builder": "@angular-devkit/build-angular:browser",
+          "builder": "@angular-devkit/build-angular:application",
           "options": {
-            "outputPath": "dist/HealthMonitor",
+            "outputPath": {
+              "base": "dist/HealthMonitor",
+              "browser": ""
+            },
             "index": "projects/HealthMonitor/src/index.html",
-            "main": "projects/HealthMonitor/src/main.ts",
-            "polyfills": "projects/HealthMonitor/src/polyfills.ts",
+            "polyfills": [
+              "projects/HealthMonitor/src/polyfills.ts"
+            ],
             "tsConfig": "projects/HealthMonitor/tsconfig.app.json",
             "assets": [
               "projects/HealthMonitor/src/assets"
@@ -150,15 +159,18 @@
               "projects/HealthMonitor/src/styles.scss"
             ],
             "scripts": [],
-            "vendorChunk": true,
             "extractLicenses": true,
-            "buildOptimizer": false,
             "sourceMap": true,
             "optimization": false,
-            "namedChunks": true
+            "namedChunks": true,
+            "browser": "projects/HealthMonitor/src/main.ts"
           },
           "configurations": {
             "production": {
+              "outputPath": {
+                "base": "wwwroot/webapps/HealthMonitor",
+                "browser": ""
+              },
               "fileReplacements": [
                 {
                   "replace": "projects/HealthMonitor/src/environments/environment.ts",
@@ -170,8 +182,6 @@
               "sourceMap": false,
               "namedChunks": false,
               "extractLicenses": true,  // To keep main.js 40KB smaller, we extract license into a separate 12KB 3rdpartylicenses.txt.
-              "vendorChunk": false,
-              "buildOptimizer": true,
               "budgets": [
                 {
                   "type": "initial",
@@ -248,12 +258,16 @@
       "prefix": "app",
       "architect": {
         "build": {
-          "builder": "@angular-devkit/build-angular:browser",
+          "builder": "@angular-devkit/build-angular:application",
           "options": {
-            "outputPath": "dist/MarketDashboard",
+            "outputPath": {
+              "base": "dist/MarketDashboard",
+              "browser": ""
+            },
             "index": "projects/MarketDashboard/src/index.html",
-            "main": "projects/MarketDashboard/src/main.ts",
-            "polyfills": "projects/MarketDashboard/src/polyfills.ts",
+            "polyfills": [
+              "projects/MarketDashboard/src/polyfills.ts"
+            ],
             "tsConfig": "projects/MarketDashboard/tsconfig.app.json",
             "assets": [
               "projects/MarketDashboard/src/favicon.ico",
@@ -268,15 +282,18 @@
               "projects/MarketDashboard/src/styles.scss"
             ],
             "scripts": [],
-            "vendorChunk": true,
             "extractLicenses": true,
-            "buildOptimizer": false,
             "sourceMap": true,
             "optimization": false,
-            "namedChunks": true
+            "namedChunks": true,
+            "browser": "projects/MarketDashboard/src/main.ts"
           },
           "configurations": {
             "production": {
+              "outputPath": {
+                "base": "wwwroot/webapps/MarketDashboard",
+                "browser": ""
+              },
               "fileReplacements": [
                 {
                   "replace": "projects/MarketDashboard/src/environments/environment.ts",
@@ -288,8 +305,6 @@
               "sourceMap": false,
               "namedChunks": false,
               "extractLicenses": true,
-              "vendorChunk": false,
-              "buildOptimizer": true,
               "budgets": [
                 {
                   "type": "initial",
@@ -298,8 +313,8 @@
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "6kb",
-                  "maximumError": "10kb"
+                  "maximumWarning": "8kb",
+                  "maximumError": "15kb"
                 }
               ]
             }
@@ -366,12 +381,16 @@
       "prefix": "app",
       "architect": {
         "build": {
-          "builder": "@angular-devkit/build-angular:browser",
+          "builder": "@angular-devkit/build-angular:application",
           "options": {
-            "outputPath": "dist/PortfolioViewer",
+            "outputPath": {
+              "base": "dist/PortfolioViewer",
+              "browser": ""
+            },
             "index": "projects/PortfolioViewer/src/index.html",
-            "main": "projects/PortfolioViewer/src/main.ts",
-            "polyfills": "projects/PortfolioViewer/src/polyfills.ts",
+            "polyfills": [
+              "projects/PortfolioViewer/src/polyfills.ts"
+            ],
             "tsConfig": "projects/PortfolioViewer/tsconfig.app.json",
             "assets": [
               "projects/PortfolioViewer/src/assets"
@@ -380,15 +399,18 @@
               "projects/PortfolioViewer/src/styles.scss"
             ],
             "scripts": [],
-            "vendorChunk": true,
             "extractLicenses": true,
-            "buildOptimizer": false,
             "sourceMap": true,
             "optimization": false,
-            "namedChunks": true
+            "namedChunks": true,
+            "browser": "projects/PortfolioViewer/src/main.ts"
           },
           "configurations": {
             "production": {
+              "outputPath": {
+                "base": "wwwroot/webapps/PortfolioViewer",
+                "browser": ""
+              },
               "fileReplacements": [
                 {
                   "replace": "projects/PortfolioViewer/src/environments/environment.ts",
@@ -399,9 +421,7 @@
               "outputHashing": "bundles",   // cache-busting hashing number in filenames is not required for media (images)
               "sourceMap": false,
               "namedChunks": false,
-              "extractLicenses": true,  // To keep main.js 40KB smaller, we extract license into a separate 12KB 3rdpartylicenses.txt.
-              "vendorChunk": false,
-              "buildOptimizer": true,
+              "extractLicenses": true,
               "budgets": [
                 {
                   "type": "initial",
@@ -478,12 +498,16 @@
         "prefix": "app",
         "architect": {
           "build": {
-            "builder": "@angular-devkit/build-angular:browser",
+            "builder": "@angular-devkit/build-angular:application",
             "options": {
-              "outputPath": "dist/ChartGenerator",
+              "outputPath": {
+                "base": "dist/ChartGenerator",
+                "browser": ""
+              },
               "index": "projects/ChartGenerator/src/index.html",
-              "main": "projects/ChartGenerator/src/main.ts",
-              "polyfills": "projects/ChartGenerator/src/polyfills.ts",
+              "polyfills": [
+                "projects/ChartGenerator/src/polyfills.ts"
+              ],
               "tsConfig": "projects/ChartGenerator/tsconfig.app.json",
               "assets": [
                 "projects/ChartGenerator/src/assets"
@@ -492,15 +516,18 @@
                 "projects/ChartGenerator/src/styles.scss"
               ],
               "scripts": [],
-              "vendorChunk": true,
               "extractLicenses": true,
-              "buildOptimizer": false,
               "sourceMap": true,
               "optimization": false,
-              "namedChunks": true
+              "namedChunks": true,
+              "browser": "projects/ChartGenerator/src/main.ts"
             },
             "configurations": {
               "production": {
+                "outputPath": {
+                    "base": "wwwroot/webapps/ChartGenerator",
+                  "browser": ""
+                },
                 "fileReplacements": [
                   {
                     "replace": "projects/ChartGenerator/src/environments/environment.ts",
@@ -511,9 +538,7 @@
                 "outputHashing": "bundles",   // cache-busting hashing number in filenames is not required for media (images)
                 "sourceMap": false,
                 "namedChunks": false,
-                "extractLicenses": true,  // To keep main.js 40KB smaller, we extract license into a separate 12KB 3rdpartylicenses.txt.
-                "vendorChunk": false,
-                "buildOptimizer": true,
+                "extractLicenses": true,
                 "budgets": [
                   {
                     "type": "initial",
@@ -590,12 +615,16 @@
       "prefix": "app",
       "architect": {
         "build": {
-          "builder": "@angular-devkit/build-angular:browser",
+          "builder": "@angular-devkit/build-angular:application",
           "options": {
-            "outputPath": "dist/TechnicalAnalyzer",
+            "outputPath": {
+              "base": "dist/TechnicalAnalyzer",
+              "browser": ""
+            },
             "index": "projects/TechnicalAnalyzer/src/index.html",
-            "main": "projects/TechnicalAnalyzer/src/main.ts",
-            "polyfills": "projects/TechnicalAnalyzer/src/polyfills.ts",
+            "polyfills": [
+              "projects/TechnicalAnalyzer/src/polyfills.ts"
+            ],
             "tsConfig": "projects/TechnicalAnalyzer/tsconfig.app.json",
             "assets": [
               "projects/TechnicalAnalyzer/src/assets", // Creating common assets, see: https://stackoverflow.com/questions/61343113/angular-shared-assets-within-multiple-applications
@@ -609,15 +638,18 @@
               "projects/TechnicalAnalyzer/src/styles.scss"
             ],
             "scripts": [],
-            "vendorChunk": true,
             "extractLicenses": true,
-            "buildOptimizer": false,
             "sourceMap": true,
             "optimization": false,
-            "namedChunks": true
+            "namedChunks": true,
+            "browser": "projects/TechnicalAnalyzer/src/main.ts"
           },
           "configurations": {
             "production": {
+              "outputPath": {
+                "base": "wwwroot/webapps/TechnicalAnalyzer",
+                "browser": ""
+              },
               "fileReplacements": [
                 {
                   "replace": "projects/TechnicalAnalyzer/src/environments/environment.ts",
@@ -628,9 +660,7 @@
               "outputHashing": "bundles",   // cache-busting hashing number in filenames is not required for media (images)
               "sourceMap": false,
               "namedChunks": false,
-              "extractLicenses": true,  // To keep main.js 40KB smaller, we extract license into a separate 12KB 3rdpartylicenses.txt.
-              "vendorChunk": false,
-              "buildOptimizer": true,
+              "extractLicenses": true,
               "budgets": [
                 {
                   "type": "initial",
@@ -707,12 +737,16 @@
       "prefix": "app",
       "architect": {
         "build": {
-          "builder": "@angular-devkit/build-angular:browser",
+          "builder": "@angular-devkit/build-angular:application",
           "options": {
-            "outputPath": "dist/LlmAssistant",
+            "outputPath": {
+              "base": "dist/LlmAssistant",
+              "browser": ""
+            },
             "index": "projects/LlmAssistant/src/index.html",
-            "main": "projects/LlmAssistant/src/main.ts",
-            "polyfills": "projects/LlmAssistant/src/polyfills.ts",
+            "polyfills": [
+              "projects/LlmAssistant/src/polyfills.ts"
+            ],
             "tsConfig": "projects/LlmAssistant/tsconfig.app.json",
             "assets": [
                 {
@@ -730,15 +764,18 @@
               "projects/LlmAssistant/src/styles.scss"
             ],
             "scripts": [],
-            "vendorChunk": true,
             "extractLicenses": true,
-            "buildOptimizer": false,
             "sourceMap": true,
             "optimization": false,
-            "namedChunks": true
+            "namedChunks": true,
+            "browser": "projects/LlmAssistant/src/main.ts"
           },
           "configurations": {
             "production": {
+              "outputPath": {
+                "base": "wwwroot/webapps/LlmAssistant",
+                "browser": ""
+              },
               "fileReplacements": [
                 {
                   "replace": "projects/LlmAssistant/src/environments/environment.ts",
@@ -749,9 +786,7 @@
               "outputHashing": "bundles",   // cache-busting hashing number in filenames is not required for media (images)
               "sourceMap": false,
               "namedChunks": false,
-              "extractLicenses": true,  // To keep main.js 40KB smaller, we extract license into a separate 12KB 3rdpartylicenses.txt.
-              "vendorChunk": false,
-              "buildOptimizer": true,
+              "extractLicenses": true,
               "budgets": [
                 {
                   "type": "initial",

@@ -199,6 +199,7 @@ class UiHistData {
   selector: 'app-bracc-viewer',
   templateUrl: './bracc-viewer.component.html',
   styleUrls: ['./bracc-viewer.component.scss'],
+  standalone: false
 })
 export class BrAccViewerComponent implements OnInit {
   @Input() _parentWsConnection?: WebSocket = undefined; // this property will be input from above parent container

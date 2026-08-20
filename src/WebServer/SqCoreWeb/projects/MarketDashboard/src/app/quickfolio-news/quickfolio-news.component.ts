@@ -16,7 +16,8 @@ class NewsItem {
 @Component({
   selector: 'app-quickfolio-news',
   templateUrl: './quickfolio-news.component.html',
-  styleUrls: ['./quickfolio-news.component.scss']
+  styleUrls: ['./quickfolio-news.component.scss'],
+  standalone: false
 })
 export class QuickfolioNewsComponent implements OnInit {
   @Input() _parentWsConnection?: WebSocket = undefined; // this property will be input from above parent container

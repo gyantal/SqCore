@@ -53,7 +53,8 @@ const gDefaultHMData: HMData = {
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
-  styleUrls: ['./app.component.scss']
+  styleUrls: ['./app.component.scss'],
+  standalone: false
 })
 export class AppComponent {
   public m_title: string = 'SQ HealthMonitor Dashboard'; // strongly typed variables in TS

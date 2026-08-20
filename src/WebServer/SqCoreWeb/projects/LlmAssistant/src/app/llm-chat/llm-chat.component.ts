@@ -16,7 +16,8 @@ class ChatItem {
 @Component({
   selector: 'app-llm-chat',
   templateUrl: './llm-chat.component.html',
-  styleUrls: ['./llm-chat.component.scss']
+  styleUrls: ['./llm-chat.component.scss'],
+  standalone: false
 })
 
 export class LlmChatComponent implements OnInit {

@@ -143,7 +143,8 @@ class TradingHoursTimer {
 @Component({
   selector: 'app-market-health',
   templateUrl: './market-health.component.html',
-  styleUrls: ['./market-health.component.scss']
+  styleUrls: ['./market-health.component.scss'],
+  standalone: false
 })
 export class MarketHealthComponent implements OnInit {
   @Input() _parentWsConnection?: WebSocket = undefined; // this property will be input from above parent container

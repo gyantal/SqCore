@@ -1,7 +1,8 @@
 { // tsconfig.json cannot be 'nested'. So, subfolders will not overwrite main folders.  https://stackoverflow.com/questions/52709947/specific-tsconfig-json-rules-inside-folder
   "compileOnSave": true,
   "compilerOptions": {
-    "strict": true,       // strict = true is the default
+    "strict": true, // strict = true is the default
+    "esModuleInterop": true,
     "alwaysStrict": true, // emit "use strict" in all JS files. Strict mode execution is 50-80% faster for specific cases
     "strictPropertyInitialization": true, // it is On by default anyway.
     "noUnusedLocals": true,

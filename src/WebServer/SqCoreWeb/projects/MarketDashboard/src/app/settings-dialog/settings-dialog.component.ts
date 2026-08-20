@@ -18,7 +18,8 @@ export class AppSettings {  // collect the settings variables here. This will be
 @Component({
   selector: 'settings-dialog',
   templateUrl: './settings-dialog.component.html',
-  styleUrls: ['./settings-dialog.component.scss']
+  styleUrls: ['./settings-dialog.component.scss'],
+  standalone: false
 })
 export class SettingsDialogComponent {
   isVisible = false;  // see https://stackoverflow.com/questions/59013913/how-to-manipulate-a-div-style-in-angular-8

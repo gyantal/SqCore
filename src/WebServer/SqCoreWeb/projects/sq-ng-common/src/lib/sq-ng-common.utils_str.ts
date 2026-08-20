@@ -3,11 +3,12 @@ import { Component, OnInit, Pipe, PipeTransform } from '@angular/core';
 @Component({
   selector: 'lib-sq-ng-common',
   template: `
-    <p>
-      sq-ng-common works!
-    </p>
+  <p>
+    sq-ng-common works!
+  </p>
   `,
-  styles: []
+  styles: [],
+  standalone: false
 })
 export class SqNgCommonUtilsStr implements OnInit {
   public static splitStrToMulLines(str:string) : string {
@@ -23,7 +24,10 @@ export class SqNgCommonUtilsStr implements OnInit {
   }
 }
 
-@Pipe({ name: 'nanToDash'}) // In Angular data to UI is transformed via Pipes
+@Pipe({
+  name: 'nanToDash',
+  standalone: false
+}) // In Angular data to UI is transformed via Pipes
 export class NanToDashPipe implements PipeTransform {
   transform(value: any, decimalPlaces: number = 2): any {
     if (isNaN(value))
@@ -33,7 +37,10 @@ export class NanToDashPipe implements PipeTransform {
   }
 }
 
-@Pipe({ name: 'nanToDashPct'}) // In Angular data to UI is transformed via Pipes, special case for Seasonality data
+@Pipe({
+  name: 'nanToDashPct',
+  standalone: false
+}) // In Angular data to UI is transformed via Pipes, special case for Seasonality data
 export class NanToDashPctPipe implements PipeTransform {
   transform(value: any): any {
     if (isNaN(value))
@@ -47,14 +54,20 @@ export class NanToDashPctPipe implements PipeTransform {
 // see : https://stackoverflow.com/questions/37511055/how-to-check-type-of-variable-in-ngif-in-angular2
 // We prefer the Pipe version solution. The version of the 'a helper method in the component' is less reusable.
 // Because we have to write that helper function in every component we use. Instead, a pipe version once it is written can be used anywhere without bloating the component itself.
-@Pipe({ name: 'sqTypeOf'})
+@Pipe({
+  name: 'sqTypeOf',
+  standalone: false
+})
 export class TypeOfPipe implements PipeTransform {
   transform(value: any): any {
     return typeof value;
   }
 }
 
-@Pipe({ name: 'numberToTBMK' }) // Transform a number into a formatted string based on its magnitude
+@Pipe({
+  name: 'numberToTBMK',
+  standalone: false
+}) // Transform a number into a formatted string based on its magnitude
 export class NumberToTBMKPipe implements PipeTransform {
   // @param input - The number to be formatted.
   // @param args - Optional argument to specify the number of decimal places for formatting.

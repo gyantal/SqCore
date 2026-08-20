@@ -9,7 +9,8 @@ class LlmPromptJs {
 @Component({
   selector: 'app-llm-prompt',
   templateUrl: './llm-prompt.component.html',
-  styleUrls: ['./llm-prompt.component.scss']
+  styleUrls: ['./llm-prompt.component.scss'],
+  standalone: false
 })
 
 export class LlmPromptComponent implements OnInit {

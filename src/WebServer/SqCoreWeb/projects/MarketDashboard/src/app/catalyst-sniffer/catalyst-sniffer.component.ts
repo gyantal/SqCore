@@ -3,7 +3,8 @@ import { Component, OnInit } from '@angular/core';
 @Component({
   selector: 'app-catalyst-sniffer',
   templateUrl: './catalyst-sniffer.component.html',
-  styleUrls: ['./catalyst-sniffer.component.scss']
+  styleUrls: ['./catalyst-sniffer.component.scss'],
+  standalone: false
 })
 export class CatalystSnifferComponent implements OnInit {
   constructor() { }
