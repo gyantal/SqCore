@@ -27,7 +27,7 @@
 		},
 		"workbench.editor.highlightModifiedTabs": true,
 		"workbench.editor.enablePreview": false,
-		"typescript.reportStyleChecksAsWarnings": false,
+		"js/ts.reportStyleChecksAsWarnings": false,
 		"files.associations": {	// treat json files as jsonc (JSON with Comments), so they can contain line comments. Such as "**/src/WebServer/SqCoreWeb/*.json": "jsonc",
 
 		},
@@ -39,6 +39,12 @@
 		"omnisharp.enableRoslynAnalyzers": true,
 		"omnisharp.analyzeOpenDocumentsOnly": false,
 		"terminal.integrated.cursorBlinking": true,
-		"csharp.maxProjectFileCountForDiagnosticAnalysis": 2000
+		"csharp.maxProjectFileCountForDiagnosticAnalysis": 2000,
+		"chat.tools.terminal.autoApprove": {
+			"/^node -v; npm -v; Get-Content package\\.json \\| Select-String -Pattern \"angular\"$/": {
+				"approve": true,
+				"matchCommandLine": true
+			}
+		}
 	}
 }
