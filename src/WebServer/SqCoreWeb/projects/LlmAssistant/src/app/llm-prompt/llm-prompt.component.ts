@@ -1,4 +1,4 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, OnInit, ChangeDetectionStrategy } from '@angular/core';
 
 class LlmPromptJs {
   Category: string = '';
@@ -10,6 +10,7 @@ class LlmPromptJs {
   selector: 'app-llm-prompt',
   templateUrl: './llm-prompt.component.html',
   styleUrls: ['./llm-prompt.component.scss'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false
 })
 

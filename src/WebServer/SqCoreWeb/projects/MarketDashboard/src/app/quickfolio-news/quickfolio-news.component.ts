@@ -1,4 +1,4 @@
-import { Component, OnInit, Input } from '@angular/core';
+import { Component, OnInit, Input, ChangeDetectionStrategy } from '@angular/core';
 
 class NewsItem {
   public ticker = '';
@@ -17,6 +17,7 @@ class NewsItem {
   selector: 'app-quickfolio-news',
   templateUrl: './quickfolio-news.component.html',
   styleUrls: ['./quickfolio-news.component.scss'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false
 })
 export class QuickfolioNewsComponent implements OnInit {

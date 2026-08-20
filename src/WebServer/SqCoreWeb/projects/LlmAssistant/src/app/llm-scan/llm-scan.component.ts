@@ -1,4 +1,4 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { markdown2HtmlFormatter } from '../../../../../TsLib/sq-common/utils_string';
 
 class NewsItem {
@@ -48,6 +48,7 @@ class TickerEarningsDate {
   selector: 'app-llm-scan',
   templateUrl: './llm-scan.component.html',
   styleUrls: ['./llm-scan.component.scss'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false
 })
 

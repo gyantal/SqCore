@@ -1,4 +1,4 @@
-import { Component, OnInit, Input } from '@angular/core';
+import { Component, OnInit, Input, ChangeDetectionStrategy } from '@angular/core';
 import { ChangeNaNstringToNaNnumber } from './../../../../sq-ng-common/src/lib/sq-ng-common.utils';
 import { SqNgCommonUtilsTime, minDate } from './../../../../sq-ng-common/src/lib/sq-ng-common.utils_time'; // direct reference, instead of via 'public-api.ts' as an Angular library. No need for 'ng build sq-ng-common'. see https://angular.io/guide/creating-libraries
 import { gDiag, AssetLastJs } from '../../../../../TsLib/sq-common/sq-globals';
@@ -144,6 +144,7 @@ class TradingHoursTimer {
   selector: 'app-market-health',
   templateUrl: './market-health.component.html',
   styleUrls: ['./market-health.component.scss'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false
 })
 export class MarketHealthComponent implements OnInit {

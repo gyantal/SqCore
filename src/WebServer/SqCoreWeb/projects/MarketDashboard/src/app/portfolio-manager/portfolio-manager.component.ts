@@ -1,4 +1,4 @@
-import { Component, OnInit, AfterViewInit, Input, ViewChild } from '@angular/core';
+import { Component, OnInit, AfterViewInit, Input, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { SqTreeViewComponent } from '../../../../sq-ng-common/src/lib/sq-tree-view/sq-tree-view.component';
 import { PrtfRunResultJs, UiPrtfRunResult, PrtfItemType, FolderJs, PortfolioJs, TreeViewItem, TreeViewState, createTreeViewData, prtfsParseHelper, fldrsParseHelper, statsParseHelper, updateUiWithPrtfRunResult, SqLogLevel } from '../../../../../TsLib/sq-common/backtestCommon';
 import { SqNgCommonUtils } from '../../../../sq-ng-common/src/lib/sq-ng-common.utils';
@@ -11,6 +11,7 @@ type Nullable<T> = T | null;
   selector: 'app-portfolio-manager',
   templateUrl: './portfolio-manager.component.html',
   styleUrls: ['./portfolio-manager.component.scss'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false
 })
 export class PortfolioManagerComponent implements OnInit, AfterViewInit {

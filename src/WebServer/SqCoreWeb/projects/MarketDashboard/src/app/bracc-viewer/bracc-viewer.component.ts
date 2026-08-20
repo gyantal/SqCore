@@ -1,4 +1,4 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { gDiag, AssetLastJs, UiChrtval } from '../../../../../TsLib/sq-common/sq-globals';
 import { SqNgCommonUtilsStr } from './../../../../sq-ng-common/src/lib/sq-ng-common.utils_str';
 import { SqNgCommonUtilsTime, minDate } from './../../../../sq-ng-common/src/lib/sq-ng-common.utils_time'; // direct reference, instead of via 'public-api.ts' as an Angular library. No need for 'ng build sq-ng-common'. see https://angular.io/guide/creating-libraries
@@ -199,6 +199,7 @@ class UiHistData {
   selector: 'app-bracc-viewer',
   templateUrl: './bracc-viewer.component.html',
   styleUrls: ['./bracc-viewer.component.scss'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false
 })
 export class BrAccViewerComponent implements OnInit {

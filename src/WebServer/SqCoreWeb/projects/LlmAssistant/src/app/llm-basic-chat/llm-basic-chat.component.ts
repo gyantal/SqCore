@@ -1,10 +1,11 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { UserInput } from '../lib/gpt-common';
 // import { ServerResponse, UserInput } from '../lib/gpt-common'; // commentting this as we need this for chatgpt
 
 @Component({
   selector: 'app-llm-basic-chat',
   templateUrl: './llm-basic-chat.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false
 })
 

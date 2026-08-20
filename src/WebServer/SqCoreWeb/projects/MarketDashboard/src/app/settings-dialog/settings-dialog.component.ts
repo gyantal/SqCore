@@ -1,4 +1,4 @@
-import { Component, Output, EventEmitter } from '@angular/core';
+import { Component, Output, EventEmitter, ChangeDetectionStrategy } from '@angular/core';
 
 export class AppSettings {  // collect the settings variables here. This will be stored in a database in server code.
   uiTheme = 'sqClassic';
@@ -19,6 +19,7 @@ export class AppSettings {  // collect the settings variables here. This will be
   selector: 'settings-dialog',
   templateUrl: './settings-dialog.component.html',
   styleUrls: ['./settings-dialog.component.scss'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false
 })
 export class SettingsDialogComponent {

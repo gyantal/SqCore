@@ -1,4 +1,4 @@
-import { Component, OnInit, Pipe, PipeTransform } from '@angular/core';
+import { Component, OnInit, Pipe, PipeTransform, ChangeDetectionStrategy } from '@angular/core';
 
 @Component({
   selector: 'lib-sq-ng-common',
@@ -8,6 +8,7 @@ import { Component, OnInit, Pipe, PipeTransform } from '@angular/core';
   </p>
   `,
   styles: [],
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false
 })
 export class SqNgCommonUtilsStr implements OnInit {

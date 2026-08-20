@@ -1,4 +1,4 @@
-import { Component, ViewChild } from '@angular/core';
+import { Component, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { LlmChatComponent } from './llm-chat/llm-chat.component';
 import { LlmBasicChatComponent } from './llm-basic-chat/llm-basic-chat.component';
 import { LlmScanComponent } from './llm-scan/llm-scan.component';
@@ -13,6 +13,7 @@ class HandshakeMessage {
   selector: 'app-root',
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false
 })
 export class AppComponent {

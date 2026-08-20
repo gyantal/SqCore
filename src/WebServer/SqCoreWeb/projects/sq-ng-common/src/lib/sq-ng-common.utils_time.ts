@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 
 export const minDate = new Date(-8640000000000000);
 export const maxDate = new Date(8640000000000000);
@@ -11,6 +11,7 @@ export const maxDate = new Date(8640000000000000);
   </p>
   `,
   styles: [],
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false
 })
 export class SqNgCommonUtilsTime implements OnInit {

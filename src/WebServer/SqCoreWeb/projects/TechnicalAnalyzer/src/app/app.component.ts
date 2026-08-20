@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { drawHistChartFromData } from '../../../../TsLib/sq-common/chartSimple';
 import { AssetHistValues } from '../../../../TsLib/sq-common/sq-globals';
@@ -40,6 +40,7 @@ class UiChrtval {
   selector: 'app-root',
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false
 })
 export class AppComponent {

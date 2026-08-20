@@ -1,4 +1,4 @@
-import { Component, OnInit, OnChanges, SimpleChanges, Input } from '@angular/core';
+import { Component, OnInit, OnChanges, SimpleChanges, Input, ChangeDetectionStrategy } from '@angular/core';
 
 // 2020-05:
 // Creating a separate components for Doc's WhatIsNow / GetStarted / Tutorial is always an option, but that would bloat the code with multiple CSS, TS, HTML
@@ -10,6 +10,7 @@ import { Component, OnInit, OnChanges, SimpleChanges, Input } from '@angular/cor
   selector: 'app-docs-what-is-new',
   templateUrl: './docs-what-is-new.html',
   styleUrls: ['./docs.component.scss'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false
 })
 export class DocsWhatIsNewComponent implements OnInit, OnChanges {
@@ -30,6 +31,7 @@ export class DocsWhatIsNewComponent implements OnInit, OnChanges {
   selector: 'app-docs-get-started',
   templateUrl: './docs-get-started.html',
   styleUrls: ['./docs.component.scss'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false
 })
 export class DocsGetStartedComponent implements OnInit, OnChanges {
@@ -50,6 +52,7 @@ export class DocsGetStartedComponent implements OnInit, OnChanges {
   selector: 'app-docs-tutorial',
   templateUrl: './docs-tutorial.html',
   styleUrls: ['./docs.component.scss'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false
 })
 export class DocsTutorialComponent implements OnInit, OnChanges {

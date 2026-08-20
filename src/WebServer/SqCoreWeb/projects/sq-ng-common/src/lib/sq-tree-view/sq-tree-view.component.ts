@@ -1,4 +1,4 @@
-import { Component, OnInit, Input, ViewChildren, QueryList } from '@angular/core';
+import { Component, OnInit, Input, ViewChildren, QueryList, ChangeDetectionStrategy } from '@angular/core';
 import { TreeViewItem, TreeViewState } from '../../../../../TsLib/sq-common/backtestCommon';
 import { RemoveItemOnce } from '../sq-ng-common.utils';
 
@@ -6,6 +6,7 @@ import { RemoveItemOnce } from '../sq-ng-common.utils';
   selector: 'app-sq-tree-view',
   templateUrl: './sq-tree-view.component.html',
   styleUrls: ['./sq-tree-view.component.scss'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false
 })
 export class SqTreeViewComponent implements OnInit {

@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { SettingsDialogComponent } from './settings-dialog/settings-dialog.component';
 import { gDiag, AssetLastJs, UserJs } from '../../../../TsLib/sq-common/sq-globals';
 import { BrAccViewerComponent } from './bracc-viewer/bracc-viewer.component';
@@ -21,6 +21,7 @@ class HandshakeMessage {
   selector: 'app-root',
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false
 })
 export class AppComponent implements OnInit {

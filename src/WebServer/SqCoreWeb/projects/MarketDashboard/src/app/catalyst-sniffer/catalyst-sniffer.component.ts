@@ -1,9 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 
 @Component({
   selector: 'app-catalyst-sniffer',
   templateUrl: './catalyst-sniffer.component.html',
   styleUrls: ['./catalyst-sniffer.component.scss'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false
 })
 export class CatalystSnifferComponent implements OnInit {

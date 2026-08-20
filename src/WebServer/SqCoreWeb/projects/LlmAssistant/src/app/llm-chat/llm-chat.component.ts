@@ -1,4 +1,4 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { UserInput } from '../lib/gpt-common';
 import { markdown2HtmlFormatter } from '../../../../../TsLib/sq-common/utils_string';
 // import { ServerResponse, UserInput } from '../lib/gpt-common'; // commentting this as we need this for chatgpt
@@ -17,6 +17,7 @@ class ChatItem {
   selector: 'app-llm-chat',
   templateUrl: './llm-chat.component.html',
   styleUrls: ['./llm-chat.component.scss'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false
 })
 
