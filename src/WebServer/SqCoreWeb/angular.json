@@ -23,7 +23,7 @@
       "prefix": "app",
       "architect": {
         "build": {
-          "builder": "@angular-devkit/build-angular:application",
+          "builder": "@angular/build:application",
           "options": {
             "outputPath": {
               "base": "dist/HelloAngular",
@@ -82,7 +82,7 @@
           "defaultConfiguration": ""
         },
         "serve": {
-          "builder": "@angular-devkit/build-angular:dev-server",
+          "builder": "@angular/build:dev-server",
           "options": {
             "buildTarget": "HelloAngular:build"
           },
@@ -93,7 +93,7 @@
           }
         },
         "extract-i18n": {
-          "builder": "@angular-devkit/build-angular:extract-i18n",
+          "builder": "@angular/build:extract-i18n",
           "options": {
             "buildTarget": "HelloAngular:build"
           }
@@ -141,7 +141,7 @@
       "prefix": "app",
       "architect": {
         "build": {
-          "builder": "@angular-devkit/build-angular:application",
+          "builder": "@angular/build:application",
           "options": {
             "outputPath": {
               "base": "dist/HealthMonitor",
@@ -199,7 +199,7 @@
           "defaultConfiguration": ""
         },
         "serve": {
-          "builder": "@angular-devkit/build-angular:dev-server",
+          "builder": "@angular/build:dev-server",
           "options": {
             "buildTarget": "HealthMonitor:build"
           },
@@ -210,7 +210,7 @@
           }
         },
         "extract-i18n": {
-          "builder": "@angular-devkit/build-angular:extract-i18n",
+          "builder": "@angular/build:extract-i18n",
           "options": {
             "buildTarget": "HealthMonitor:build"
           }
@@ -258,7 +258,7 @@
       "prefix": "app",
       "architect": {
         "build": {
-          "builder": "@angular-devkit/build-angular:application",
+          "builder": "@angular/build:application",
           "options": {
             "outputPath": {
               "base": "dist/MarketDashboard",
@@ -322,7 +322,7 @@
           "defaultConfiguration": ""
         },
         "serve": {
-          "builder": "@angular-devkit/build-angular:dev-server",
+          "builder": "@angular/build:dev-server",
           "options": {
             "buildTarget": "MarketDashboard:build"
           },
@@ -333,7 +333,7 @@
           }
         },
         "extract-i18n": {
-          "builder": "@angular-devkit/build-angular:extract-i18n",
+          "builder": "@angular/build:extract-i18n",
           "options": {
             "buildTarget": "MarketDashboard:build"
           }
@@ -381,7 +381,7 @@
       "prefix": "app",
       "architect": {
         "build": {
-          "builder": "@angular-devkit/build-angular:application",
+          "builder": "@angular/build:application",
           "options": {
             "outputPath": {
               "base": "dist/PortfolioViewer",
@@ -439,7 +439,7 @@
           "defaultConfiguration": ""
         },
         "serve": {
-          "builder": "@angular-devkit/build-angular:dev-server",
+          "builder": "@angular/build:dev-server",
           "options": {
             "buildTarget": "PortfolioViewer:build"
           },
@@ -450,7 +450,7 @@
           }
         },
         "extract-i18n": {
-          "builder": "@angular-devkit/build-angular:extract-i18n",
+          "builder": "@angular/build:extract-i18n",
           "options": {
             "buildTarget": "PortfolioViewer:build"
           }
@@ -498,7 +498,7 @@
         "prefix": "app",
         "architect": {
           "build": {
-            "builder": "@angular-devkit/build-angular:application",
+            "builder": "@angular/build:application",
             "options": {
               "outputPath": {
                 "base": "dist/ChartGenerator",
@@ -556,7 +556,7 @@
             "defaultConfiguration": ""
           },
           "serve": {
-            "builder": "@angular-devkit/build-angular:dev-server",
+            "builder": "@angular/build:dev-server",
             "options": {
               "buildTarget": "ChartGenerator:build"
             },
@@ -567,7 +567,7 @@
             }
           },
           "extract-i18n": {
-            "builder": "@angular-devkit/build-angular:extract-i18n",
+            "builder": "@angular/build:extract-i18n",
             "options": {
               "buildTarget": "ChartGenerator:build"
             }
@@ -615,7 +615,7 @@
       "prefix": "app",
       "architect": {
         "build": {
-          "builder": "@angular-devkit/build-angular:application",
+          "builder": "@angular/build:application",
           "options": {
             "outputPath": {
               "base": "dist/TechnicalAnalyzer",
@@ -678,7 +678,7 @@
           "defaultConfiguration": ""
         },
         "serve": {
-          "builder": "@angular-devkit/build-angular:dev-server",
+          "builder": "@angular/build:dev-server",
           "options": {
             "buildTarget": "TechnicalAnalyzer:build"
           },
@@ -689,7 +689,7 @@
           }
         },
         "extract-i18n": {
-          "builder": "@angular-devkit/build-angular:extract-i18n",
+          "builder": "@angular/build:extract-i18n",
           "options": {
             "buildTarget": "TechnicalAnalyzer:build"
           }
@@ -737,7 +737,7 @@
       "prefix": "app",
       "architect": {
         "build": {
-          "builder": "@angular-devkit/build-angular:application",
+          "builder": "@angular/build:application",
           "options": {
             "outputPath": {
               "base": "dist/LlmAssistant",
@@ -804,7 +804,7 @@
           "defaultConfiguration": ""
         },
         "serve": {
-          "builder": "@angular-devkit/build-angular:dev-server",
+          "builder": "@angular/build:dev-server",
           "options": {
             "buildTarget": "LlmAssistant:build"
           },
@@ -815,7 +815,7 @@
           }
         },
         "extract-i18n": {
-          "builder": "@angular-devkit/build-angular:extract-i18n",
+          "builder": "@angular/build:extract-i18n",
           "options": {
             "buildTarget": "LlmAssistant:build"
           }
@@ -858,7 +858,7 @@
       "prefix": "lib",
       "architect": {
         "build": {
-          "builder": "@angular-devkit/build-angular:ng-packagr",
+          "builder": "@angular/build:ng-packagr",
           "options": {
             "tsConfig": "projects/sq-ng-common/tsconfig.lib.json",
             "project": "projects/sq-ng-common/ng-package.json"

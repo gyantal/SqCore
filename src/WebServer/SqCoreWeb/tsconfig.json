@@ -34,7 +34,8 @@
     ]
   },
   "include": [  // if include or files are given, only that will be transpiled. see https://www.typescriptlang.org/docs/handbook/tsconfig-json.html
-    "wwwroot"   // we only have to transpile wwwroot, the static webapps. The Webpack and Angular webapps will be transpiled by webpack, not tsc.
+    "wwwroot",  // we only have to transpile wwwroot, the static webapps. The Webpack and Angular webapps will be transpiled by webpack, not tsc.
+    "webapps/css.d.ts"  // TS 6 TS2882: webpack apps do `import './../css/main.css'`
   ],
   // "exclude": [   // only wwwroot is transpiled, so we don't need these now.
   //   "node_modules",

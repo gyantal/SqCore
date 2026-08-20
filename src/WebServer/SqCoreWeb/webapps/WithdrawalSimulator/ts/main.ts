@@ -407,8 +407,15 @@ function withdrawalSimulatorOutput(totalDeposit, developerInfo, averagePVWoWith,
   developerInfoElem.innerText = developerInfo;
 }
 
-const simulateBtn = document.getElementById('simulate') as HTMLElement;
-simulateBtn.onclick = function() { withdrawalSimulationDriver(); };
+document.addEventListener('DOMContentLoaded', () => {
+  const simulateBtn = document.getElementById('simulate') as HTMLElement | null;
+  console.log('simulateBtn: ' + simulateBtn);
+  if (!simulateBtn) {
+    console.error('simulate button not found');
+    return;
+  }
+  simulateBtn.onclick = function() { withdrawalSimulationDriver(); };
+});
 
 console.log('Body is running...');
 
