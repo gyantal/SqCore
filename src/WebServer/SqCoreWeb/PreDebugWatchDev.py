@@ -6,6 +6,30 @@ import sys
 import socket
 import psutil
 
+import shutil
+import subprocess
+
+# 2026-08: In case, there is a 'tsc' or 'ng or 'node' is not recognized as an internal or external command, uncomment this
+# Problem was that Python Install Manager (which is a Windows Store app, and can be deleted) created a PATH variable instead of using the correct "Path" variable.
+# So, in the os.system() subprocess (only if it was run under VsCode), both PATH and Path existed.
+# PATH=C:\Program Files\WindowsApps\PythonSoftwareFoundation.PythonManager\_26.0.240.0\_x64\_\_3847v3x7pw1km
+# Path=c:\Users\gyantal\.vscode\...\;C:\Windows\system32;...;C:\Program Files\nodejs\;...
+# Uninstalling Python Install Manager solved the problem.
+# But other solution can be:
+# if os.name == "nt":
+#    os.environ["PATH"] = os.environ["Path"]
+# print("===== CHILD ENVIRONMENT =====")
+# p = subprocess.run(
+#     [r"C:\Windows\System32\cmd.exe", "/c", "set PATH"],
+#     capture_output=True,
+#     text=True
+# )
+# print("return:", p.returncode)
+# print("stdout:")
+# print(p.stdout)
+# print("stderr:")
+# print(p.stderr)
+
 print("SqBuild:PreDebugWatchDev.py Python ver: " + platform.python_version() + " (" + platform.architecture()[0] + "), CWD:'" + os. getcwd() + "'")
 print("In VsCode, this should run in a separate CMD window, not in VsCode.Terminal. If not, manually run once this PY") # That 'magically' fixed the VsCode in 2023-01.
 if (os.getcwd().endswith("SqCore")) : # VsCode's context menu 'Run Python file in Terminal' runs it from the workspace folder. VsCode F5 runs it from the project folder. We change it to the project folder
@@ -29,12 +53,15 @@ else:
 
 # 2. What can Debug user watch: wwwrootGeneral (NonWebpack), ExampleCsServerPushInRealtime (Webpack), HealthMonitor (Angular), MarketDashboard (Angular)
 def runCommandThread(commandStr):
-     print("SqBuild: Executing in an in-process separate thread: " + commandStr)
-     # Don't run them in a separate process CMD window, because then it is more difficult to kill them. Just run in inprocess threads, which will PIPE their output StdOut to this the parent process.
-     os.system(commandStr) # run the command in-process, not as a separate process
-     # os.system("cmd /k " + commandStr)  # 2023-01: it seemed it was a fix, but didn't change a thing.
-     # os.system("start /wait cmd /k " + commandStr) # This would creates a separate CMD/WT window, the 'start' creates as a separate process, so when I kill this running process, that extra process is not terminated. Can be worked out that we kill those processes too, but not too easy.
-     # processObj = subprocess.run("tsc --watch", shell=True, stdout=subprocess.PIPE)  # An alternative to os.system(). This will run the command and return any output into process.output
+    print("SqBuild: Executing in an in-process separate thread: " + commandStr)
+    # Don't run them in a separate process CMD window, because then it is more difficult to kill them. Just run in inprocess threads, which will PIPE their output StdOut to this the parent process.
+    # os.system(commandStr) # run the command in-process, not as a separate process
+    # os.system("cmd /k " + commandStr)  # 2023-01: it seemed it was a fix, but didn't change a thing.
+    # os.system("start /wait cmd /k " + commandStr) # This would creates a separate CMD/WT window, the 'start' creates as a separate process, so when I kill this running process, that extra process is not terminated. Can be worked out that we kill those processes too, but not too easy.
+    # processObj = subprocess.run("tsc --watch", shell=True, stdout=subprocess.PIPE)  # An alternative to os.system(). This will run the command and return any output into process.output
+    env = os.environ.copy()
+    # env["PATH"] = r"C:\Program Files\nodejs"
+    subprocess.Popen(commandStr, shell=True, cwd=os.getcwd(), env=env) # os.system() is soft deprecated. consider instead: subprocess.Popen()
 
 # we run os.system() commands 
 def startThreadForSubprocess(pCommandStr):
@@ -49,7 +76,8 @@ def startThreadForSubprocess(pCommandStr):
 # thread1 = Thread(target = runCommandThread, args = ("tsc --watch",))
 # thread1.setDaemon(True)  # daemon = true didn't help. Main thread exited, but watchers were left alive.
 # thread1.start()  #thread1.join()
-startThreadForSubprocess("tsc --watch --preserveWatchOutput")
+# startThreadForSubprocess("tsc --watch --preserveWatchOutput")
+startThreadForSubprocess(r".\node_modules\.bin\tsc.cmd --watch --preserveWatchOutput")
 
 
 # 2.2 Webpack webapps in ./webapps should be packed (TS, CSS, HTML)
@@ -71,7 +99,8 @@ startThreadForSubprocess("tsc --watch --preserveWatchOutput")
 # ng serve doesn't create anything into --output-path=wwwroot/webapps/ (it keeps its files temp, maybe in RAM)
 # to create files into wwwroot/weapps, at publish run 'ng build HealthMonitor --prod --output-path=wwwroot/webapps/HealthMonitor --base-href ./'
 # startShellCallingThread("ng serve --ssl --ssl-key DevTools/AngularLocalServeHttpsCert/localhost.key  --ssl-cert DevTools/AngularLocalServeHttpsCert/localhost.crt --proxy-config angular.watch.proxy.conf.js HelloAngular --port 4201")
-startThreadForSubprocess("ng serve --ssl --ssl-key DevTools/AngularLocalServeHttpsCert/localhost.key  --ssl-cert DevTools/AngularLocalServeHttpsCert/localhost.crt --proxy-config angular.watch.proxy.conf.js MarketDashboard --host 127.0.0.1 --port 4202")
+# startThreadForSubprocess("ng serve --ssl --ssl-key DevTools/AngularLocalServeHttpsCert/localhost.key  --ssl-cert DevTools/AngularLocalServeHttpsCert/localhost.crt --proxy-config angular.watch.proxy.conf.js MarketDashboard --host 127.0.0.1 --port 4202")
+startThreadForSubprocess(r".\node_modules\.bin\ng.cmd serve --ssl --ssl-key DevTools/AngularLocalServeHttpsCert/localhost.key  --ssl-cert DevTools/AngularLocalServeHttpsCert/localhost.crt --proxy-config angular.watch.proxy.conf.js MarketDashboard --host 127.0.0.1 --port 4202")
 # startShellCallingThread("ng serve --ssl --ssl-key DevTools/AngularLocalServeHttpsCert/localhost.key  --ssl-cert DevTools/AngularLocalServeHttpsCert/localhost.crt --proxy-config angular.watch.proxy.conf.js HealthMonitor --host 127.0.0.1 --port 4203")
 # startThreadForSubprocess("ng serve --ssl --ssl-key DevTools/AngularLocalServeHttpsCert/localhost.key  --ssl-cert DevTools/AngularLocalServeHttpsCert/localhost.crt --proxy-config angular.watch.proxy.conf.js PortfolioViewer --host 127.0.0.1 --port 4204")
 # startThreadForSubprocess("ng serve --ssl --ssl-key DevTools/AngularLocalServeHttpsCert/localhost.key  --ssl-cert DevTools/AngularLocalServeHttpsCert/localhost.crt --proxy-config angular.watch.proxy.conf.js ChartGenerator --host 127.0.0.1 --port 4205")

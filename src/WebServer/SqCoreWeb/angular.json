@@ -79,18 +79,18 @@
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
           "options": {
-            "browserTarget": "HelloAngular:build"
+            "buildTarget": "HelloAngular:build"
           },
           "configurations": {
             "production": {
-              "browserTarget": "HelloAngular:build:production"
+              "buildTarget": "HelloAngular:build:production"
             }
           }
         },
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",
           "options": {
-            "browserTarget": "HelloAngular:build"
+            "buildTarget": "HelloAngular:build"
           }
         },
         "test": {
@@ -191,18 +191,18 @@
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
           "options": {
-            "browserTarget": "HealthMonitor:build"
+            "buildTarget": "HealthMonitor:build"
           },
           "configurations": {
             "production": {
-              "browserTarget": "HealthMonitor:build:production"
+              "buildTarget": "HealthMonitor:build:production"
             }
           }
         },
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",
           "options": {
-            "browserTarget": "HealthMonitor:build"
+            "buildTarget": "HealthMonitor:build"
           }
         },
         "test": {
@@ -309,18 +309,18 @@
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
           "options": {
-            "browserTarget": "MarketDashboard:build"
+            "buildTarget": "MarketDashboard:build"
           },
           "configurations": {
             "production": {
-              "browserTarget": "MarketDashboard:build:production"
+              "buildTarget": "MarketDashboard:build:production"
             }
           }
         },
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",
           "options": {
-            "browserTarget": "MarketDashboard:build"
+            "buildTarget": "MarketDashboard:build"
           }
         },
         "test": {
@@ -421,18 +421,18 @@
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
           "options": {
-            "browserTarget": "PortfolioViewer:build"
+            "buildTarget": "PortfolioViewer:build"
           },
           "configurations": {
             "production": {
-              "browserTarget": "PortfolioViewer:build:production"
+              "buildTarget": "PortfolioViewer:build:production"
             }
           }
         },
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",
           "options": {
-            "browserTarget": "PortfolioViewer:build"
+            "buildTarget": "PortfolioViewer:build"
           }
         },
         "test": {
@@ -533,18 +533,18 @@
           "serve": {
             "builder": "@angular-devkit/build-angular:dev-server",
             "options": {
-              "browserTarget": "ChartGenerator:build"
+              "buildTarget": "ChartGenerator:build"
             },
             "configurations": {
               "production": {
-                "browserTarget": "ChartGenerator:build:production"
+                "buildTarget": "ChartGenerator:build:production"
               }
             }
           },
           "extract-i18n": {
             "builder": "@angular-devkit/build-angular:extract-i18n",
             "options": {
-              "browserTarget": "ChartGenerator:build"
+              "buildTarget": "ChartGenerator:build"
             }
           },
           "test": {
@@ -650,18 +650,18 @@
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
           "options": {
-            "browserTarget": "TechnicalAnalyzer:build"
+            "buildTarget": "TechnicalAnalyzer:build"
           },
           "configurations": {
             "production": {
-              "browserTarget": "TechnicalAnalyzer:build:production"
+              "buildTarget": "TechnicalAnalyzer:build:production"
             }
           }
         },
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",
           "options": {
-            "browserTarget": "TechnicalAnalyzer:build"
+            "buildTarget": "TechnicalAnalyzer:build"
           }
         },
         "test": {
@@ -771,18 +771,18 @@
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
           "options": {
-            "browserTarget": "LlmAssistant:build"
+            "buildTarget": "LlmAssistant:build"
           },
           "configurations": {
             "production": {
-              "browserTarget": "LlmAssistant:build:production"
+              "buildTarget": "LlmAssistant:build:production"
             }
           }
         },
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",
           "options": {
-            "browserTarget": "LlmAssistant:build"
+            "buildTarget": "LlmAssistant:build"
           }
         },
         "test": {
