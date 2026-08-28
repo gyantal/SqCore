@@ -40,9 +40,9 @@ struct VixCentralRec2
 [ResponseCache(CacheProfileName = "DefaultShortDuration")]
 public class ContangoVisualizerDataController : Microsoft.AspNetCore.Mvc.Controller
 {
-// #if !DEBUG
-//         [Authorize]
-// #endif
+    // #if !DEBUG
+    //         [Authorize]
+    // #endif
     public ActionResult Index(int commo)
     {
         switch (commo)
@@ -67,11 +67,28 @@ public class ContangoVisualizerDataController : Microsoft.AspNetCore.Mvc.Control
     public static string GetStrVIX()
     {
         // Downloading live data from vixcentral.com.
-        string? webpageLive = Utils.DownloadStringWithRetryAsync("http://vixcentral.com", 3, TimeSpan.FromSeconds(2), true).TurnAsyncToSyncTask();
+        string? webpageLive = Utils.DownloadStringWithRetryAsync("https://volchart.io/", 3, TimeSpan.FromSeconds(2), true).TurnAsyncToSyncTask();
         if (webpageLive == null)
             return "Error in live data";
 
-        string? webpageLiveAjax = Utils.DownloadStringWithRetryAsync("http://vixcentral.com/ajax_update", 3, TimeSpan.FromSeconds(2), true).TurnAsyncToSyncTask();
+        // string? webpageLiveAjax = Utils.DownloadStringWithRetryAsync("https://volchart.io/ajax_update", 3, TimeSpan.FromSeconds(2), true).TurnAsyncToSyncTask();
+        // 2026-08-26: VIX Central moved to volchart.io; the AJAX endpoint started returning "hello" for plain GET requests, so we now send the required XMLHttpRequest and Referer headers.
+        string? webpageLiveAjax = null;
+        try
+        {
+            using System.Net.Http.HttpClient client = new();
+            using System.Net.Http.HttpRequestMessage request = new(System.Net.Http.HttpMethod.Get, $"https://volchart.io/ajax_update?_={DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}");
+            request.Headers.TryAddWithoutValidation("X-Requested-With", "XMLHttpRequest");
+            request.Headers.Referrer = new Uri("https://volchart.io/");
+            System.Net.Http.HttpResponseMessage ajaxResponse = client.SendAsync(request).TurnAsyncToSyncTask();
+            ajaxResponse.EnsureSuccessStatusCode();
+            webpageLiveAjax = ajaxResponse.Content.ReadAsStringAsync().TurnAsyncToSyncTask();
+        }
+        catch
+        {
+            return "Error in live data";
+        }
+
         if (webpageLiveAjax == null)
             return "Error in live data";
 
