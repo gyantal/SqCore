@@ -136,7 +136,7 @@ public class StrategyRenewedUberController : ControllerBase
             // }
             // else
             // {
-                vixLeverage[iRows] = 1;
+            vixLeverage[iRows] = 1;
             // }
         }
 
@@ -725,73 +725,73 @@ public class StrategyRenewedUberController : ControllerBase
     // Selecting, splitting data got from GSheet
     public static Tuple<double[], DateTime[], string[,], int[], int[], int[], string[]> GSheetConverter(string? p_gSheetString, string[] p_allAssetList)
     {
-    if (p_gSheetString != null)
+        if (p_gSheetString != null)
         {
-        string[] gSheetTableRows = p_gSheetString.Split(new string[] { "[" }, StringSplitOptions.RemoveEmptyEntries);
-        string currPosRaw = gSheetTableRows[3];
-        currPosRaw = currPosRaw.Replace("\n", string.Empty).Replace("]", string.Empty).Replace("\",", "BRB").Replace("\"", string.Empty).Replace(" ", string.Empty).Replace(",", string.Empty);
-        string[] currPos = currPosRaw.Split(new string[] { "BRB" }, StringSplitOptions.RemoveEmptyEntries);
-        string[] currPosAP = new string[p_allAssetList.Length];
-        Array.Copy(currPos, 2, currPosAP, 0, p_allAssetList.Length);
-        int currPosDate = Int32.Parse(currPos[0]);
-        int currPosCash = Int32.Parse(currPos[^3]);
-        int[] currPosDateCash = new int[] { currPosDate, currPosCash };
-        int[] currPosAssets = Array.ConvertAll(currPosAP, int.Parse);
+            string[] gSheetTableRows = p_gSheetString.Split(new string[] { "[" }, StringSplitOptions.RemoveEmptyEntries);
+            string currPosRaw = gSheetTableRows[3];
+            currPosRaw = currPosRaw.Replace("\n", string.Empty).Replace("]", string.Empty).Replace("\",", "BRB").Replace("\"", string.Empty).Replace(" ", string.Empty).Replace(",", string.Empty);
+            string[] currPos = currPosRaw.Split(new string[] { "BRB" }, StringSplitOptions.RemoveEmptyEntries);
+            string[] currPosAP = new string[p_allAssetList.Length];
+            Array.Copy(currPos, 2, currPosAP, 0, p_allAssetList.Length);
+            int currPosDate = Int32.Parse(currPos[0]);
+            int currPosCash = Int32.Parse(currPos[^3]);
+            int[] currPosDateCash = new int[] { currPosDate, currPosCash };
+            int[] currPosAssets = Array.ConvertAll(currPosAP, int.Parse);
 
-        p_gSheetString = p_gSheetString.Replace("\n", string.Empty).Replace("]", string.Empty).Replace("\"", string.Empty).Replace(" ", string.Empty).Replace(",,", ",0,").Replace(",,", ",0,");
-        gSheetTableRows = p_gSheetString.Split(new string[] { "[" }, StringSplitOptions.RemoveEmptyEntries);
+            p_gSheetString = p_gSheetString.Replace("\n", string.Empty).Replace("]", string.Empty).Replace("\"", string.Empty).Replace(" ", string.Empty).Replace(",,", ",0,").Replace(",,", ",0,");
+            gSheetTableRows = p_gSheetString.Split(new string[] { "[" }, StringSplitOptions.RemoveEmptyEntries);
 
-        string[,] gSheetCodes = new string[gSheetTableRows.Length - 4, currPos.Length];
-        string[] gSheetCodesH = new string[currPos.Length];
-        for (int iRows = 0; iRows < gSheetCodes.GetLength(0); iRows++)
-        {
-            gSheetCodesH = gSheetTableRows[iRows + 4].Split(new string[] { "," }, StringSplitOptions.RemoveEmptyEntries);
-            for (int jCols = 0; jCols < gSheetCodes.GetLength(1); jCols++)
+            string[,] gSheetCodes = new string[gSheetTableRows.Length - 4, currPos.Length];
+            string[] gSheetCodesH = new string[currPos.Length];
+            for (int iRows = 0; iRows < gSheetCodes.GetLength(0); iRows++)
             {
-                gSheetCodes[iRows, jCols] = gSheetCodesH[jCols];
+                gSheetCodesH = gSheetTableRows[iRows + 4].Split(new string[] { "," }, StringSplitOptions.RemoveEmptyEntries);
+                for (int jCols = 0; jCols < gSheetCodes.GetLength(1); jCols++)
+                {
+                    gSheetCodes[iRows, jCols] = gSheetCodesH[jCols];
+                }
             }
-        }
 
-        gSheetCodes[gSheetCodes.GetLength(0) - 1, gSheetCodes.GetLength(1) - 1] = gSheetCodesH[^1][..gSheetCodesH[^1].IndexOf('}')];
+            gSheetCodes[gSheetCodes.GetLength(0) - 1, gSheetCodes.GetLength(1) - 1] = gSheetCodesH[^1][..gSheetCodesH[^1].IndexOf('}')];
 
-        double[] gSheetDateVec = new double[gSheetCodes.GetLength(0)];
-        for (int iRows = 0; iRows < gSheetDateVec.Length; iRows++)
-        {
-            gSheetDateVec[iRows] = Double.Parse(gSheetCodes[iRows, 0]);
-        }
-
-        DateTime[] gSheetRealDateVec = new DateTime[gSheetCodes.GetLength(0)];
-        for (int iRows = 0; iRows < gSheetRealDateVec.Length; iRows++)
-        {
-            gSheetRealDateVec[iRows] = DateTime.Parse(gSheetCodes[iRows, 1]);
-        }
-
-        string[,] gSheetCodesAssets = new string[gSheetCodes.GetLength(0), p_allAssetList.Length + 1];
-        for (int iRows = 0; iRows < gSheetCodesAssets.GetLength(0); iRows++)
-        {
-            for (int jCols = 0; jCols < gSheetCodesAssets.GetLength(1); jCols++)
+            double[] gSheetDateVec = new double[gSheetCodes.GetLength(0)];
+            for (int iRows = 0; iRows < gSheetDateVec.Length; iRows++)
             {
-                gSheetCodesAssets[iRows, jCols] = gSheetCodes[iRows, jCols + 3];
+                gSheetDateVec[iRows] = Double.Parse(gSheetCodes[iRows, 0]);
             }
+
+            DateTime[] gSheetRealDateVec = new DateTime[gSheetCodes.GetLength(0)];
+            for (int iRows = 0; iRows < gSheetRealDateVec.Length; iRows++)
+            {
+                gSheetRealDateVec[iRows] = DateTime.Parse(gSheetCodes[iRows, 1]);
+            }
+
+            string[,] gSheetCodesAssets = new string[gSheetCodes.GetLength(0), p_allAssetList.Length + 1];
+            for (int iRows = 0; iRows < gSheetCodesAssets.GetLength(0); iRows++)
+            {
+                for (int jCols = 0; jCols < gSheetCodesAssets.GetLength(1); jCols++)
+                {
+                    gSheetCodesAssets[iRows, jCols] = gSheetCodes[iRows, jCols + 3];
+                }
+            }
+
+            string[] gSheetEventFinalSignal = new string[gSheetCodes.GetLength(0)];
+            for (int iRows = 0; iRows < gSheetEventFinalSignal.Length; iRows++)
+            {
+                gSheetEventFinalSignal[iRows] = gSheetCodes[iRows, 2];
+            }
+
+            int[] gSheetEventCodes = new int[gSheetCodes.GetLength(0)];
+            for (int iRows = 0; iRows < gSheetEventCodes.Length; iRows++)
+            {
+                gSheetEventCodes[iRows] = Int32.Parse(gSheetCodes[iRows, gSheetCodes.GetLength(1) - 1]);
+            }
+
+            Tuple<double[], DateTime[], string[,], int[], int[], int[], string[]> gSheetResFinal = Tuple.Create(gSheetDateVec, gSheetRealDateVec, gSheetCodesAssets, gSheetEventCodes, currPosDateCash, currPosAssets, gSheetEventFinalSignal);
+
+            return gSheetResFinal;
         }
-
-        string[] gSheetEventFinalSignal = new string[gSheetCodes.GetLength(0)];
-        for (int iRows = 0; iRows < gSheetEventFinalSignal.Length; iRows++)
-        {
-            gSheetEventFinalSignal[iRows] = gSheetCodes[iRows, 2];
-        }
-
-        int[] gSheetEventCodes = new int[gSheetCodes.GetLength(0)];
-        for (int iRows = 0; iRows < gSheetEventCodes.Length; iRows++)
-        {
-            gSheetEventCodes[iRows] = Int32.Parse(gSheetCodes[iRows, gSheetCodes.GetLength(1) - 1]);
-        }
-
-        Tuple<double[], DateTime[], string[,], int[], int[], int[], string[]> gSheetResFinal = Tuple.Create(gSheetDateVec, gSheetRealDateVec, gSheetCodesAssets, gSheetEventCodes, currPosDateCash, currPosAssets, gSheetEventFinalSignal);
-
-        return gSheetResFinal;
-    }
-    throw new NotImplementedException();
+        throw new NotImplementedException();
     }
     public static (IList<List<DailyData>> UberTickersData, List<DailyData> VIXDailyquotes) GetUberStockHistData(string[] p_allAssetList) // { "VIXY", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG", "^VIX" }
     {
@@ -833,11 +833,25 @@ public class StrategyRenewedUberController : ControllerBase
 
     public static Tuple<DateTime[], double[], Tuple<double[], double[], double[], double[], double[], double>> STCIdata(DateTime[] p_usedDateVec)
     {
-        var client = new HttpClient();
+        // Download live VIX futures data from volchart.io. The AJAX endpoint requires XMLHttpRequest and Referer headers.
+        string? webpageAjax = null;
+        try
+        {
+            using HttpClient client = new();
+            using HttpRequestMessage request = new(HttpMethod.Get, $"https://volchart.io/ajax_update?_={DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}");
+            request.Headers.TryAddWithoutValidation("X-Requested-With", "XMLHttpRequest");
+            request.Headers.Referrer = new Uri("https://volchart.io/");
+            HttpResponseMessage response = client.SendAsync(request).TurnAsyncToSyncTask();
+            response.EnsureSuccessStatusCode();
+            webpageAjax = response.Content.ReadAsStringAsync().TurnAsyncToSyncTask();
+        }
+        catch
+        {
+            webpageAjax = null;
+        }
 
-        // Downloading historical data from vixcentral.com.
-        string? webpageAjax = Utils.DownloadStringWithRetryAsync("http://vixcentral.com/ajax_update", 3, TimeSpan.FromSeconds(2), true).TurnAsyncToSyncTask();
-        webpageAjax ??= "Error in DownloadStringWithRetry().";
+        if (string.IsNullOrWhiteSpace(webpageAjax))
+            throw new InvalidOperationException("Error downloading live VIX data from volchart.io.");
 
         string[] resuRows = webpageAjax.Split(new string[] { "[", "]" }, StringSplitOptions.RemoveEmptyEntries);
         string[] liveFuturesPrices = resuRows[4].Split(new string[] { "," }, StringSplitOptions.RemoveEmptyEntries);
@@ -846,60 +860,36 @@ public class StrategyRenewedUberController : ControllerBase
         string[] futuresNextExps = resuRows[0].Split(new string[] { "," }, StringSplitOptions.RemoveEmptyEntries);
         string liveFuturesNextExp = futuresNextExps[0].Substring(1, 3);
 
-        // Downloading historical data from vixcentral.com.
-        string? webpageHist = Utils.DownloadStringWithRetryAsync("http://vixcentral.com/historical/?days=100", 3, TimeSpan.FromSeconds(2), true).TurnAsyncToSyncTask();
-        webpageHist ??= "Error in DownloadStringWithRetry().";
+        // Download the main page because previous_close_var is still embedded in its JavaScript.
+        string? webpageLive = Utils.DownloadStringWithRetryAsync("https://volchart.io/", 3, TimeSpan.FromSeconds(2), true).TurnAsyncToSyncTask();
 
-        // Downloading live data from vixcentral.com.
-        string? webpageLive = Utils.DownloadStringWithRetryAsync("http://vixcentral.com", 3, TimeSpan.FromSeconds(2), true).TurnAsyncToSyncTask();
-        webpageLive ??= "Error in DownloadStringWithRetry().";
+        if (string.IsNullOrWhiteSpace(webpageLive))
+            throw new InvalidOperationException("Error downloading volchart.io main page.");
 
-        // Selecting data from live data string.
-        string[] tableRows = webpageHist.Split(new string[] { "<tr>", "</tr>" }, StringSplitOptions.RemoveEmptyEntries);
-        int nHistoricalRec = tableRows.Length - 2;
-
-        // string liveFuturesDataDT = System.String.Empty;
-        string liveFuturesDataDate = System.String.Empty;
-        string liveFuturesDataTime = System.String.Empty;
-        // string liveFuturesData = System.String.Empty;
         string prevFuturesData = System.String.Empty;
-        // string liveFuturesNextExp = System.String.Empty;
-        // string spotVixData = System.String.Empty;
 
-        // int startPosLiveDate = webpageLive.IndexOf("var time_data_var=['") + "var time_data_var=['".Length;
-        // int startPosLive = webpageLive.IndexOf("var last_data_var=[", startPosLiveDate) + "var last_data_var=[".Length;
-        // int endPosLive = webpageLive.IndexOf("];last_data_var=clean_array(last_data_var);", startPosLive);
-        int startPosPrev = webpageLive.IndexOf("];var previous_close_var=[", 0) + "];var previous_close_var=[".Length;
-        int endPosPrev = webpageLive.IndexOf("];var contango_graph_exists=", startPosPrev);
-        // int nextExpLiveMonth = webpageLive.IndexOf("var mx=['", 0) + "var mx=['".Length;
-        // int startSpotVix = webpageLive.IndexOf("{id:'VIX_Index',name:'VIX Index',legendIndex:9,lineWidth:2,color:'green',dashStyle:'LongDash',marker:{enabled:false},dataLabels:{enabled:true,align:'left',x:5,y:4,formatter:function(){if(this.point.x==this.series.data.length-1){return Highcharts.numberFormat(this.y,2);}else{return null;}}},data:[", nextExpLiveMonth) + "{id:'VIX_Index',name:'VIX Index',legendIndex:9,lineWidth:2,color:'green',dashStyle:'LongDash',marker:{enabled:false},dataLabels:{enabled:true,align:'left',x:5,y:4,formatter:function(){if(this.point.x==this.series.data.length-1){return Highcharts.numberFormat(this.y,2);}else{return null;}}},data:[".Length;
-        // int endSpotVix = webpageLive.IndexOf("]},{id:'VXV_Index',name:'VXV Index',legendIndex:10,lineWidth:2", startSpotVix);
-        // liveFuturesDataDT = webpageLive.Substring(startPosLiveDate, 16);
-        // liveFuturesNextExp = webpageLive.Substring(nextExpLiveMonth, 3);
-        // liveFuturesData = webpageLive.Substring(startPosLive, endPosLive - startPosLive);
+        const string previousCloseStartMarker = "];var previous_close_var=[";
+        const string previousCloseEndMarker = "];var contango_graph_exists=";
+
+        int previousCloseMarkerPos = webpageLive.IndexOf(previousCloseStartMarker, StringComparison.Ordinal);
+        if (previousCloseMarkerPos < 0)
+            throw new InvalidOperationException("previous_close_var was not found on volchart.io.");
+
+        int startPosPrev = previousCloseMarkerPos + previousCloseStartMarker.Length;
+        int endPosPrev = webpageLive.IndexOf(previousCloseEndMarker, startPosPrev, StringComparison.Ordinal);
+        if (endPosPrev < 0)
+            throw new InvalidOperationException("End of previous_close_var was not found on volchart.io.");
+
         prevFuturesData = webpageLive[startPosPrev..endPosPrev];
-        // spotVixData = webpageLive.Substring(startSpotVix, endSpotVix - startSpotVix);
 
-        // liveFuturesDataDate = liveFuturesDataDT.Substring(0, 10);
-        // liveFuturesDataTime = liveFuturesDataDT.Substring(11, 5) + " EST";
-        liveFuturesDataDate = "2999-12-31";
-        liveFuturesDataTime = "11:11" + " EST";
-
-        // string[] liveFuturesPrices = liveFuturesData.Split(new string[] { "," }, StringSplitOptions.RemoveEmptyEntries);
         int lengthLiveFuturesPrices = liveFuturesPrices.Length;
         string[] prevFuturesPrices = prevFuturesData.Split(new string[] { "," }, StringSplitOptions.RemoveEmptyEntries);
         int lengthPrevFuturesPrices = prevFuturesPrices.Length;
-        // string[] spotVixPrices = spotVixData.Split(new string[] { "," }, StringSplitOptions.RemoveEmptyEntries);
-        // double spotVixValue = Double.Parse(spotVixPrices[0]);
-
         string[] monthsNumList = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
         int monthsNum = Array.IndexOf(monthsNumList, liveFuturesNextExp) + 1;
 
-        DateTime liveDateTime;
-        string liveDate = System.String.Empty;
-        liveDateTime = p_usedDateVec[0];
-        // liveDateTime = DateTime.Parse(liveFuturesDataDate);
-        liveDate = liveDateTime.ToString("yyyy-MM-dd");
+        DateTime liveDateTime = p_usedDateVec[0];
+        string liveDate = liveDateTime.ToString("yyyy-MM-dd");
 
         VixCentralRec[] vixCentralRec = new VixCentralRec[2];
         vixCentralRec[0].Date = DateTime.Parse(liveDate);
@@ -928,52 +918,6 @@ public class StrategyRenewedUberController : ControllerBase
         vixCentralRec[1].STCont = vixCentralRec[1].F2 / vixCentralRec[1].F1 - 1;
         vixCentralRec[1].LTCont = vixCentralRec[1].F7 / vixCentralRec[1].F4 - 1;
 
-        // string[] firstTableCells = tableRows[2].Split(new string[] { "<td>", "</td>" }, StringSplitOptions.RemoveEmptyEntries);
-        // DateTime histStartDay;
-        // string histStartDate = System.String.Empty;
-        // histStartDay = DateTime.Parse(firstTableCells[0]);
-        // histStartDate = histStartDay.ToString("yyyy-MM-dd");
-        // bool isExtraDay = !string.Equals(liveDate, histStartDate);
-
-        // //Sorting historical data.
-        // int nRec = (isExtraDay) ? nHistoricalRec + 1 : nHistoricalRec;
-        // VixCentralRec[] vixCentralRec = new VixCentralRec[nRec - 2];
-
-        // for (int iRows = 2; iRows < tableRows.Length - 2; iRows++)
-        // {
-        //     string[] tableCells = tableRows[iRows].Split(new string[] { "<td>", "</td>" }, StringSplitOptions.RemoveEmptyEntries);
-        //     int iRec = (isExtraDay) ? iRows - 1 : iRows - 2;
-        //     vixCentralRec[iRec].Date = DateTime.Parse(tableCells[0]);
-        //     vixCentralRec[iRec].FirstMonth = Int32.Parse(tableCells[1]);
-        //     vixCentralRec[iRec].F1 = Double.Parse(tableCells[2]);
-        //     vixCentralRec[iRec].F2 = Double.Parse(tableCells[3]);
-        //     vixCentralRec[iRec].F3 = Double.Parse(tableCells[4]);
-        //     vixCentralRec[iRec].F4 = Double.Parse(tableCells[5]);
-        //     vixCentralRec[iRec].F5 = Double.Parse(tableCells[6]);
-        //     vixCentralRec[iRec].F6 = Double.Parse(tableCells[7]);
-        //     vixCentralRec[iRec].F7 = Double.Parse(tableCells[8]);
-        //     vixCentralRec[iRec].F8 = (tableCells[9] == "0") ? vixCentralRec[iRec].F7 : Double.Parse(tableCells[9]);
-        //     vixCentralRec[iRec].STCont = vixCentralRec[iRec].F2 / vixCentralRec[iRec].F1 - 1;
-        //     vixCentralRec[iRec].LTCont = vixCentralRec[iRec].F7 / vixCentralRec[iRec].F4 - 1;
-        // }
-
-        // if (isExtraDay)
-        // {
-        //     vixCentralRec[0].Date = DateTime.Parse(liveDate);
-        //     vixCentralRec[0].FirstMonth = monthsNum;
-        //     vixCentralRec[0].F1 = Double.Parse(liveFuturesPrices[0]);
-        //     vixCentralRec[0].F2 = Double.Parse(liveFuturesPrices[1]);
-        //     vixCentralRec[0].F3 = Double.Parse(liveFuturesPrices[2]);
-        //     vixCentralRec[0].F4 = Double.Parse(liveFuturesPrices[3]);
-        //     vixCentralRec[0].F5 = Double.Parse(liveFuturesPrices[4]);
-        //     vixCentralRec[0].F6 = Double.Parse(liveFuturesPrices[5]);
-        //     vixCentralRec[0].F7 = Double.Parse(liveFuturesPrices[6]);
-        //     vixCentralRec[0].F8 = (lengthLiveFuturesPrices == 8) ? Double.Parse(liveFuturesPrices[7]) : 0;
-        //     vixCentralRec[0].STCont = vixCentralRec[0].F2 / vixCentralRec[0].F1 - 1;
-        //     vixCentralRec[0].LTCont = vixCentralRec[0].F7 / vixCentralRec[0].F4 - 1;
-
-        // }
-
         // Calculating futures expiration dates.
 
         // var firstDataDay = vixCentralRec[nRec - 3].Date;
@@ -985,7 +929,7 @@ public class StrategyRenewedUberController : ControllerBase
         string lastData = lastDataDay.ToString("yyyy-MM-dd");
 
         // var lengthExps = (lastDataYear - firstDataYear + 2) * 12;
-        var lengthExps = (lastDataYear - 2020 + 2) * 12;
+        int lengthExps = (lastDataYear - 2020 + 2) * 12;
         int[,] expDatesDat = new int[lengthExps, 2];
 
         expDatesDat[0, 0] = lastDataYear + 1;
