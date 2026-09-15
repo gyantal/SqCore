@@ -62,7 +62,7 @@ public static class ServerIp
     {
         get
         {
-            return "rqcore.com"; // Dynamic IP can change. 2026-05-07: 89.45.186.152
+            return "rqcore.com"; // Dynamic IP can change. 2026-05-07: 89.45.186.152, 2026-08-25: 149.34.189.166, 2026-09-15: 45.248.145.214
         }
     }
 
