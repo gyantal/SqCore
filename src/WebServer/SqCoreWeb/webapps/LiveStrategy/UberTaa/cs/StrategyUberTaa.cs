@@ -3,13 +3,14 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
 using System.Text.Json.Serialization;
+using System.Threading.Tasks;
 using Fin.MemDb;
 using MathCommon.MathNet;
 using Microsoft.AspNetCore.Mvc;
 using SqCommon;
-using YahooFinanceApi;
 
 namespace SqCoreWeb.Controllers;
 
@@ -48,6 +49,24 @@ public record GSheetResult(
     int[] CurrPosDateCash,
     int[] CurrPosAssets,
     bool[] ImportantTickersBool);
+
+public class TiingoDailyPrice
+{
+    [JsonPropertyName("date")]
+    public DateTime Date { get; set; }
+
+    [JsonPropertyName("close")]
+    public double Close { get; set; }
+
+    [JsonPropertyName("adjClose")]
+    public double AdjClose { get; set; }
+
+    [JsonPropertyName("splitFactor")]
+    public double SplitFactor { get; set; }
+
+    [JsonPropertyName("divCash")]
+    public double DivCash { get; set; }
+}
 
 [ApiController]
 [Route("[controller]")]
@@ -777,10 +796,11 @@ public class StrategyUberTaaController : ControllerBase
         DateTime startIncLoc = nowET.AddDays(-490);    // This uses a 6-months, 120 trading days rolling simulation window for PctChannels
 
         List<(Asset Asset, List<AssetHistValue> Values)> assetHistsAndEst = MemDb.gMemDb.GetSdaHistClosesAndLastEstValue(assets, startIncLoc, true).ToList();
+        CheckAndRepairMissingYfDataWithTiingo(assetHistsAndEst, startIncLoc, nowET).GetAwaiter().GetResult();
         List<List<DailyData>> quotesData = new();
         for (int i = 3; i < assetHistsAndEst.Count - 1; i++)
         {
-            var vals = assetHistsAndEst[i].Values;
+            List<AssetHistValue> vals = assetHistsAndEst[i].Values;
             List<DailyData> uberValsData = new();
             for (int j = 0; j < vals.Count; j++)
             {
@@ -792,7 +812,7 @@ public class StrategyUberTaaController : ControllerBase
         List<List<DailyData>> quotesForClmtData = new();
         for (int i = 0; i < 3; i++)
         {
-            var vals = assetHistsAndEst[i].Values;
+            List<AssetHistValue> vals = assetHistsAndEst[i].Values;
             List<DailyData> clmtData = new();
             for (int j = 0; j < vals.Count; j++)
             {
@@ -802,7 +822,7 @@ public class StrategyUberTaaController : ControllerBase
         }
         // last ticker is TLT, which is used as a cash substitute. Special role.
         List<DailyData> cashEquivalentQuotesData = new();
-        var cashVals = assetHistsAndEst[^1].Values;
+        List<AssetHistValue> cashVals = assetHistsAndEst[^1].Values;
         for (int j = 0; j < cashVals.Count; j++)
             cashEquivalentQuotesData.Add(new DailyData() { Date = cashVals[j].Date, AdjClosePrice = cashVals[j].SdaValue });
 
@@ -946,7 +966,7 @@ public class StrategyUberTaaController : ControllerBase
 
     public static Tuple<double[], double[,]> TaaWeights(IList<List<DailyData>> p_taaWeightsData, int[] p_pctChannelLookbackDays, int p_histVolLookbackDays, int p_thresholdLower, bool p_winnerRun)
     {
-        var dshd = p_taaWeightsData;
+        IList<List<DailyData>> dshd = p_taaWeightsData;
         int nAssets = p_taaWeightsData.Count;
 
         double[] assetScores = new double[nAssets];
@@ -974,7 +994,7 @@ public class StrategyUberTaaController : ControllerBase
                 for (int iChannel = 0; iChannel < p_pctChannelLookbackDays.Length; iChannel++)
                 {
                     // A long position would be initiated if the price exceeds the 75th percentile of prices over the last “n” days.The position would be closed if the price falls below the 25th percentile of prices over the last “n” days.
-                    var usedQuotes = p_taaWeightsData[iAsset].GetRange(startNumDay + iDay - (p_pctChannelLookbackDays[iChannel] - 1), p_pctChannelLookbackDays[iChannel]).Select(r => r.AdjClosePrice);
+                    IEnumerable<double> usedQuotes = p_taaWeightsData[iAsset].GetRange(startNumDay + iDay - (p_pctChannelLookbackDays[iChannel] - 1), p_pctChannelLookbackDays[iChannel]).Select(r => r.AdjClosePrice);
                     assetPctChannelsLower[iAsset, iChannel] = Statistics.Quantile(usedQuotes, thresholdLower);
                     assetPctChannelsUpper[iAsset, iChannel] = Statistics.Quantile(usedQuotes, thresholdUpper);
                     if (assetPrice < assetPctChannelsLower[iAsset, iChannel])
@@ -1403,5 +1423,110 @@ public class StrategyUberTaaController : ControllerBase
             return (value / 1000000.0).ToString("0.###") + "M";
         else
             return Math.Round(value / 1000.0).ToString() + "K";
+    }
+
+    // 2026-09: Tiingo fallback for missing Yahoo Finance historical prices.
+    private static async Task<List<TiingoDailyPrice>> GetTiingoHistoryAsync(string p_symbol, DateTime p_startDate, DateTime p_endDate, string p_apiToken)
+    {
+        string url = $"https://api.tiingo.com/tiingo/daily/{p_symbol}/prices" + $"?startDate={p_startDate:yyyy-MM-dd}" + $"&endDate={p_endDate:yyyy-MM-dd}" + $"&token={p_apiToken}";
+        using HttpClient httpClient = new();
+        string json = await httpClient.GetStringAsync(url);
+        return System.Text.Json.JsonSerializer.Deserialize<List<TiingoDailyPrice>>(json) ?? new();
+    }
+
+    private static async Task CheckAndRepairMissingYfDataWithTiingo(List<(Asset Asset, List<AssetHistValue> Values)> p_histories, DateTime p_startDate, DateTime p_endDate)
+    {
+        string tiingoApiToken = Utils.Configuration["ConnectionStrings:TiingoApiKey"] ?? throw new SqException("TiingoApiKey is missing from Config");
+        DateTime today = p_endDate.Date;
+
+        (Asset Asset, List<AssetHistValue> Values) spyHistory = p_histories.FirstOrDefault(r => r.Asset.SqTicker == "S/SPY");
+
+        if (spyHistory.Asset == null)
+        {
+            Utils.Logger.Error("TiingoFallback: SPY history not found.");
+            return;
+        }
+
+        HashSet<DateTime> expectedDates = spyHistory.Values.Select(r => ((DateTime)r.Date).Date).Where(r => r < today).ToHashSet();
+
+        foreach ((Asset asset, List<AssetHistValue> yfValues) in p_histories)
+        {
+            string symbol = asset.SqTicker;
+            if (!symbol.StartsWith("S/") || symbol == "S/SPY")
+                continue;
+            symbol = symbol[2..];
+            symbol = symbol.Replace(" ", "-").Replace(".", "-");
+            HashSet<DateTime> yfDates = yfValues.Select(r => ((DateTime)r.Date).Date).Where(r => r < today).ToHashSet();
+            List<DateTime> missingDates = expectedDates.Where(r => !yfDates.Contains(r)).OrderBy(r => r).ToList();
+            if (missingDates.Count == 0)
+                continue;
+
+            try
+            {
+                List<TiingoDailyPrice> tiingoValues = await GetTiingoHistoryAsync(symbol, p_startDate, p_endDate, tiingoApiToken);
+
+                if (!ValidateTiingoAgainstYahoo(yfValues, tiingoValues, missingDates))
+                {
+                    Utils.Logger.Error($"TiingoFallback {symbol}: validation failed.");
+                    continue;
+                }
+
+                Dictionary<DateTime, TiingoDailyPrice> tiingoByDate = tiingoValues.GroupBy(r => r.Date.Date).ToDictionary(r => r.Key, r => r.First());
+
+                foreach (DateTime missingDate in missingDates)
+                {
+                    if (!tiingoByDate.TryGetValue(missingDate, out TiingoDailyPrice? tiingoValue))
+                    {
+                        Utils.Logger.Error($"TiingoFallback {symbol}: {missingDate:yyyy-MM-dd} missing from Tiingo too.");
+                        continue;
+                    }
+
+                    yfValues.Add(new AssetHistValue
+                    {
+                        Date = new SqDateOnly(missingDate),
+                        SdaValue = (float)tiingoValue.AdjClose
+                    });
+
+                    Utils.Logger.Warn($"TiingoFallback {symbol}: filled {missingDate:yyyy-MM-dd} with {tiingoValue.AdjClose}.");
+                }
+
+                yfValues.Sort((a, b) => ((DateTime)a.Date).CompareTo((DateTime)b.Date));
+            }
+            catch (HttpRequestException e) when (e.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+            {
+                Utils.Logger.Error($"TiingoFallback {symbol}: rate limit reached. " + $"Skipping remaining Tiingo requests.");
+                break;
+            }
+            catch (Exception e)
+            {
+                Utils.Logger.Error($"TiingoFallback {symbol}: {e.Message}");
+            }
+        }
+    }
+
+    private static bool ValidateTiingoAgainstYahoo(List<AssetHistValue> p_yfValues, List<TiingoDailyPrice> p_tiingoValues, List<DateTime> p_missingDates)
+    {
+        Dictionary<DateTime, float> yfByDate = p_yfValues.GroupBy(r => ((DateTime)r.Date).Date).ToDictionary(r => r.Key, r => r.First().SdaValue);
+        Dictionary<DateTime, double> tiingoByDate = p_tiingoValues.GroupBy(r => r.Date.Date).ToDictionary(r => r.Key, r => r.First().AdjClose);
+        DateTime firstMissingDate = p_missingDates.Min();
+        List<DateTime> commonDates = yfByDate.Keys.Where(date => tiingoByDate.ContainsKey(date) && date < firstMissingDate).OrderByDescending(date => date).Take(20).ToList();
+
+        if (commonDates.Count < 5)
+            return false;
+
+        foreach (DateTime date in commonDates)
+        {
+            float yfPrice = yfByDate[date];
+            double tiingoPrice = tiingoByDate[date];
+            if (yfPrice == 0.0f || float.IsNaN(yfPrice) || tiingoPrice == 0.0 || double.IsNaN(tiingoPrice))
+                continue;
+            double diffPct = Math.Abs(yfPrice - tiingoPrice) / Math.Abs(yfPrice) * 100.0;
+            if (diffPct > 0.10)
+            {
+                Utils.Logger.Error($"TiingoFallback validation mismatch: " + $"date={date:yyyy-MM-dd}, " + $"YF={yfPrice}, " + $"Tiingo={tiingoPrice}, " + $"diff={diffPct:F6}%");
+                return false;
+            }
+        }
+        return true;
     }
 }
