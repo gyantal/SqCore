@@ -116,7 +116,7 @@ public static partial class Utils
         // using http://www.thestreet.com/stock-market-news/11771386/market-holidays-2015.html is not recommended,
         // because for 20x pages it does an Adver redirection instead of giving back the proper info the returned page
         // is an advert. So, stick to the official NYSE website.
-        string? webPage = Utils.DownloadStringWithRetryAsync("https://www.nyse.com/markets/hours-calendars", 5, TimeSpan.FromSeconds(2), false).TurnAsyncToSyncTask();
+        string? webPage = Utils.DownloadStringWithRetryAsync("https://www.nyse.com/trade/hours-calendars", 5, TimeSpan.FromSeconds(2), false).TurnAsyncToSyncTask();
         if (webPage == null)
         {
             if (g_holidays != null)
