@@ -30,8 +30,8 @@ public partial class HealthMonitor
                 Utils.Logger.Info($"<Tcp:>ProcessTcpClient: Message: NULL");
                 return;
             }
-            Console.WriteLine("<Tcp:>" + DateTime.UtcNow.ToString("MM-dd HH:mm:ss") + $" Msg.ID:{message.ID}, Param:{(String.IsNullOrEmpty(message.ParamStr)?"NULL": message.ParamStr)}");  // user can quickly check from Console the messages
-            Utils.Logger.Info($"<Tcp:>ProcessTcpClient: Message ID:\"{ message.ID}\", ParamStr: \"{(String.IsNullOrEmpty(message.ParamStr)?"NULL": message.ParamStr)}\", ResponseFormat: \"{message.ResponseFormat}\"");
+            Console.WriteLine("<Tcp:>" + DateTime.UtcNow.ToString("MM-dd HH:mm:ss") + $"Msg.TcpServerHost:{message.TcpServerHost}, Msg.ID:{message.ID}, Param:{(String.IsNullOrEmpty(message.ParamStr)?"NULL": message.ParamStr)}");  // user can quickly check from Console the messages
+            Utils.Logger.Info($"<Tcp:>ProcessTcpClient: Msg.TcpServerHost:\"{message.TcpServerHost}\", Msg.ID:\"{ message.ID}\", ParamStr: \"{(String.IsNullOrEmpty(message.ParamStr)?"NULL": message.ParamStr)}\", ResponseFormat: \"{message.ResponseFormat}\"");
         }
         catch (Exception e) // Background thread can crash application. A background thread does not keep the managed execution environment running.
         {
@@ -57,6 +57,15 @@ public partial class HealthMonitor
         {
             Console.WriteLine("<Tcp:>" + DateTime.UtcNow.ToString("MM-dd HH:mm:ss") + $" Msg: NULL");  // user can quickly check from Console the messages
             Utils.Logger.Info($"<Tcp:>ProcessTcpClient: Message: NULL");
+            return;
+        }
+
+        // rarely random servers spam HealthMonitor with messages (Message ID:"16817152") not intended for it, so we filter by TcpServerHost.
+        // We always put ServerIp.HealthMonitorPublicIp as the TcpServerHost for messages intended for HealthMonitor.
+        if (message.TcpServerHost != ServerIp.HealthMonitorPublicIp)
+        {
+            Console.WriteLine("<Tcp:>" + DateTime.UtcNow.ToString("MM-dd HH:mm:ss") + $" Msg.TcpServerHost:{message.TcpServerHost}, Msg.ID:{message.ID}, Msg.Param:{(String.IsNullOrEmpty(message.ParamStr)?"NULL": message.ParamStr)}");  // user can quickly check from Console the messages
+            Utils.Logger.Info($"<Tcp:>ProcessTcpClient: Msg.TcpServerHost:\"{message.TcpServerHost}\", Msg.ID:\"{message.ID}\", Msg.Param:\"{(String.IsNullOrEmpty(message.ParamStr)?"NULL": message.ParamStr)}\", Message: NULL");
             return;
         }
 
